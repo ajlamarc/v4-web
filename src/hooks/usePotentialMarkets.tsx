@@ -46,7 +46,7 @@ export const PotentialMarketsProvider = ({ ...props }) => (
 
 export const usePotentialMarkets = () => useContext(PotentialMarketsContext);
 
-const POTENTIAL_MARKETS_FILE_PATH = '/configs/otherMarketData.json';
+const POTENTIAL_MARKETS_FILE_PATH = '/configs/other-market-data.json';
 
 const usePotentialMarketsContext = () => {
   const stringGetter = useStringGetter();

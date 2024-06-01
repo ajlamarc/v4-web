@@ -15,6 +15,7 @@ const entryPoints = entryPointsExist
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: './',
   define: {
     'process.env': {},
   },
