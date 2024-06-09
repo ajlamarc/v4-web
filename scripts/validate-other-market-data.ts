@@ -15,9 +15,9 @@ import {
   CompositeClient,
   LocalWallet as LocalWalletType,
   Network,
+  ProposalStatus,
   TransactionOptions,
   VoteOption,
-  ProposalStatus,
 } from '@dydxprotocol/v4-client-js';
 import {
   Perpetual,
@@ -37,7 +37,7 @@ const LocalWalletModule = await import(
 );
 const LocalWallet = LocalWalletModule.default;
 
-const PATH_TO_PROPOSALS = 'public/configs/otherMarketData.json';
+const PATH_TO_PROPOSALS = 'public/configs/other-market-data.json';
 // TODO: Query MIN_DEPOSIT and VOTING_PERIOD_SECONDS from chain.
 const MIN_DEPOSIT = '10000000';
 const VOTING_PERIOD_SECONDS = 300;

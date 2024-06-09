@@ -1,6 +1,9 @@
+import dotenv from 'dotenv';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+dotenv.config();
 
 const STATUS_PAGE_SCRIPT_URI = process.env.STATUS_PAGE_SCRIPT_URI;
 
@@ -12,7 +15,7 @@ if (STATUS_PAGE_SCRIPT_URI) {
     const files = await fs.readdir('entry-points');
     for (const file of files) {
       inject(file);
-    };
+    }
   } catch (err) {
     console.error('Error injecting StatusPage scripts:', err);
   }
