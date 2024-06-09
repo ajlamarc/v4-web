@@ -1,5 +1,7 @@
 import environments from '../../public/configs/v1/env.json';
 
+console.error('environments', environments);
+
 const CURRENT_MODE = ({
   production: 'MAINNET',
   testnet: 'TESTNET',

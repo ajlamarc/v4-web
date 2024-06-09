@@ -15,7 +15,7 @@ const entryPoints = entryPointsExist
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: './',
+  base: '/apps/dydx-v4/',
   define: {
     'process.env': {},
   },
@@ -85,6 +85,7 @@ export default defineConfig(({ mode }) => ({
     ],
   },
   build: {
+    // modulePreload: false,
     rollupOptions: {
       input: entryPoints,
     },

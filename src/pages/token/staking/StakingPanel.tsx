@@ -23,7 +23,10 @@ export const StakingPanel = ({ className }: { className?: string }) => {
       slotHeaderContent={
         <$Header>
           <$Title>{stringGetter({ key: STRING_KEYS.STAKE_WITH_KEPLR })}</$Title>
-          <$Img src="/third-party/keplr.png" alt={stringGetter({ key: STRING_KEYS.KEPLR })} />
+          <$Img
+            src="/apps/dydx-v4/third-party/keplr.png"
+            alt={stringGetter({ key: STRING_KEYS.KEPLR })}
+          />
         </$Header>
       }
       onClick={() => dispatch(openDialog({ type: DialogTypes.ExternalNavKeplr }))}

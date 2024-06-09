@@ -127,8 +127,8 @@ export const getWidgetOptions = () => {
   return {
     // debug: true,
     container: 'tv-price-chart',
-    library_path: '/tradingview/', // relative to public folder
-    custom_css_url: '/tradingview/custom-styles.css',
+    library_path: '/apps/dydx-v4/tradingview/', // relative to public folder
+    custom_css_url: '/apps/dydx-v4/tradingview/custom-styles.css',
     autosize: true,
     disabled_features: [
       'header_symbol_search',

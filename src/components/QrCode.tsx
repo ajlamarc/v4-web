@@ -17,8 +17,8 @@ type StyleProps = {
   size?: number;
 };
 
-const DARK_LOGO_MARK_URL = '/logos/logo-mark-dark.svg';
-const LIGHT_LOGO_MARK_URL = '/logos/logo-mark-light.svg';
+const DARK_LOGO_MARK_URL = '/apps/dydx-v4/logos/logo-mark-dark.svg';
+const LIGHT_LOGO_MARK_URL = '/apps/dydx-v4/logos/logo-mark-light.svg';
 
 export const QrCode = ({ className, value, hasLogo, size = 300 }: ElementProps & StyleProps) => {
   const ref = useRef<HTMLDivElement>(null);

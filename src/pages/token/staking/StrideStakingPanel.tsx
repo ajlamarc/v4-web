@@ -29,7 +29,7 @@ export const StrideStakingPanel = ({ className }: { className?: string }) => {
             {stringGetter({ key: STRING_KEYS.LIQUID_STAKE_W_STRIDE })}
             <Tag isHighlighted>{stringGetter({ key: STRING_KEYS.NEW })}</Tag>
           </$Title>
-          <$Img src="/third-party/stride.png" alt="Stride" />
+          <$Img src="/apps/dydx-v4/third-party/stride.png" alt="Stride" />
         </$Header>
       }
       onClick={() => dispatch(openDialog({ type: DialogTypes.ExternalNavStride }))}

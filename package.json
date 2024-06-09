@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "cp ./template.html ./index.html && vite",
-    "build": "pnpm run build:set-last-commit-and-tag && pnpm run build:generate-entry-points && tsc && vite build && pnpm run postbuild",
+    "build": "pnpm run build:set-last-commit-and-tag && pnpm run build:generate-entry-points && tsc && vite build && pnpm run build:inject-statuspage && pnpm run postbuild",
     "build:inject-app-deeplinks": "sh scripts/inject-app-deeplinks.sh",
     "build:inject-amplitude": "node scripts/inject-amplitude.js",
     "build:inject-bugsnag": "node scripts/inject-bugsnag.js",
@@ -36,7 +36,7 @@
     "prepare": "husky",
     "commitlint": "commitlint --edit",
     "wdio": "wdio run ./wdio.conf.ts",
-    "postbuild": "node scripts/remove-urbit-incompatible-files.js"
+    "postbuild": "node scripts/urbit-cleanup.js"
   },
   "packageManager": "pnpm@8.6.6",
   "dependencies": {
@@ -47,7 +47,7 @@
     "@cosmjs/proto-signing": "^0.32.1",
     "@cosmjs/stargate": "^0.32.1",
     "@cosmjs/tendermint-rpc": "^0.32.1",
-    "@dydxprotocol/v4-abacus": "1.7.43",
+    "@dydxprotocol/v4-abacus": "file:../v4-abacus/build/packages/dydxprotocol-v4-abacus-1.7.47.tgz",
     "@dydxprotocol/v4-client-js": "^1.1.15",
     "@dydxprotocol/v4-localization": "^1.1.100",
     "@ethersproject/providers": "^5.7.2",
@@ -106,6 +106,7 @@
     "color": "^4.2.3",
     "cosmjs-types": "^0.9.0",
     "crypto-js": "^4.1.1",
+    "dotenv": "^16.4.5",
     "ethers": "^6.6.1",
     "graz": "^0.0.43",
     "lodash": "^4.17.21",
