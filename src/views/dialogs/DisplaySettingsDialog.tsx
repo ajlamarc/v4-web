@@ -88,7 +88,7 @@ export const DisplaySettingsDialog = ({ setIsOpen }: ElementProps) => {
               <$AppThemeHeader textcolor={textColor}>
                 {stringGetter({ key: label })}
               </$AppThemeHeader>
-              <$Image src="/chart-bars.svg" />
+              <$Image src="/apps/dydx-v4/chart-bars.svg" />
               <$CheckIndicator>
                 <$CheckIcon iconName={IconName.Check} />
               </$CheckIndicator>

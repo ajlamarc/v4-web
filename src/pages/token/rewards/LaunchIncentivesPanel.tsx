@@ -133,7 +133,7 @@ const EstimatedRewards = () => {
         </$Points>
       </$EstimatedRewardsCardContent>
 
-      <$Image src="/rewards-stars.svg" />
+      <$Image src="/apps/dydx-v4/rewards-stars.svg" />
     </$EstimatedRewardsCard>
   );
 };
