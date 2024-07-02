@@ -6,30 +6,36 @@ import { shallowEqual } from 'react-redux';
 import { OrderbookLine, type PerpetualMarketOrderbookLevel } from '@/constants/abacus';
 import { DepthChartDatum, DepthChartSeries } from '@/constants/charts';
 
-import { getSubaccountOrderSizeBySideAndPrice } from '@/state/accountSelectors';
+import { getSubaccountOrderSizeBySideAndOrderbookLevel } from '@/state/accountSelectors';
 import { useAppSelector } from '@/state/appTypes';
 import { getCurrentMarketOrderbook } from '@/state/perpetualsSelectors';
 
 import { MustBigNumber } from '@/lib/numbers';
+import { safeAssign } from '@/lib/objectHelpers';
+import { orEmptyObj } from '@/lib/typeUtils';
 
 export const useCalculateOrderbookData = ({ maxRowsPerSide }: { maxRowsPerSide: number }) => {
   const orderbook = useAppSelector(getCurrentMarketOrderbook, shallowEqual);
 
-  const subaccountOrderSizeBySideAndPrice =
-    useAppSelector(getSubaccountOrderSizeBySideAndPrice, shallowEqual) || {};
+  const subaccountOrderSizeBySideAndPrice = orEmptyObj(
+    useAppSelector(getSubaccountOrderSizeBySideAndOrderbookLevel, shallowEqual)
+  );
 
   return useMemo(() => {
     const asks: Array<PerpetualMarketOrderbookLevel | undefined> = (
       orderbook?.asks?.toArray() ?? []
     )
       .map(
-        (row: OrderbookLine, idx: number) =>
-          ({
-            key: `ask-${idx}`,
-            side: 'ask',
-            mine: subaccountOrderSizeBySideAndPrice[OrderSide.SELL]?.[row.price],
-            ...row,
-          }) as PerpetualMarketOrderbookLevel
+        (row: OrderbookLine, idx: number): PerpetualMarketOrderbookLevel =>
+          safeAssign(
+            {},
+            {
+              key: `ask-${idx}`,
+              side: 'ask' as const,
+              mine: subaccountOrderSizeBySideAndPrice[OrderSide.SELL]?.[row.price],
+            },
+            row
+          )
       )
       .slice(0, maxRowsPerSide);
 
@@ -37,42 +43,20 @@ export const useCalculateOrderbookData = ({ maxRowsPerSide }: { maxRowsPerSide: 
       orderbook?.bids?.toArray() ?? []
     )
       .map(
-        (row: OrderbookLine, idx: number) =>
-          ({
-            key: `bid-${idx}`,
-            side: 'bid',
-            mine: subaccountOrderSizeBySideAndPrice[OrderSide.BUY]?.[row.price],
-            ...row,
-          }) as PerpetualMarketOrderbookLevel
+        (row: OrderbookLine, idx: number): PerpetualMarketOrderbookLevel =>
+          safeAssign(
+            {},
+            {
+              key: `bid-${idx}`,
+              side: 'bid' as const,
+              mine: subaccountOrderSizeBySideAndPrice[OrderSide.BUY]?.[row.price],
+            },
+            row
+          )
       )
       .slice(0, maxRowsPerSide);
 
-    // Prevent the bid/ask sides from crossing by using the offsets.
-    // While the books are crossing...
-    while (asks[0] && bids[0] && bids[0]!.price >= asks[0].price) {
-      // Drop the order on the side with the lower offset.
-      // The offset of the other side is higher and so supercedes.
-      if (bids[0]!.offset === asks[0].offset) {
-        // If offsets are the same, give precedence to the larger size. In this case,
-        // one of the sizes *should* be zero, but we simply check for the larger size.
-        if (bids[0]!.size > asks[0].size) {
-          asks.shift();
-        } else {
-          bids.pop();
-        }
-      } else {
-        // Offsets are not equal. Give precedence to the larger offset.
-        if (bids[0]!.offset > asks[0].offset) {
-          asks.shift();
-        } else {
-          bids.pop();
-        }
-      }
-    }
-
-    const spread =
-      asks[0]?.price && bids[0]?.price ? MustBigNumber(asks[0].price).minus(bids[0].price) : null;
-
+    const spread = orderbook?.spread;
     const spreadPercent = orderbook?.spreadPercent;
 
     const histogramRange = Math.max(
@@ -87,8 +71,9 @@ export const useCalculateOrderbookData = ({ maxRowsPerSide }: { maxRowsPerSide: 
       spreadPercent,
       histogramRange,
       hasOrderbook: !!orderbook,
+      currentGrouping: orderbook?.grouping,
     };
-  }, [orderbook, subaccountOrderSizeBySideAndPrice]);
+  }, [maxRowsPerSide, orderbook, subaccountOrderSizeBySideAndPrice]);
 };
 
 export const useOrderbookValuesForDepthChart = () => {
@@ -97,11 +82,11 @@ export const useOrderbookValuesForDepthChart = () => {
   return useMemo(() => {
     const bids = (orderbook?.bids?.toArray() ?? [])
       .filter(Boolean)
-      .map((datum) => ({ ...datum, seriesKey: DepthChartSeries.Bids }) as DepthChartDatum);
+      .map((datum): DepthChartDatum => safeAssign({}, datum, { seriesKey: DepthChartSeries.Bids }));
 
     const asks = (orderbook?.asks?.toArray() ?? [])
       .filter(Boolean)
-      .map((datum) => ({ ...datum, seriesKey: DepthChartSeries.Asks }) as DepthChartDatum);
+      .map((datum): DepthChartDatum => safeAssign({}, datum, { seriesKey: DepthChartSeries.Asks }));
 
     const lowestBid = bids[bids.length - 1];
     const highestBid = bids[0];

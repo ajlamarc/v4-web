@@ -2,6 +2,7 @@ import styled from 'styled-components';
 
 import { STRING_KEYS } from '@/constants/localization';
 
+import { useEnvFeatures } from '@/hooks/useEnvFeatures';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useURLConfigs } from '@/hooks/useURLConfigs';
 
@@ -14,7 +15,14 @@ import { Panel } from '@/components/Panel';
 
 export const RewardsHelpPanel = () => {
   const stringGetter = useStringGetter();
-  const { tradingRewardsLearnMore } = useURLConfigs();
+
+  const { isStakingEnabled } = useEnvFeatures();
+  const { protocolStaking, tradingRewardsLearnMore, stakingAndClaimingRewardsLearnMore } =
+    useURLConfigs();
+
+  const hereLink = (href?: string) => (
+    <$AccentLink href={href}>{stringGetter({ key: STRING_KEYS.HERE })}</$AccentLink>
+  );
 
   return (
     <$HelpCard
@@ -37,12 +45,49 @@ export const RewardsHelpPanel = () => {
           },
           {
             header: stringGetter({ key: STRING_KEYS.FAQ_HOW_DO_TRADING_REWARDS_WORK_QUESTION }),
-            content: stringGetter({ key: STRING_KEYS.FAQ_HOW_DO_TRADING_REWARDS_WORK_ANSWER }),
+            content: stringGetter({
+              key: STRING_KEYS.FAQ_HOW_DO_TRADING_REWARDS_WORK_ANSWER,
+              params: {
+                HERE_LINK: hereLink(tradingRewardsLearnMore),
+              },
+            }),
           },
           {
             header: stringGetter({ key: STRING_KEYS.FAQ_HOW_DO_I_CLAIM_MY_REWARDS_QUESTION }),
             content: stringGetter({ key: STRING_KEYS.FAQ_HOW_DO_I_CLAIM_MY_REWARDS_ANSWER }),
           },
+          ...(isStakingEnabled
+            ? [
+                {
+                  header: stringGetter({ key: STRING_KEYS.FAQ_WHAT_IS_STAKING_QUESTION }),
+                  content: stringGetter({
+                    key: STRING_KEYS.FAQ_WHAT_IS_STAKING_ANSWER,
+                    params: {
+                      HERE_LINK: hereLink(protocolStaking),
+                    },
+                  }),
+                },
+                {
+                  header: stringGetter({
+                    key: STRING_KEYS.FAQ_HOW_DO_I_STAKE_AND_CLAIM_REWARDS_QUESTION,
+                  }),
+                  content: stringGetter({
+                    key: STRING_KEYS.FAQ_HOW_DO_I_STAKE_AND_CLAIM_REWARDS_ANSWER,
+                    params: {
+                      HERE_LINK: hereLink(stakingAndClaimingRewardsLearnMore),
+                    },
+                  }),
+                },
+                {
+                  header: stringGetter({
+                    key: STRING_KEYS.FAQ_WHAT_ARE_THE_RISKS_OF_STAKING_QUESTION,
+                  }),
+                  content: stringGetter({
+                    key: STRING_KEYS.FAQ_WHAT_ARE_THE_RISKS_OF_STAKING_ANSWER,
+                  }),
+                },
+              ]
+            : []),
         ]}
       />
     </$HelpCard>
@@ -66,7 +111,7 @@ const $Header = styled.div`
   padding: 1rem 1rem;
   border-bottom: var(--border-width) solid var(--border-color);
 
-  font: var(--font-small-book);
+  font: var(--font-base-book);
 
   @media ${breakpoints.notTablet} {
     padding: 1.5rem;
@@ -76,4 +121,9 @@ const $Header = styled.div`
     font: var(--font-medium-book);
     color: var(--color-text-2);
   }
+`;
+
+const $AccentLink = styled(Link)`
+  --link-color: var(--color-accent);
+  display: inline-block;
 `;

@@ -21,7 +21,6 @@ export type DetailsItem = {
   // eslint-disable-next-line react/no-unused-prop-types
   subitems?: DetailsItem[];
   withTooltipIcon?: boolean;
-  allowUserSelection?: boolean;
 };
 
 const DETAIL_LAYOUTS = {
@@ -66,7 +65,6 @@ const DetailItem = ({
   justifyItems,
   layout = 'column',
   withOverflow,
-  allowUserSelection,
 }: DetailsItem & StyleProps) => (
   <$Item justifyItems={justifyItems} layout={layout} withOverflow={withOverflow}>
     <dt>
@@ -79,7 +77,7 @@ const DetailItem = ({
         {label}
       </WithTooltip>
     </dt>
-    <$DetailsItemValue allowUserSelection={allowUserSelection}>{value ?? ''}</$DetailsItemValue>
+    <dd>{value ?? ''}</dd>
   </$Item>
 );
 
@@ -96,42 +94,30 @@ export const Details = ({
   <LoadingContext.Provider value={isLoading}>
     <$Details layout={layout} withSeparators={withSeparators} className={className}>
       <WithSeparators withSeparators={withSeparators} layout={DETAIL_LAYOUTS[layout]}>
-        {items.map(
-          ({
-            key,
-            tooltip,
-            tooltipParams,
-            label,
-            subitems,
-            value,
-            withTooltipIcon,
-            allowUserSelection,
-          }) => (
-            <Fragment key={key}>
-              <DetailItem
-                {...{
-                  key,
-                  tooltip,
-                  tooltipParams,
-                  label,
-                  value,
-                  withTooltipIcon,
-                  justifyItems,
-                  layout,
-                  withOverflow,
-                  allowUserSelection,
-                }}
+        {items.map(({ key, tooltip, tooltipParams, label, subitems, value, withTooltipIcon }) => (
+          <Fragment key={key}>
+            <DetailItem
+              {...{
+                key,
+                tooltip,
+                tooltipParams,
+                label,
+                value,
+                withTooltipIcon,
+                justifyItems,
+                layout,
+                withOverflow,
+              }}
+            />
+            {subitems && showSubitems && layout === 'column' && (
+              <$SubDetails
+                items={subitems}
+                layout={DETAIL_LAYOUTS[layout]}
+                withSeparators={withSeparators}
               />
-              {subitems && showSubitems && layout === 'column' && (
-                <$SubDetails
-                  items={subitems}
-                  layout={DETAIL_LAYOUTS[layout]}
-                  withSeparators={withSeparators}
-                />
-              )}
-            </Fragment>
-          )
-        )}
+            )}
+          </Fragment>
+        ))}
       </WithSeparators>
     </$Details>
   </LoadingContext.Provider>
@@ -167,8 +153,6 @@ const detailsLayoutVariants = {
 
 const itemLayoutVariants = {
   column: css`
-    isolation: isolate;
-
     ${layoutMixins.scrollArea}
 
     ${layoutMixins.stickyArea0}
@@ -176,8 +160,8 @@ const itemLayoutVariants = {
 
     ${layoutMixins.spacedRow}
     gap: 0.5rem;
-    align-items: start;
-    padding: 0.5rem 0;
+    align-items: center;
+    padding: var(--details-item-vertical-padding, 0.5rem) 0;
 
     min-height: var(--details-item-height);
 
@@ -196,7 +180,7 @@ const itemLayoutVariants = {
 
   stackColumn: css`
     ${layoutMixins.column}
-    padding: 0.75rem 0;
+    padding: var(--details-item-vertical-padding, 0.75rem) 0;
     > :first-child {
       margin-bottom: 0.5rem;
     }
@@ -229,10 +213,11 @@ const $Details = styled.dl<{
   layout: 'column' | 'row' | 'rowColumns' | 'grid' | 'stackColumn';
   withSeparators: boolean;
 }>`
-  --details-item-height: 2rem;
+  --details-item-height: 1rem;
   --details-item-backgroundColor: transparent;
   --details-subitem-borderWidth: 2px;
   --details-grid-numColumns: 2;
+  --details-item-vertical-padding: ;
 
   ${({ layout }) => layout && detailsLayoutVariants[layout]}
 `;
@@ -317,14 +302,4 @@ const $SubDetails = styled(Details)`
     width: var(--details-subitem-borderWidth);
     border-radius: 0.25rem;
   }
-`;
-
-const $DetailsItemValue = styled.dd<{
-  allowUserSelection?: boolean;
-}>`
-  ${({ allowUserSelection }) =>
-    allowUserSelection &&
-    css`
-      user-select: all;
-    `}
 `;

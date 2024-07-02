@@ -30,7 +30,7 @@ import { useOrderbookValuesForDepthChart } from '@/hooks/Orderbook/useOrderbookV
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 import { LoadingSpace } from '@/components/Loading/LoadingSpinner';
-import { OutputType } from '@/components/Output';
+import { OutputType, formatNumberOutput } from '@/components/Output';
 import { AxisLabelOutput } from '@/components/visx/AxisLabelOutput';
 import Tooltip from '@/components/visx/XYChartTooltipWithBounds';
 import { XYChartWithPointerEvents } from '@/components/visx/XYChartWithPointerEvents';
@@ -55,11 +55,11 @@ const lerp = (percent: number, from: number, to: number) => from + percent * (to
 const formatNumber = (n: number, selectedLocale: string, isCompact: boolean = n >= 10000) => {
   const formattedNumber = Intl.NumberFormat(selectedLocale).format(n);
 
-  const compactNumber = Intl.NumberFormat(selectedLocale, {
-    compactDisplay: 'short',
-    notation: 'compact',
-    minimumSignificantDigits: 2,
-  }).format(n);
+  const compactNumber = formatNumberOutput(n, OutputType.CompactNumber, {
+    decimalSeparator: undefined,
+    groupSeparator: undefined,
+    locale: selectedLocale,
+  });
 
   return isCompact && compactNumber.length < formattedNumber.length
     ? compactNumber
@@ -129,7 +129,7 @@ export const DepthChart = ({
       0,
       [...bids, ...asks]
         .filter((datum) => datum.price >= newDomain[0] && datum.price <= newDomain[1])
-        .map((datum) => datum.depth)
+        .map((datum) => datum.depth ?? 0)
         .reduce((a, b) => Math.max(a, b), 0),
     ] as const;
 
@@ -141,20 +141,20 @@ export const DepthChart = ({
       let price;
       let size;
       if (point instanceof Point) {
-        const { x, y } = point as Point;
+        const { x, y } = point;
         price = x;
         size = y;
       } else {
-        const { svgPoint: { x, y } = {} } = point as EventHandlerParams<object>;
-        price = x;
-        size = y;
+        const { svgPoint: { x, y } = {} } = point;
+        price = x ?? 0;
+        size = y ?? 0;
       }
 
       return {
         side: MustBigNumber(price).lt(midMarketPrice!) ? OrderSide.BUY : OrderSide.SELL,
         price,
         size,
-      } as DepthChartPoint;
+      } satisfies DepthChartPoint;
     },
     [midMarketPrice]
   );

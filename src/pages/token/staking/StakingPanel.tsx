@@ -29,7 +29,7 @@ export const StakingPanel = ({ className }: { className?: string }) => {
           />
         </$Header>
       }
-      onClick={() => dispatch(openDialog({ type: DialogTypes.ExternalNavKeplr }))}
+      onClick={() => dispatch(openDialog(DialogTypes.ExternalNavKeplr()))}
     >
       <$Description>
         {stringGetter({ key: STRING_KEYS.STAKING_DESCRIPTION })}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { LinearGradient } from '@visx/gradient';
 import { ParentSize } from '@visx/responsive';
@@ -29,7 +29,7 @@ import Tooltip from '@/components/visx/XYChartTooltipWithBounds';
 
 import { formatAbsoluteTime } from '@/lib/dateTime';
 import { clamp, lerp, map } from '@/lib/math';
-import { objectEntries } from '@/lib/objectEntries';
+import { objectEntries } from '@/lib/objectHelpers';
 
 import { XYChartThreshold, type Threshold } from './XYChartThreshold';
 
@@ -141,17 +141,32 @@ export const TimeSeriesChart = <Datum extends {}>({
   const latestDatum = data?.[data.length - 1];
 
   // Chart state
+  const getClampedZoomDomain = useCallback(
+    (unclamped: number) => {
+      return clamp(
+        Math.max(1e-320, Math.min(Number.MAX_SAFE_INTEGER, unclamped)),
+        minZoomDomain,
+        xAccessor(latestDatum) - xAccessor(earliestDatum)
+      );
+    },
+    [earliestDatum, latestDatum, minZoomDomain, xAccessor]
+  );
+
   const [zoomDomain, setZoomDomain] = useState<number | undefined>(
-    defaultZoomDomain ?? xAccessor(latestDatum) - xAccessor(earliestDatum)
+    defaultZoomDomain
+      ? getClampedZoomDomain(defaultZoomDomain)
+      : xAccessor(latestDatum) - xAccessor(earliestDatum)
   );
 
   const [zoomDomainAnimateTo, setZoomDomainAnimateTo] = useState<number | undefined>();
 
   useEffect(() => {
     if (defaultZoomDomain) {
-      setZoomDomainAnimateTo(defaultZoomDomain);
+      const clampedZoomDomain = getClampedZoomDomain(defaultZoomDomain);
+      setZoomDomain(clampedZoomDomain);
+      setZoomDomainAnimateTo(clampedZoomDomain);
     }
-  }, [defaultZoomDomain]);
+  }, [defaultZoomDomain, getClampedZoomDomain]);
 
   useEffect(() => {
     onZoom?.({ zoomDomain });
@@ -181,8 +196,8 @@ export const TimeSeriesChart = <Datum extends {}>({
     if (!zoomDomain)
       return {
         zoom: 1,
-        domain: [0, 1] as [number, number],
-        range: [0, 1] as [number, number],
+        domain: [0, 1] as const,
+        range: [0, 1] as const,
         visibleData: data,
       };
 
@@ -219,14 +234,7 @@ export const TimeSeriesChart = <Datum extends {}>({
   const onWheel = ({ deltaY }: React.WheelEvent) => {
     if (!zoomDomain) return;
 
-    setZoomDomain(
-      clamp(
-        Math.max(1e-320, Math.min(Number.MAX_SAFE_INTEGER, zoomDomain * Math.exp(deltaY / 1000))),
-        minZoomDomain,
-        xAccessor(latestDatum) - xAccessor(earliestDatum)
-      )
-    );
-
+    setZoomDomain(getClampedZoomDomain(zoomDomain * Math.exp(deltaY / 1000)));
     setZoomDomainAnimateTo(undefined);
 
     // TODO: scroll horizontally to pan

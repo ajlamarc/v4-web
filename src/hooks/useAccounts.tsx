@@ -17,7 +17,8 @@ import {
 } from '@/constants/wallets';
 
 import { setOnboardingGuard, setOnboardingState } from '@/state/account';
-import { useAppDispatch } from '@/state/appTypes';
+import { getHasSubaccount } from '@/state/accountSelectors';
+import { useAppDispatch, useAppSelector } from '@/state/appTypes';
 
 import abacusStateManager from '@/lib/abacus';
 import { log } from '@/lib/telemetry';
@@ -38,6 +39,12 @@ export const AccountsProvider = ({ ...props }) => (
 
 export const useAccounts = () => useContext(AccountsContext)!;
 
+async function sleep(ms = 1000) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(null), ms);
+  });
+}
+
 const useAccountsContext = () => {
   const dispatch = useAppDispatch();
 
@@ -57,6 +64,7 @@ const useAccountsContext = () => {
 
   // EVM wallet connection
   const [previousEvmAddress, setPreviousEvmAddress] = useState(evmAddress);
+  const hasSubAccount = useAppSelector(getHasSubaccount);
 
   useEffect(() => {
     // Wallet accounts switched
@@ -73,7 +81,7 @@ const useAccountsContext = () => {
     }
 
     setPreviousEvmAddress(evmAddress);
-  }, [evmAddress]);
+  }, [evmAddress, hasSubAccount]);
 
   const { ready, authenticated } = usePrivy();
 
@@ -224,6 +232,8 @@ const useAccountsContext = () => {
 
           if (walletConnectionType === WalletConnectionType.Privy && authenticated && ready) {
             try {
+              // Give Privy a second to finish the auth flow before getting the signature
+              await sleep();
               const signature = await signTypedDataAsync();
 
               await setWalletFromEvmSignature(signature);

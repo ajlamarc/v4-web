@@ -95,6 +95,7 @@ interface Params {
 }
 
 interface Proposal {
+  id: Long.Long;
   title: string;
   summary: string;
   params: Params;
@@ -114,6 +115,7 @@ enum ExchangeName {
   Kucoin = 'Kucoin',
   Mexc = 'Mexc',
   Okx = 'Okx',
+  Raydium = 'Raydium',
 }
 
 interface PrometheusTimeSeries {
@@ -269,7 +271,30 @@ const EXCHANGE_INFO: { [key in ExchangeName]: ExchangeInfo } = {
     },
     slinkyProviderName: 'okx_ws',
   },
+  [ExchangeName.Raydium]: {
+    url: '',
+    tickers: null,
+    parseResp: (response: any) => {
+      return Array.from(response.data).reduce((acc: Map<string, any>, item: any) => {
+        acc.set(item.instId, {});
+        return acc;
+      }, new Map<string, any>());
+    },
+    slinkyProviderName: 'Raydium',
+  },
 };
+
+enum ValidationError {
+  PROPOSAL_REJECTED = 'proposal rejected',
+  PROPOSAL_FAILED = 'proposal failed',
+  PRICE_EXPONENT_MISMATCH = 'price exponent mismatch',
+  PRICE_ZERO = 'price is 0',
+  CLOB_QCE_MISMATCH = 'Quantum conversion exponent mismatch',
+  CLOB_SBQ_MISMATCH = 'step base quantums mismatch',
+  CLOB_SPT_MISMATCH = 'subticks per tick mismatch',
+  PERP_AR_MISMATCH = 'Atomic resolution mismatch',
+  PERP_LT_MISMATCH = 'Liquidity tier mismatch',
+}
 
 async function validateExchangeConfigJson(exchangeConfigJson: Exchange[]): Promise<void> {
   const exchanges: Set<ExchangeName> = new Set();
@@ -285,7 +310,9 @@ async function validateExchangeConfigJson(exchangeConfigJson: Exchange[]): Promi
 
     // `adjustByMarket` should be set if ticker doesn't end in usd or USD.
     if (
-      (!/usd$/i.test(exchange.ticker) && exchange.adjustByMarket === undefined) ||
+      (exchange.exchangeName !== ExchangeName.Raydium &&
+        !/usd$|usdc$/i.test(exchange.ticker) &&
+        exchange.adjustByMarket === undefined) ||
       exchange.adjustByMarket === ''
     ) {
       throw new Error(
@@ -296,7 +323,12 @@ async function validateExchangeConfigJson(exchangeConfigJson: Exchange[]): Promi
 
     // TODO: Skip Bybit exchange until we can query from non-US IP.
     if (exchange.exchangeName === ExchangeName.Bybit) {
-      return; // exit the current iteration of the loop.
+      continue; // exit the current iteration of the loop.
+    }
+
+    // TODO: Skip Raydium since ticker is idiosyncratic
+    if (exchange.exchangeName === ExchangeName.Raydium) {
+      continue; // exit the current iteration of the loop.
     }
 
     // Query exchange tickers if not yet.
@@ -389,7 +421,7 @@ async function validateAgainstLocalnet(proposals: Proposal[]): Promise<void> {
     for (let j = 0; j < proposalsToSend.length; j++) {
       // Use wallets[j] to send out proposalsToSend[j]
       const proposal = proposalsToSend[j];
-      const proposalId: number = i + j + 1;
+      const proposalId: number = i + j + 1; 
       const marketId: number = numExistingMarkets + proposalId;
 
       // Send proposal.
@@ -433,55 +465,74 @@ async function validateAgainstLocalnet(proposals: Proposal[]): Promise<void> {
       proposalIds.push(proposalId);
     }
 
-    // Wait 10 seconds for proposals to be processed.
-    await sleep(10000);
+    // Wait 5 seconds for proposals to be processed.
+    await sleep(5000);
 
     // Vote YES on proposals from every wallet.
     for (const wallet of wallets) {
       retry(() => voteOnProposals(proposalIds, client, wallet));
     }
 
-    // Wait 10 seconds for votes to be processed.
-    await sleep(10000);
+    // Wait 5 seconds for votes to be processed.
+    await sleep(5000);
   }
 
   // Wait for voting period to end.
   console.log(`\nWaiting for ${VOTING_PERIOD_SECONDS} seconds for voting period to end...`);
   await sleep(VOTING_PERIOD_SECONDS * 1000);
 
-  // Check that no proposal failed.
-  console.log('\nChecking that no proposal failed...');
+  // Keep track of which error occurred for which markets.
+  const allErrors: Map<string, ValidationError> = new Map();
+  const failedOrRejectedProposals = new Set<Long.Long>();
+
+  // Check which proposals were rejected.
+  console.log('\nChecking which proposals were rejected...');
+  const proposalsRejected = await client.validatorClient.get.getAllGovProposals(
+    ProposalStatus.PROPOSAL_STATUS_REJECTED
+  );
+  console.log(`${proposalsRejected.proposals.length} proposals rejected`);
+  proposalsRejected.proposals.map((proposal) => {
+    allErrors.set(`Proposal ${proposal.id} with title ${proposal.title}`, ValidationError.PROPOSAL_REJECTED);
+    failedOrRejectedProposals.add(proposal.id);
+  })
+
+  // Check which proposals failed.
+  console.log('\nChecking which proposals failed...');
   const proposalsFailed = await client.validatorClient.get.getAllGovProposals(
     ProposalStatus.PROPOSAL_STATUS_FAILED
   );
-  if (proposalsFailed.proposals.length > 0) {
-    const failedIds = proposalsFailed.proposals.map((proposal) => proposal.id);
-    throw new Error(`Proposals ${failedIds} failed: ${proposalsFailed.proposals}`);
-  }
+  console.log(`${proposalsFailed.proposals.length} proposals failed`);
+  proposalsFailed.proposals.map((proposal) => {
+    allErrors.set(`Proposal ${proposal.id} with title ${proposal.title}`, ValidationError.PROPOSAL_FAILED);
+    failedOrRejectedProposals.add(proposal.id);
+  })
 
   // Wait for prices to update.
   console.log('\nWaiting for 300 seconds for prices to update...');
-  await sleep(300 * 1000);
+  await sleep(400 * 1000);
 
   // Check markets on chain.
   console.log('\nChecking price, clob pair, and perpetual on chain for each market proposed...');
   for (const [marketId, proposal] of marketsProposed.entries()) {
     console.log(`\nChecking ${proposal?.params?.ticker}`);
+    if (failedOrRejectedProposals.has(proposal.id)) {
+      console.log(`Skipping proposal ${proposal.id} as it failed or was rejected.`);
+      continue;
+    }
+
     const isDydxUsd = proposal.params.ticker.toLowerCase() === 'dydx-usd';
     // Validate price.
     const price = await client.validatorClient.get.getPrice(isDydxUsd ? 1000001 : marketId);
-    validatePrice(price.marketPrice!, proposal);
+    validatePrice(price.marketPrice!, proposal, allErrors);
 
     // Validate clob pair.
     const clobPair = await client.validatorClient.get.getClobPair(marketId);
-    validateClobPair(clobPair.clobPair!, proposal);
+    validateClobPair(clobPair.clobPair!, proposal, allErrors);
 
     // Validate perpetual.
     const perpetual = await client.validatorClient.get.getPerpetual(marketId);
-    validatePerpetual(perpetual.perpetual!, proposal);
+    validatePerpetual(perpetual.perpetual!, proposal, allErrors);
   }
-
-  console.log(`\nValidated ${marketsProposed.size} proposals against localnet`);
 
   // for all markets proposed, determine if the slinky metrics are ok
   for (const proposal of marketsProposed.values()) {
@@ -493,6 +544,18 @@ async function validateAgainstLocalnet(proposals: Proposal[]): Promise<void> {
       );
     }
   }
+
+  // Print all errors.
+  console.log(`\nValidated ${marketsProposed.size} markets against localnet`);
+  if (allErrors.size === 0) {
+    console.log('All markets validated successfully');
+    return;
+  }
+  console.log(`\nPrinting out ${allErrors.size} errors:`);
+  allErrors.forEach((k, v) => {
+    console.log(`${k}: ${v}`);
+  });
+  throw new Error('Errors occurred while validating markets');
 }
 
 // convert a ticker like BTC-USD -> btc/usd
@@ -577,33 +640,36 @@ function makePrometheusRateQuery(
     });
 }
 
-function validatePrice(price: MarketPrice, proposal: Proposal): void {
+function validatePrice(price: MarketPrice, proposal: Proposal, allErrors: Map<String, ValidationError>): void {
+  const ticker = proposal?.params?.ticker;
   if (price.exponent !== proposal.params.priceExponent) {
-    throw new Error(`Price exponent mismatch for price ${price.id}`);
+    allErrors.set(`Price ${price.id.toString()} with ticker ${ticker}`, ValidationError.PRICE_EXPONENT_MISMATCH);
   }
   if (price.price.isZero()) {
-    throw new Error(`Price is 0 for price ${price.id}`);
+    allErrors.set(`Price ${price.id.toString()} with ticker ${ticker}`, ValidationError.PRICE_ZERO);
   }
 }
 
-function validateClobPair(clobPair: ClobPair, proposal: Proposal): void {
+function validateClobPair(clobPair: ClobPair, proposal: Proposal, allErrors: Map<String, ValidationError>): void {
+  const ticker = proposal?.params?.ticker;
   if (clobPair.quantumConversionExponent !== proposal.params.quantumConversionExponent) {
-    throw new Error(`Quantum conversion exponent mismatch for clob pair ${clobPair.id}`);
+    allErrors.set(`Clob pair ${clobPair.id.toString()} with ticker ${ticker}`, ValidationError.CLOB_QCE_MISMATCH);
   }
   if (!clobPair.stepBaseQuantums.equals(proposal.params.stepBaseQuantums)) {
-    throw new Error(`Step base quantums mismatch for clob pair ${clobPair.id}`);
+    allErrors.set(`Clob pair ${clobPair.id.toString()} with ticker ${ticker}`, ValidationError.CLOB_SBQ_MISMATCH);
   }
   if (clobPair.subticksPerTick !== proposal.params.subticksPerTick) {
-    throw new Error(`Subticks per tick mismatch for clob pair ${clobPair.id}`);
+    allErrors.set(`Clob pair ${clobPair.id.toString()} with ticker ${ticker}`, ValidationError.CLOB_SPT_MISMATCH);
   }
 }
 
-function validatePerpetual(perpetual: Perpetual, proposal: Proposal): void {
+function validatePerpetual(perpetual: Perpetual, proposal: Proposal, allErrors: Map<String, ValidationError>): void {
+  const ticker = proposal?.params?.ticker;
   if (perpetual.params!.atomicResolution !== proposal.params.atomicResolution) {
-    throw new Error(`Atomic resolution mismatch for perpetual ${perpetual.params!.id}`);
+    allErrors.set(`Perpetual ${perpetual.params!.id.toString()} with ticker ${ticker}`, ValidationError.PERP_AR_MISMATCH);
   }
   if (perpetual.params!.liquidityTier !== proposal.params.liquidityTier) {
-    throw new Error(`Liquidity tier mismatch for perpetual ${perpetual.params!.id}`);
+    allErrors.set(`Perpetual ${perpetual.params!.id.toString()} with ticker ${ticker}`, ValidationError.PERP_LT_MISMATCH);
   }
 }
 
@@ -626,6 +692,7 @@ function validateParamsSchema(proposal: Proposal): void {
             exchangeName: { type: 'string' },
             ticker: { type: 'string' },
             adjustByMarket: { type: 'string', nullable: true },
+            invert: {type: 'boolean', nullable: true },
           },
           required: ['exchangeName', 'ticker'],
           additionalProperties: false,
@@ -685,10 +752,96 @@ async function retry<T>(
   }
 }
 
+// getMarketsToValidate finds markets that are either added or modified.
+function getMarketsToValidate(otherMarketsContent: string): Set<string> {
+  const diffFile = process.env.DIFF;
+  if (!diffFile) {
+    throw new Error('Diff file does not exist');
+  }
+
+  // Get added/modified line numbers.
+  const diffContent = readFileSync(diffFile, 'utf8');
+  const diffLines = diffContent.split('\n');
+  const changedLines: number[] = [];
+  let currentLine = 0;
+  diffLines.forEach(line => {
+    if (line.startsWith('@@')) {
+      const match = line.match(/@@ \-(\d+),\d+ \+(\d+),\d+ @@/);
+      if (match) {
+        currentLine = parseInt(match[2], 10) - 1;
+      }
+    } else if (line.startsWith('+') && !line.startsWith('+++')) {
+      currentLine += 1; 
+      changedLines.push(currentLine);
+    } else if (!line.startsWith('-')) {
+      currentLine += 1;
+    }
+  });
+
+  // Get all added/modified markets.
+  const marketsToValidate = new Set<string>();
+  const lines = otherMarketsContent.split('\n');
+  const findMarket = (lineNumber: number, lines: string[]) => {
+    for (let i = lineNumber - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      const match = line.match(/"([A-Z]+)": \{/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return null;
+  };
+  changedLines.forEach(line => {
+    const market = findMarket(line, lines);
+    if (market) {
+      marketsToValidate.add(market);
+    }
+  });
+  if (marketsToValidate.size === 0) {
+    console.log('No markets to validate');
+  }
+
+  return marketsToValidate;
+}
+function getAllMarketsToValidate(otherMarketsContent: string): Set<string> {
+  // Create a set to store all markets
+  const marketsToValidate = new Set<string>();
+
+  // Split the content by lines
+  const lines = otherMarketsContent.split('\n');
+
+  // Regex to find market lines
+  const marketRegex = /"([A-Z]+)": \{/;
+
+  // Iterate over each line to find all markets
+  lines.forEach(line => {
+    const match = line.trim().match(marketRegex);
+    if (match) {
+      marketsToValidate.add(match[1]);
+    }
+  });
+
+  // Log a message if no markets were found
+  if (marketsToValidate.size === 0) {
+    console.log('No markets to validate');
+  }
+
+  return marketsToValidate;
+}
+
+
 async function main(): Promise<void> {
-  // Read proposals from json file.
+  // Get markets to validate.
   const fileContent = readFileSync(PATH_TO_PROPOSALS, 'utf8');
-  const proposals: Proposal[] = Object.values(JSON.parse(fileContent));
+  const marketsToValidate = getMarketsToValidate(fileContent);
+  console.log("\nValidating markets: ", marketsToValidate);
+  if (marketsToValidate.size === 0) {
+    return;
+  }
+
+  // Extract proposals.
+  const allMarkets = JSON.parse(fileContent)
+  const proposals: Proposal[] = Array.from(marketsToValidate).map(market => allMarkets[market]);
 
   // Validate JSON schema.
   console.log('Validating JSON schema of params...\n');
@@ -706,6 +859,8 @@ async function main(): Promise<void> {
   // Validate proposals against localnet.
   console.log('\nTesting proposals against localnet...\n');
   await validateAgainstLocalnet(proposals);
+
+  console.log(`\nValidated ${proposals.length} markets. See log for specific names.`);
 }
 
 main()

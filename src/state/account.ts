@@ -1,21 +1,23 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type {
-  AccountBalance,
-  Compliance,
-  HistoricalPnlPeriods,
-  Nullable,
-  StakingDelegation,
-  SubAccountHistoricalPNLs,
-  Subaccount,
-  SubaccountFill,
-  SubaccountFills,
-  SubaccountFundingPayments,
-  SubaccountOrder,
-  SubaccountTransfers,
-  TradingRewards,
-  UsageRestriction,
-  Wallet,
+import {
+  type AccountBalance,
+  type Compliance,
+  type HistoricalPnlPeriods,
+  type Nullable,
+  type StakingDelegation,
+  type StakingRewards,
+  type SubAccountHistoricalPNLs,
+  type Subaccount,
+  type SubaccountFill,
+  type SubaccountFills,
+  type SubaccountFundingPayments,
+  type SubaccountOrder,
+  type SubaccountTransfers,
+  type TradingRewards,
+  type UnbondingDelegation,
+  type UsageRestriction,
+  type Wallet,
 } from '@/constants/abacus';
 import { OnboardingGuard, OnboardingState } from '@/constants/account';
 import { LocalStorageKey } from '@/constants/localStorage';
@@ -30,11 +32,14 @@ import {
 import { WalletType } from '@/constants/wallets';
 
 import { getLocalStorage } from '@/lib/localStorage';
+import { isOrderStatusCanceled } from '@/lib/orders';
 
 export type AccountState = {
   balances?: Record<string, AccountBalance>;
   stakingBalances?: Record<string, AccountBalance>;
   stakingDelegations?: StakingDelegation[];
+  unbondingDelegations?: UnbondingDelegation[];
+  stakingRewards?: StakingRewards;
   tradingRewards?: TradingRewards;
   wallet?: Nullable<Wallet>;
   walletType?: WalletType;
@@ -44,6 +49,19 @@ export type AccountState = {
   fundingPayments?: SubaccountFundingPayments;
   transfers?: SubaccountTransfers;
   historicalPnl?: SubAccountHistoricalPNLs;
+
+  childSubaccounts: {
+    [subaccountNumber: number]: Nullable<
+      Partial<
+        Subaccount & {
+          fills: SubaccountFills;
+          fundingPayments: SubaccountFundingPayments;
+          transfers: SubaccountTransfers;
+          historicalPnl: SubAccountHistoricalPNLs;
+        }
+      >
+    >;
+  };
 
   onboardingGuards: Record<OnboardingGuard, boolean | undefined>;
   onboardingState: OnboardingState;
@@ -71,6 +89,7 @@ const initialState: AccountState = {
 
   // Subaccount
   subaccount: undefined,
+  childSubaccounts: {},
   fills: undefined,
   fundingPayments: undefined,
   transfers: undefined,
@@ -208,17 +227,53 @@ export const accountSlice = createSlice({
         : [];
 
       // Updates are only considered new after state.subaccount.orders has been set
+      const payloadOrders = action.payload?.orders?.toArray() ?? [];
       const hasNewOrderUpdates =
         state.subaccount?.orders != null &&
-        (action.payload?.orders?.toArray() ?? []).some(
-          (order: SubaccountOrder) => !existingOrderIds.includes(order.id)
-        );
+        payloadOrders.some((order: SubaccountOrder) => !existingOrderIds.includes(order.id));
 
-      if (!state.hasUnseenOrderUpdates) {
-        state.hasUnseenOrderUpdates = hasNewOrderUpdates;
-      }
+      const canceledOrderIdsInPayload = payloadOrders
+        .filter((order) => isOrderStatusCanceled(order.status))
+        .map((order) => order.id);
 
-      state.subaccount = action.payload;
+      // ignore locally canceled orders since it's intentional and already handled
+      // by local cancel tracking and notification
+      const isOrderCanceledByBackend = (orderId: string) =>
+        canceledOrderIdsInPayload.includes(orderId) &&
+        !state.localCancelOrders.map((order) => order.orderId).includes(orderId);
+
+      return {
+        ...state,
+        subaccount: action.payload,
+        hasUnseenOrderUpdates: hasNewOrderUpdates,
+        localPlaceOrders: canceledOrderIdsInPayload.length
+          ? state.localPlaceOrders.map((order) =>
+              order.submissionStatus !== PlaceOrderStatuses.Canceled &&
+              order.orderId &&
+              isOrderCanceledByBackend(order.orderId)
+                ? {
+                    ...order,
+                    submissionStatus: PlaceOrderStatuses.Canceled,
+                  }
+                : order
+            )
+          : state.localPlaceOrders,
+      };
+    },
+    setChildSubaccount: (
+      state,
+      action: PayloadAction<Partial<AccountState['childSubaccounts']>>
+    ) => {
+      const childSubaccountsCopy = { ...state.childSubaccounts };
+
+      Object.keys(action.payload).forEach((subaccountNumber) => {
+        childSubaccountsCopy[Number(subaccountNumber)] = {
+          ...childSubaccountsCopy[Number(subaccountNumber)],
+          ...action.payload[Number(subaccountNumber)],
+        };
+      });
+
+      state.childSubaccounts = childSubaccountsCopy;
     },
     setWallet: (state, action: PayloadAction<Nullable<Wallet>>) => ({
       ...state,
@@ -244,6 +299,12 @@ export const accountSlice = createSlice({
     },
     setStakingDelegations: (state, action: PayloadAction<StakingDelegation[]>) => {
       state.stakingDelegations = action.payload;
+    },
+    setUnbondingDelegations: (state, action: PayloadAction<UnbondingDelegation[]>) => {
+      state.unbondingDelegations = action.payload;
+    },
+    setStakingRewards: (state, action: PayloadAction<StakingRewards>) => {
+      state.stakingRewards = action.payload;
     },
     setTradingRewards: (state, action: PayloadAction<TradingRewards>) => {
       state.tradingRewards = action.payload;
@@ -320,6 +381,7 @@ export const {
   setRestrictionType,
   setCompliance,
   setSubaccount,
+  setChildSubaccount,
   setWallet,
   viewedFills,
   viewedOrders,
@@ -327,6 +389,8 @@ export const {
   setStakingBalances,
   setStakingDelegations,
   setTradingRewards,
+  setUnbondingDelegations,
+  setStakingRewards,
   placeOrderSubmitted,
   placeOrderFailed,
   placeOrderTimeout,

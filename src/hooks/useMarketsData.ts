@@ -11,9 +11,10 @@ import {
 
 import { useAppSelector } from '@/state/appTypes';
 import { getAssets } from '@/state/assetsSelectors';
-import { getPerpetualMarkets } from '@/state/perpetualsSelectors';
+import { getPerpetualMarkets, getPerpetualMarketsClobIds } from '@/state/perpetualsSelectors';
 
 import { isTruthy } from '@/lib/isTruthy';
+import { objectKeys, safeAssign } from '@/lib/objectHelpers';
 import { orEmptyObj } from '@/lib/typeUtils';
 
 const filterFunctions = {
@@ -42,6 +43,12 @@ const filterFunctions = {
   [MarketFilters.NEW]: (market: MarketData) => {
     return market.isNew;
   },
+  [MarketFilters.ENT]: (market: MarketData) => {
+    return market.asset.tags?.toArray().includes('ENT');
+  },
+  [MarketFilters.RWA]: (market: MarketData) => {
+    return market.asset.tags?.toArray().includes('RWA');
+  },
 };
 
 export const useMarketsData = (
@@ -50,45 +57,36 @@ export const useMarketsData = (
 ): {
   markets: MarketData[];
   filteredMarkets: MarketData[];
-  marketFilters: string[];
+  marketFilters: MarketFilters[];
 } => {
   const allPerpetualMarkets = orEmptyObj(useAppSelector(getPerpetualMarkets, shallowEqual));
+  const allPerpetualClobIds = orEmptyObj(useAppSelector(getPerpetualMarketsClobIds, shallowEqual));
   const allAssets = orEmptyObj(useAppSelector(getAssets, shallowEqual));
   const sevenDaysSparklineData = usePerpetualMarketSparklines();
 
   const markets = useMemo(() => {
     return Object.values(allPerpetualMarkets)
       .filter(isTruthy)
-      .map((marketData) => {
+      .map((marketData): MarketData => {
         const sevenDaySparklineEntries = sevenDaysSparklineData?.[marketData.id]?.length ?? 0;
         const isNew = Boolean(
           sevenDaysSparklineData && sevenDaySparklineEntries < SEVEN_DAY_SPARKLINE_ENTRIES
         );
+        const clobPairId = allPerpetualClobIds?.[marketData.id] ?? 0;
 
-        /**
-         * There is no date in the services to determine when it was listed, but we can calculate it approximately.
-         * Keeping in mind that the `/sparklines` service using the period `SEVEN_DAYS` as a parameter,
-         * returns a maximum of 6 entries for each day with a timeframe of 4 hours.
-         * For this it is possible to estimate the listing date as follows:
-         * `Hours elapsed since listing = (Total sparklines entries * 6)`
-         */
-        let listingDate: Date | undefined;
-
-        if (isNew) {
-          listingDate = new Date();
-          listingDate.setHours(listingDate.getHours() - sevenDaySparklineEntries * 4);
-        }
-
-        return {
-          asset: allAssets[marketData.assetId] ?? {},
-          tickSizeDecimals: marketData.configs?.tickSizeDecimals,
-          isNew,
-          listingDate,
-          ...marketData,
-          ...marketData.perpetual,
-          ...marketData.configs,
-        };
-      }) as MarketData[];
+        return safeAssign(
+          {},
+          {
+            asset: allAssets[marketData.assetId] ?? {},
+            tickSizeDecimals: marketData.configs?.tickSizeDecimals,
+            isNew,
+            clobPairId,
+          },
+          marketData,
+          marketData.perpetual,
+          marketData.configs
+        );
+      });
   }, [allPerpetualMarkets, allAssets, sevenDaysSparklineData]);
 
   const filteredMarkets = useMemo(() => {
@@ -109,7 +107,7 @@ export const useMarketsData = (
     () => [
       MarketFilters.ALL,
       MarketFilters.NEW,
-      ...Object.keys(MARKET_FILTER_LABELS).filter((marketFilter) =>
+      ...objectKeys(MARKET_FILTER_LABELS).filter((marketFilter) =>
         markets.some((market) => market.asset?.tags?.toArray().some((tag) => tag === marketFilter))
       ),
     ],

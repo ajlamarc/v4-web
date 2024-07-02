@@ -56,7 +56,8 @@ export const AdvancedTradeOptions = () => {
   const showReduceOnly = !!needsReduceOnly || !!reduceOnlyTooltip;
 
   const needsExecution = !!executionOptions || !!showPostOnly || !!showReduceOnly;
-  const hasTimeInForce = timeInForceOptions?.toArray()?.length;
+  const hasTimeInForce = !!timeInForceOptions?.toArray()?.length;
+  const needsTimeRow = !!needsGoodUntil || hasTimeInForce;
 
   useEffect(() => {
     if (complianceState === ComplianceStates.CLOSE_ONLY) {
@@ -67,6 +68,11 @@ export const AdvancedTradeOptions = () => {
     }
   }, [complianceState]);
 
+  const necessary = needsTimeRow || needsExecution;
+  if (!necessary) {
+    return undefined;
+  }
+
   return (
     <$Collapsible
       defaultOpen={!isTablet}
@@ -75,7 +81,7 @@ export const AdvancedTradeOptions = () => {
       fullWidth
     >
       <$AdvancedInputsContainer>
-        {(!!hasTimeInForce || !!needsGoodUntil) && (
+        {needsTimeRow && (
           <$AdvancedInputsRow>
             {hasTimeInForce && timeInForce != null && (
               <$SelectMenu
@@ -181,11 +187,9 @@ export const AdvancedTradeOptions = () => {
                     tooltip={
                       needsReduceOnly
                         ? 'reduce-only'
-                        : reduceOnlyTooltip?.titleStringKey.includes(
-                              'REDUCE_ONLY_EXECUTION_IOC_FOK'
-                            )
-                          ? 'reduce-only-execution-ioc-fok'
-                          : 'reduce-only-timeinforce-ioc-fok'
+                        : reduceOnlyTooltip?.titleStringKey.includes('REDUCE_ONLY_EXECUTION_IOC')
+                          ? 'reduce-only-execution-ioc'
+                          : 'reduce-only-timeinforce-ioc'
                     }
                     side="right"
                   >

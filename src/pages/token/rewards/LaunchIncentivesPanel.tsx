@@ -13,7 +13,7 @@ import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useQueryChaosLabsIncentives } from '@/hooks/useQueryChaosLabsIncentives';
 import { useStringGetter } from '@/hooks/useStringGetter';
 
-import { ChaosLabsIcon } from '@/icons';
+import { ChaosLabsIcon } from '@/icons/chaos-labs';
 import breakpoints from '@/styles/breakpoints';
 import { layoutMixins } from '@/styles/layoutMixins';
 
@@ -152,34 +152,34 @@ const LaunchIncentivesContent = () => {
       </$ChaosLabsLogo>
       <$ButtonRow>
         <$AboutButton
-          action={ButtonAction.Base}
+          action={ButtonAction.Secondary}
           onClick={() => {
             dispatch(
-              openDialog({
-                type: DialogTypes.ExternalLink,
-                dialogProps: { link: 'https://dydx.exchange/blog/v4-full-trading' },
-              })
+              openDialog(
+                DialogTypes.ExternalLink({ link: 'https://dydx.exchange/blog/v4-full-trading' })
+              )
             );
           }}
           slotRight={<Icon iconName={IconName.LinkOut} />}
         >
           {stringGetter({ key: STRING_KEYS.ABOUT })}
         </$AboutButton>
-        <$Button
-          action={ButtonAction.Primary}
+        <$LeaderboardButton
+          action={ButtonAction.Secondary}
           onClick={() => {
             dispatch(
-              openDialog({
-                type: DialogTypes.ExternalLink,
-                dialogProps: { link: 'https://community.chaoslabs.xyz/dydx-v4/risk/leaderboard' },
-              })
+              openDialog(
+                DialogTypes.ExternalLink({
+                  link: 'https://community.chaoslabs.xyz/dydx-v4/risk/leaderboard',
+                })
+              )
             );
           }}
           slotRight={<Icon iconName={IconName.LinkOut} />}
           slotLeft={<Icon iconName={IconName.Leaderboard} />}
         >
           {stringGetter({ key: STRING_KEYS.LEADERBOARD })}
-        </$Button>
+        </$LeaderboardButton>
       </$ButtonRow>
     </$Column>
   );
@@ -230,12 +230,18 @@ const $ButtonRow = styled.div`
 
 const $Button = styled(Button)`
   --button-padding: 0 1rem;
-`;
 
-const $AboutButton = styled($Button)`
   --button-textColor: var(--color-text-2);
   --button-backgroundColor: var(--color-layer-6);
   --button-border: solid var(--border-width) var(--color-layer-7);
+`;
+
+const $AboutButton = styled($Button)`
+  flex-grow: 1;
+`;
+
+const $LeaderboardButton = styled($Button)`
+  flex-grow: 2;
 `;
 
 const $Column = styled.div`

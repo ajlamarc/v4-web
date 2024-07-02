@@ -35,7 +35,6 @@ import { InputType } from '@/components/Input';
 import { Tag } from '@/components/Tag';
 import { ToggleGroup } from '@/components/ToggleGroup';
 import { PositionPreview } from '@/views/forms/TradeForm/PositionPreview';
-import { Orderbook, orderbookMixins, type OrderbookScrollBehavior } from '@/views/tables/Orderbook';
 
 import { getCurrentMarketPositionData } from '@/state/accountSelectors';
 import { useAppDispatch, useAppSelector } from '@/state/appTypes';
@@ -46,8 +45,10 @@ import { getCurrentMarketConfig, getCurrentMarketId } from '@/state/perpetualsSe
 
 import abacusStateManager from '@/lib/abacus';
 import { MustBigNumber } from '@/lib/numbers';
+import { objectEntries } from '@/lib/objectHelpers';
 import { getTradeInputAlert } from '@/lib/tradeData';
 
+import { CanvasOrderbook } from '../CanvasOrderbook/CanvasOrderbook';
 import { PlaceOrderButtonAndReceipt } from './TradeForm/PlaceOrderButtonAndReceipt';
 
 const MAX_KEY = 'MAX';
@@ -244,7 +245,7 @@ export const ClosePositionForm = ({
       />
 
       <$ToggleGroup
-        items={Object.entries(SIZE_PERCENT_OPTIONS).map(([key, value]) => ({
+        items={objectEntries(SIZE_PERCENT_OPTIONS).map(([key, value]) => ({
           label: key === MAX_KEY ? stringGetter({ key: STRING_KEYS.FULL_CLOSE }) : key,
           value: value.toString(),
         }))}
@@ -268,9 +269,9 @@ export const ClosePositionForm = ({
         </$PreviewAndConfirmContent>
       ) : (
         <$MobileLayout>
-          <$OrderbookScrollArea scrollBehavior="snapToCenterUnlessHovered">
+          <$OrderbookContainer>
             <$Orderbook hideHeader />
-          </$OrderbookScrollArea>
+          </$OrderbookContainer>
 
           <$Right>
             <PositionPreview showNarrowVariation />
@@ -358,34 +359,15 @@ const $MobileLayout = styled.div`
   gap: var(--form-input-gap);
 `;
 
-const $OrderbookScrollArea = styled.div<{
-  scrollBehavior: OrderbookScrollBehavior;
-}>`
-  ${layoutMixins.stickyLeft}
-
-  ${layoutMixins.scrollArea}
-  overscroll-behavior: contain;
-
-  ${layoutMixins.stickyArea0}
-  --stickyArea0-paddingTop: calc(-1 * var(--dialog-content-paddingTop));
-  --stickyArea0-paddingBottom: calc(-1 * var(--form-rowGap));
-  /* --stickyArea0-paddingBottom: 10rem;
-  height: calc(100% + 10rem);
-  margin-bottom: -10rem;
-  padding-bottom: 10rem; */
-
-  ${layoutMixins.contentContainer}
-
-  ${orderbookMixins.scrollArea}
-
-  display: block;
+const $OrderbookContainer = styled.div`
+  display: flex;
+  min-height: 100%;
   padding-top: var(--dialog-content-paddingTop);
   padding-bottom: var(--form-rowGap);
 `;
 
-const $Orderbook = styled(Orderbook)`
+const $Orderbook = styled(CanvasOrderbook)`
   min-height: 100%;
-  --tableCell-padding: 0.5em 1em;
 `;
 
 const $Right = styled.div`

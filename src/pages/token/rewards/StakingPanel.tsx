@@ -1,38 +1,68 @@
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual } from 'react-redux';
 import styled from 'styled-components';
 
-import { ButtonAction, ButtonSize } from '@/constants/buttons';
+import { ButtonAction, ButtonShape, ButtonSize } from '@/constants/buttons';
+import { ComplianceStates } from '@/constants/compliance';
 import { DialogTypes } from '@/constants/dialogs';
 import { STRING_KEYS } from '@/constants/localization';
 
 import { useAccountBalance } from '@/hooks/useAccountBalance';
-import { useStakingValidator } from '@/hooks/useStakingValidator';
+import { useComplianceState } from '@/hooks/useComplianceState';
+import { useStakingAPR } from '@/hooks/useStakingAPR';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useTokenConfigs } from '@/hooks/useTokenConfigs';
+import { useURLConfigs } from '@/hooks/useURLConfigs';
 
 import { layoutMixins } from '@/styles/layoutMixins';
 
 import { AssetIcon } from '@/components/AssetIcon';
 import { Button } from '@/components/Button';
 import { Details } from '@/components/Details';
-import { Icon, IconName } from '@/components/Icon';
+import { IconName } from '@/components/Icon';
+import { IconButton } from '@/components/IconButton';
+import { Link } from '@/components/Link';
 import { Output, OutputType } from '@/components/Output';
 import { Panel } from '@/components/Panel';
 import { Tag, TagSign } from '@/components/Tag';
 import { Toolbar } from '@/components/Toolbar';
+import { WithTooltip } from '@/components/WithTooltip';
 import { OnboardingTriggerButton } from '@/views/dialogs/OnboardingTriggerButton';
 
 import { calculateCanAccountTrade } from '@/state/accountCalculators';
+import { useAppDispatch, useAppSelector } from '@/state/appTypes';
 import { openDialog } from '@/state/dialogs';
 
 export const StakingPanel = ({ className }: { className?: string }) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const stringGetter = useStringGetter();
 
-  const canAccountTrade = useSelector(calculateCanAccountTrade, shallowEqual);
+  const canAccountTrade = useAppSelector(calculateCanAccountTrade, shallowEqual);
+  const stakingApr = useStakingAPR();
+
+  const { complianceState } = useComplianceState();
   const { nativeTokenBalance, nativeStakingBalance } = useAccountBalance();
   const { chainTokenLabel } = useTokenConfigs();
-  const { selectedValidator } = useStakingValidator() ?? {};
+  const { protocolStaking } = useURLConfigs();
+
+  const showStakingActions = canAccountTrade && complianceState === ComplianceStates.FULL_ACCESS;
+
+  const estimatedAprTooltipString = stringGetter({
+    key: STRING_KEYS.ESTIMATED_APR_DATA_BASED_ON,
+    params: {
+      PROTOCOL_STAKING_LINK: (
+        <$Link href={protocolStaking} withIcon>
+          {stringGetter({
+            key: STRING_KEYS.PROTOCOL_STAKING,
+          })}
+        </$Link>
+      ),
+    },
+  });
+
+  const aprText = stringGetter({
+    key: STRING_KEYS.EST_APR,
+    params: { PERCENTAGE: <$Output type={OutputType.Percent} value={stakingApr} /> },
+  });
 
   return (
     <Panel
@@ -43,40 +73,42 @@ export const StakingPanel = ({ className }: { className?: string }) => {
             <AssetIcon symbol={chainTokenLabel} />
             {chainTokenLabel}
           </$Title>
-          <$ActionButtons>
-            {!canAccountTrade ? (
-              <OnboardingTriggerButton size={ButtonSize.Small} />
-            ) : (
-              <Button
-                slotLeft={<Icon iconName={IconName.Send} />}
-                size={ButtonSize.Small}
-                action={ButtonAction.Primary}
-                onClick={() => dispatch(openDialog({ type: DialogTypes.Transfer }))}
-              >
-                {stringGetter({ key: STRING_KEYS.TRANSFER })}
-              </Button>
-            )}
-          </$ActionButtons>
+          {complianceState === ComplianceStates.FULL_ACCESS && (
+            <$ActionButtons>
+              {!canAccountTrade ? (
+                <OnboardingTriggerButton size={ButtonSize.Small} />
+              ) : (
+                <IconButton
+                  iconName={IconName.Send}
+                  shape={ButtonShape.Square}
+                  size={ButtonSize.Small}
+                  action={ButtonAction.Base}
+                  onClick={() => dispatch(openDialog(DialogTypes.Transfer({})))}
+                />
+              )}
+            </$ActionButtons>
+          )}
         </$Header>
       }
     >
       <$Content>
         <$BalanceRow>
           <div>
-            <$label>
-              {stringGetter({
-                key: STRING_KEYS.UNSTAKED,
-              })}
-              {/* Hardcoded for now until I get the APY endpoint working */}
-              <Tag sign={TagSign.Positive}>Est. 16.94 APR</Tag>
-            </$label>
+            <$Label>
+              <WithTooltip tooltipString={estimatedAprTooltipString}>
+                {stringGetter({
+                  key: STRING_KEYS.UNSTAKED,
+                })}
+              </WithTooltip>
+              {stakingApr && <$Tag sign={TagSign.Positive}>{aprText}</$Tag>}
+            </$Label>
             <$BalanceOutput type={OutputType.Asset} value={nativeTokenBalance} />
           </div>
-          {canAccountTrade && selectedValidator && (
+          {showStakingActions && (
             <div>
               <Button
                 action={ButtonAction.Primary}
-                onClick={() => dispatch(openDialog({ type: DialogTypes.Stake }))}
+                onClick={() => dispatch(openDialog(DialogTypes.Stake()))}
               >
                 {stringGetter({ key: STRING_KEYS.STAKE })}
               </Button>
@@ -85,20 +117,21 @@ export const StakingPanel = ({ className }: { className?: string }) => {
         </$BalanceRow>
         <$BalanceRow>
           <div>
-            <$label>
-              {stringGetter({
-                key: STRING_KEYS.STAKED,
-              })}
-              {/* Hardcoded for now until I get the APY endpoint working */}
-              <Tag>Est. 16.94 APR</Tag>
-            </$label>
+            <$Label>
+              <WithTooltip tooltipString={estimatedAprTooltipString}>
+                {stringGetter({
+                  key: STRING_KEYS.STAKED,
+                })}
+              </WithTooltip>
+              {stakingApr && <$Tag>{aprText}</$Tag>}
+            </$Label>
             <$BalanceOutput type={OutputType.Asset} value={nativeStakingBalance} />
           </div>
-          {canAccountTrade && nativeStakingBalance > 0 && (
+          {showStakingActions && nativeStakingBalance > 0 && (
             <div>
               <Button
                 action={ButtonAction.Base}
-                onClick={() => dispatch(openDialog({ type: DialogTypes.Unstake }))}
+                onClick={() => dispatch(openDialog(DialogTypes.Unstake()))}
               >
                 {stringGetter({ key: STRING_KEYS.UNSTAKE })}
               </Button>
@@ -109,12 +142,16 @@ export const StakingPanel = ({ className }: { className?: string }) => {
           items={[
             {
               key: 'totalBalance',
-              label: 'Total balance',
+              label: (
+                <$Label>
+                  {stringGetter({ key: STRING_KEYS.TOTAL_BALANCE })}
+                  <Tag>{chainTokenLabel}</Tag>
+                </$Label>
+              ),
               value: (
                 <Output
                   type={OutputType.Asset}
                   value={nativeTokenBalance.plus(nativeStakingBalance)}
-                  tag={chainTokenLabel}
                 />
               ),
             },
@@ -153,6 +190,14 @@ const $Content = styled.div`
   gap: 0.75rem;
 `;
 
+const $Tag = styled(Tag)`
+  display: inline-block;
+`;
+
+const $Output = styled(Output)`
+  display: inline-block;
+`;
+
 const $TotalBalance = styled(Details)`
   div {
     --scrollArea-height: auto;
@@ -172,13 +217,19 @@ const $BalanceRow = styled.div`
   padding: 1rem;
 `;
 
-const $label = styled.div`
+const $Label = styled.div`
   ${layoutMixins.row}
 
-  gap: 0.25rem;
+  gap: 0.5rem;
 `;
 
 const $BalanceOutput = styled(Output)`
   font-size: var(--fontSize-large);
   color: var(--color-text-0);
+`;
+
+const $Link = styled(Link)`
+  text-decoration: underline;
+
+  ${layoutMixins.inlineRow}
 `;

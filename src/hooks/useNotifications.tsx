@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 
-import { AnalyticsEvent } from '@/constants/analytics';
+import { AnalyticsEvents } from '@/constants/analytics';
 import { LOCAL_STORAGE_VERSIONS, LocalStorageKey } from '@/constants/localStorage';
 import {
   NotificationCategoryPreferences,
@@ -170,19 +170,17 @@ const useNotificationsContext = () => {
           if (notificationPreferences[notificationCategory] !== false) {
             // New unique key - create new notification
             if (!notification) {
-              const thisNotification = (notifications[key] = {
+              const newStatus = isNew ? NotificationStatus.Triggered : NotificationStatus.Cleared;
+              const thisNotification: Notification = (notifications[key] = {
                 id,
                 type,
                 timestamps: {},
+                status: newStatus,
                 updateKey,
-              } as Notification);
-              updateStatus(
-                thisNotification,
-                isNew ? NotificationStatus.Triggered : NotificationStatus.Cleared
-              );
+              });
+              updateStatus(thisNotification, newStatus);
             } else if (JSON.stringify(updateKey) !== JSON.stringify(notification.updateKey)) {
               // updateKey changed - update existing notification
-
               const thisNotification = notifications[key];
 
               thisNotification.updateKey = updateKey;
@@ -212,7 +210,7 @@ const useNotificationsContext = () => {
   );
 
   const onNotificationAction = (notification: Notification) => {
-    track(AnalyticsEvent.NotificationAction, { type: notification.type, id: notification.id });
+    track(AnalyticsEvents.NotificationAction({ type: notification.type, id: notification.id }));
     return actions[notification.type]?.(notification.id);
   };
 
