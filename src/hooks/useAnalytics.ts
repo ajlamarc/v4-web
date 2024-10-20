@@ -9,29 +9,31 @@ import {
   lastSuccessfulWebsocketRequestByOrigin,
 } from '@/constants/analytics';
 import { DialogTypesTypes } from '@/constants/dialogs';
+import { WalletInfo } from '@/constants/wallets';
 
 import { calculateOnboardingStep } from '@/state/accountCalculators';
-import { getOnboardingState, getSubaccountId } from '@/state/accountSelectors';
+import { getGeo, getOnboardingState, getSubaccountId } from '@/state/accountSelectors';
 import { useAppSelector } from '@/state/appTypes';
 import { getActiveDialog } from '@/state/dialogsSelectors';
 import { getInputTradeData } from '@/state/inputsSelectors';
 import { getSelectedLocale } from '@/state/localizationSelectors';
 
-import { identify, track } from '@/lib/analytics';
+import { identify, track } from '@/lib/analytics/analytics';
 import { getSelectedTradeType } from '@/lib/tradeData';
 
 import { useAccounts } from './useAccounts';
 import { useApiState } from './useApiState';
 import { useBreakpoints } from './useBreakpoints';
 import { useDydxClient } from './useDydxClient';
+import { useReferredBy } from './useReferredBy';
 import { useSelectedNetwork } from './useSelectedNetwork';
+import { useAllStatsigGateValues } from './useStatsig';
 
 export const useAnalytics = () => {
   const latestTag = import.meta.env.VITE_LAST_TAG;
-  const { walletType, walletConnectionType, evmAddress, dydxAddress, selectedWalletType } =
-    useAccounts();
+  const { sourceAccount, selectedWallet, dydxAddress } = useAccounts();
   const { indexerClient } = useDydxClient();
-
+  const statsigConfig = useAllStatsigGateValues();
   /** User properties */
 
   // AnalyticsUserProperty.Breakpoint
@@ -48,6 +50,16 @@ export const useAnalytics = () => {
           : breakpointMatches.isDesktopLarge
             ? 'DESKTOP_LARGE'
             : 'UNSUPPORTED';
+
+  // AnalyticsUserProperty.Geo
+  const geo = useAppSelector(getGeo) ?? undefined;
+  useEffect(() => {
+    identify(AnalyticsUserProperties.Geo(geo ?? null));
+  }, [geo]);
+
+  useEffect(() => {
+    identify(AnalyticsUserProperties.CustomDomainReferrer(document.referrer));
+  }, []);
 
   useEffect(() => {
     identify(AnalyticsUserProperties.Breakpoint(breakpoint));
@@ -67,6 +79,11 @@ export const useAnalytics = () => {
     }
   }, [latestTag]);
 
+  // AnalyticsUserProperty.StatsigConfigs
+  useEffect(() => {
+    identify(AnalyticsUserProperties.StatsigFlags(statsigConfig));
+  }, [statsigConfig]);
+
   // AnalyticsUserProperty.Network
   const { selectedNetwork } = useSelectedNetwork();
 
@@ -76,18 +93,20 @@ export const useAnalytics = () => {
 
   // AnalyticsUserProperty.WalletType
   useEffect(() => {
-    identify(AnalyticsUserProperties.WalletType(walletType ?? null));
-  }, [walletType]);
+    identify(AnalyticsUserProperties.WalletType(sourceAccount.walletInfo?.name ?? null));
+  }, [sourceAccount.walletInfo?.name]);
 
-  // AnalyticsUserProperty.WalletConnectionType
+  // AnalyticsUserProperty.WalletConnectorType
   useEffect(() => {
-    identify(AnalyticsUserProperties.WalletConnectionType(walletConnectionType ?? null));
-  }, [walletConnectionType]);
+    identify(
+      AnalyticsUserProperties.WalletConnectorType(sourceAccount.walletInfo?.connectorType ?? null)
+    );
+  }, [sourceAccount.walletInfo?.connectorType]);
 
   // AnalyticsUserProperty.WalletAddress
   useEffect(() => {
-    identify(AnalyticsUserProperties.WalletAddress(evmAddress ?? dydxAddress ?? null));
-  }, [evmAddress, dydxAddress]);
+    identify(AnalyticsUserProperties.WalletAddress(sourceAccount.address ?? null));
+  }, [sourceAccount.address]);
 
   // AnalyticsUserProperty.DydxAddress
   useEffect(() => {
@@ -148,17 +167,27 @@ export const useAnalytics = () => {
     DialogTypesTypes | undefined
   >();
 
-  useEffect(() => {
-    if (activeDialog?.type) {
-      track(AnalyticsEvents.NavigateDialog({ type: activeDialog.type }));
-    }
+  useEffect(
+    () => {
+      if (activeDialog?.type) {
+        track(
+          AnalyticsEvents.NavigateDialog({
+            type: activeDialog.type,
+            fromDialogType: previousActiveDialogType,
+          })
+        );
+      }
 
-    if (previousActiveDialogType) {
-      track(AnalyticsEvents.NavigateDialogClose({ type: previousActiveDialogType }));
-    }
+      if (previousActiveDialogType) {
+        track(AnalyticsEvents.NavigateDialogClose({ type: previousActiveDialogType }));
+      }
 
-    setPreviousActiveDialogType(activeDialog?.type);
-  }, [activeDialog]);
+      setPreviousActiveDialogType(activeDialog?.type);
+    },
+    // This effect should only trigger on updates to the current active dialog, not previousActiveDialogType
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeDialog]
+  );
 
   // AnalyticsEvent.NavigateExternal
   useEffect(() => {
@@ -197,23 +226,22 @@ export const useAnalytics = () => {
 
   // AnalyticsEvent.ConnectWallet
   // AnalyticsEvent.DisconnectWallet
-  const [previousSelectedWalletType, setPreviousSelectedWalletType] =
-    useState<typeof selectedWalletType>();
+  const [previousSelectedWallet, setPreviousSelectedWallet] = useState<WalletInfo>();
 
   useEffect(() => {
-    if (selectedWalletType) {
+    if (selectedWallet) {
       track(
         AnalyticsEvents.ConnectWallet({
-          walletType: selectedWalletType,
-          walletConnectionType: walletConnectionType!,
+          walletType: selectedWallet?.name,
+          walletConnectorType: selectedWallet?.connectorType!,
         })
       );
-    } else if (previousSelectedWalletType) {
+    } else if (previousSelectedWallet) {
       track(AnalyticsEvents.DisconnectWallet());
     }
 
-    setPreviousSelectedWalletType(selectedWalletType);
-  }, [selectedWalletType, walletConnectionType]);
+    setPreviousSelectedWallet(selectedWallet);
+  }, [previousSelectedWallet, selectedWallet]);
 
   // AnalyticsEvent.TradeOrderTypeSelected
   const { type: selectedOrderType } = useAppSelector(getInputTradeData, shallowEqual) ?? {};
@@ -231,4 +259,12 @@ export const useAnalytics = () => {
       setHasSelectedOrderTypeChanged(true);
     }
   }, [selectedOrderType]);
+
+  const { data: referredBy, isFetched: isReferredByFetched } = useReferredBy();
+
+  useEffect(() => {
+    if (isReferredByFetched && referredBy) {
+      identify(AnalyticsUserProperties.AffiliateAddress(referredBy.affiliateAddress ?? null));
+    }
+  }, [isReferredByFetched, referredBy]);
 };

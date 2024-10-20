@@ -1,39 +1,43 @@
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { useSwitchNetwork as useSwitchNetworkPrivy } from '@privy-io/wagmi-connector';
-import { useNetwork, useSwitchNetwork } from 'wagmi';
+import { useWallets } from '@privy-io/react-auth';
+import { useAccount, useSwitchChain } from 'wagmi';
 
-import { WalletConnectionType } from '@/constants/wallets';
+import { ConnectorType } from '@/constants/wallets';
 
-import { useWalletConnection } from './useWalletConnection';
+import { useAccounts } from './useAccounts';
 
 export const useMatchingEvmNetwork = ({
   chainId,
   switchAutomatically = false,
   onError,
+  onSuccess,
 }: {
   chainId?: string | number;
   switchAutomatically?: boolean;
   onError?: (error: Error) => void;
+  onSuccess?: () => void;
 }) => {
-  const { chain } = useNetwork();
-  const { walletConnectionType } = useWalletConnection();
-  const { isLoading, switchNetworkAsync } = useSwitchNetwork({ onError });
-  const { isLoading: isLoadingPrivy, switchNetworkAsync: switchNetworkAsyncPrivy } =
-    useSwitchNetworkPrivy({ onError });
+  const { chain } = useAccount();
+  const { sourceAccount } = useAccounts();
+  const { isPending, switchChainAsync } = useSwitchChain();
+  const { wallets } = useWallets();
 
-  // If chainId is not a number, we can assume it is a non EVM compatible chain
-  const isMatchingNetwork = useMemo(
-    () => Boolean(chain && chainId && typeof chainId === 'number' && chain.id === chainId),
-    [chainId, chain]
-  );
+  const isMatchingNetwork = useMemo(() => {
+    // In the Keplr wallet, the network will always match
+    if (sourceAccount.walletInfo?.connectorType === ConnectorType.Cosmos) {
+      return true;
+    }
+    // If chainId is not a number, we can assume it is a non EVM compatible chain
+    return Boolean(chain && chainId && typeof chainId === 'number' && chain.id === chainId);
+  }, [sourceAccount.walletInfo, chain, chainId]);
 
   const matchNetwork = useCallback(async () => {
     if (!isMatchingNetwork) {
-      if (walletConnectionType === WalletConnectionType.Privy) {
-        await switchNetworkAsyncPrivy?.(Number(chainId));
+      if (sourceAccount.walletInfo?.connectorType === ConnectorType.Privy) {
+        await wallets?.[0].switchChain(Number(chainId));
       } else {
-        await switchNetworkAsync?.(Number(chainId));
+        await switchChainAsync?.({ chainId: Number(chainId) }, { onError, onSuccess });
       }
     }
   }, [chainId, chain]);
@@ -47,6 +51,6 @@ export const useMatchingEvmNetwork = ({
   return {
     isMatchingNetwork,
     matchNetwork,
-    isSwitchingNetwork: isLoading || isLoadingPrivy,
+    isSwitchingNetwork: isPending,
   };
 };

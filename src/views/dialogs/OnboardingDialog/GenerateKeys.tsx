@@ -8,7 +8,7 @@ import { AlertType } from '@/constants/alerts';
 import { AnalyticsEvents } from '@/constants/analytics';
 import { ButtonAction } from '@/constants/buttons';
 import { STRING_KEYS } from '@/constants/localization';
-import { DydxAddress } from '@/constants/wallets';
+import { DydxAddress, WalletType } from '@/constants/wallets';
 
 import { useAccounts } from '@/hooks/useAccounts';
 import { useDydxClient } from '@/hooks/useDydxClient';
@@ -27,7 +27,10 @@ import { Switch } from '@/components/Switch';
 import { WithReceipt } from '@/components/WithReceipt';
 import { WithTooltip } from '@/components/WithTooltip';
 
-import { track } from '@/lib/analytics';
+import { useAppDispatch } from '@/state/appTypes';
+import { setSavedEncryptedSignature } from '@/state/wallet';
+
+import { track } from '@/lib/analytics/analytics';
 import { isTruthy } from '@/lib/isTruthy';
 import { log } from '@/lib/telemetry';
 import { parseWalletError } from '@/lib/wallet';
@@ -40,9 +43,10 @@ type ElementProps = {
 
 export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: ElementProps) => {
   const stringGetter = useStringGetter();
+  const dispatch = useAppDispatch();
   const [shouldRememberMe, setShouldRememberMe] = useState(false);
 
-  const { setWalletFromEvmSignature, saveEvmSignature } = useAccounts();
+  const { sourceAccount, setWalletFromSignature } = useAccounts();
 
   const [error, setError] = useState<string>();
 
@@ -84,7 +88,7 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
   };
 
   // 2. Derive keys from EVM account
-  const { getWalletFromEvmSignature } = useDydxClient();
+  const { getWalletFromSignature } = useDydxClient();
   const { getSubaccounts } = useAccounts();
 
   const isDeriving = ![
@@ -92,7 +96,7 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
     EvmDerivedAccountStatus.Derived,
   ].includes(status);
 
-  const signTypedDataAsync = useSignForWalletDerivation();
+  const signMessageAsync = useSignForWalletDerivation(sourceAccount.walletInfo);
 
   const staticEncryptionKey = import.meta.env.VITE_PK_ENCRYPTION_KEY;
 
@@ -103,8 +107,13 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
       // 1. First signature
       setStatus(EvmDerivedAccountStatus.Deriving);
 
-      const signature = await signTypedDataAsync();
-      const { wallet: dydxWallet } = await getWalletFromEvmSignature({ signature });
+      const signature = await signMessageAsync();
+      track(
+        AnalyticsEvents.OnboardingDeriveKeysSignatureReceived({
+          signatureNumber: 1,
+        })
+      );
+      const { wallet: dydxWallet } = await getWalletFromSignature({ signature });
 
       // 2. Ensure signature is deterministic
       // Check if subaccounts exist
@@ -121,7 +130,12 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
           setStatus(EvmDerivedAccountStatus.EnsuringDeterminism);
 
           // Second signature
-          const additionalSignature = await signTypedDataAsync();
+          const additionalSignature = await signMessageAsync();
+          track(
+            AnalyticsEvents.OnboardingDeriveKeysSignatureReceived({
+              signatureNumber: 2,
+            })
+          );
 
           if (signature !== additionalSignature) {
             throw new Error(
@@ -140,13 +154,12 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
         return;
       }
 
-      await setWalletFromEvmSignature(signature);
+      await setWalletFromSignature(signature);
 
       // 3: Remember me (encrypt and store signature)
       if (shouldRememberMe && staticEncryptionKey) {
         const encryptedSignature = AES.encrypt(signature, staticEncryptionKey).toString();
-
-        saveEvmSignature(encryptedSignature);
+        dispatch(setSavedEncryptedSignature(encryptedSignature));
       }
 
       // 4. Done
@@ -167,9 +180,23 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
     }
   };
 
+  const onClickSwitchNetwork = () => {
+    switchNetworkAndDeriveKeys().then(onKeysDerived);
+    track(AnalyticsEvents.OnboardingSwitchNetworkClick());
+  };
+
+  const onClickSendRequestOrTryAgain = () => {
+    deriveKeys().then(onKeysDerived);
+    track(
+      AnalyticsEvents.OnboardingSendRequestClick({
+        firstAttempt: !error,
+      })
+    );
+  };
+
   return (
     <>
-      <$StatusCardsContainer>
+      <div tw="grid gap-1">
         {[
           {
             status: EvmDerivedAccountStatus.Deriving,
@@ -190,7 +217,7 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
               ) : status === step.status ? (
                 <LoadingSpinner />
               ) : (
-                <$GreenCheckCircle />
+                <GreenCheckCircle tw="[--icon-size:2.375rem]" />
               )}
               <div>
                 <h3>{step.title}</h3>
@@ -198,10 +225,10 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
               </div>
             </$StatusCard>
           ))}
-      </$StatusCardsContainer>
+      </div>
 
       <$Footer>
-        <$RememberMe htmlFor="remember-me">
+        <label htmlFor="remember-me" tw="spacedRow font-base-book">
           <WithTooltip withIcon tooltip="remember-me">
             {stringGetter({ key: STRING_KEYS.REMEMBER_ME })}
           </WithTooltip>
@@ -212,30 +239,31 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
             checked={shouldRememberMe}
             onCheckedChange={setShouldRememberMe}
           />
-        </$RememberMe>
+        </label>
         {error && <AlertMessage type={AlertType.Error}>{error}</AlertMessage>}
-        <$WithReceipt
+        <WithReceipt
           slotReceipt={
-            <$ReceiptArea>
+            <div tw="p-1 text-color-text-0 font-small-book">
               <span>
                 {stringGetter({
                   key: STRING_KEYS.FREE_SIGNING,
                   params: {
                     FREE: (
-                      <$Green>
+                      <span tw="text-green">
                         {stringGetter({ key: STRING_KEYS.FREE_TRADING_TITLE_ASTERISK_FREE })}
-                      </$Green>
+                      </span>
                     ),
                   },
                 })}
               </span>
-            </$ReceiptArea>
+            </div>
           }
+          tw="[--withReceipt-backgroundColor:--color-layer-2]"
         >
-          {!isMatchingNetwork ? (
+          {!isMatchingNetwork && sourceAccount.walletInfo?.name !== WalletType.Phantom ? (
             <Button
               action={ButtonAction.Primary}
-              onClick={() => switchNetworkAndDeriveKeys().then(onKeysDerived)}
+              onClick={onClickSwitchNetwork}
               state={{ isLoading: isSwitchingNetwork }}
             >
               {stringGetter({ key: STRING_KEYS.SWITCH_NETWORK })}
@@ -243,7 +271,7 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
           ) : (
             <Button
               action={ButtonAction.Primary}
-              onClick={() => deriveKeys().then(onKeysDerived)}
+              onClick={onClickSendRequestOrTryAgain}
               state={{
                 isLoading: isDeriving,
                 isDisabled: status !== EvmDerivedAccountStatus.NotDerived,
@@ -258,17 +286,14 @@ export const GenerateKeys = ({ status, setStatus, onKeysDerived = () => {} }: El
                   })}
             </Button>
           )}
-        </$WithReceipt>
-        <$Disclaimer>{stringGetter({ key: STRING_KEYS.CHECK_WALLET_FOR_REQUEST })}</$Disclaimer>
+        </WithReceipt>
+        <span tw="text-center text-color-text-0 font-base-book">
+          {stringGetter({ key: STRING_KEYS.CHECK_WALLET_FOR_REQUEST })}
+        </span>
       </$Footer>
     </>
   );
 };
-const $StatusCardsContainer = styled.div`
-  display: grid;
-  gap: 1rem;
-`;
-
 const $StatusCard = styled.div<{ active?: boolean }>`
   ${layoutMixins.row}
   gap: 1rem;
@@ -281,7 +306,6 @@ const $StatusCard = styled.div<{ active?: boolean }>`
     css`
       background-color: var(--color-layer-6);
     `}
-
   > div {
     ${layoutMixins.column}
     gap: 0.25rem;
@@ -304,33 +328,4 @@ const $Footer = styled.footer`
 
   display: grid;
   gap: 1rem;
-`;
-
-const $RememberMe = styled.label`
-  ${layoutMixins.spacedRow}
-  font: var(--font-base-book);
-`;
-
-const $WithReceipt = styled(WithReceipt)`
-  --withReceipt-backgroundColor: var(--color-layer-2);
-`;
-
-const $ReceiptArea = styled.div`
-  padding: 1rem;
-  font: var(--font-small-book);
-  color: var(--color-text-0);
-`;
-
-const $Green = styled.span`
-  color: var(--color-green);
-`;
-
-const $GreenCheckCircle = styled(GreenCheckCircle)`
-  --icon-size: 2.375rem;
-`;
-
-const $Disclaimer = styled.span`
-  text-align: center;
-  color: var(--color-text-0);
-  font: var(--font-base-book);
 `;

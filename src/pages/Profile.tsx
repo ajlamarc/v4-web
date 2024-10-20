@@ -1,5 +1,6 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link as ReactLink, useNavigate } from 'react-router-dom';
 import styled, { css } from 'styled-components';
+import tw from 'twin.macro';
 import { useEnsName } from 'wagmi';
 
 import { TransferType } from '@/constants/abacus';
@@ -8,9 +9,11 @@ import { ButtonSize } from '@/constants/buttons';
 import { DialogTypes } from '@/constants/dialogs';
 import { STRING_KEYS } from '@/constants/localization';
 import { AppRoute, HistoryRoute, PortfolioRoute } from '@/constants/routes';
-import { wallets } from '@/constants/wallets';
+import { ConnectorType, EvmAddress, WalletNetworkType, wallets } from '@/constants/wallets';
 
 import { useAccounts } from '@/hooks/useAccounts';
+import { useComplianceState } from '@/hooks/useComplianceState';
+import { useEnvConfig } from '@/hooks/useEnvConfig';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useTokenConfigs } from '@/hooks/useTokenConfigs';
 
@@ -21,6 +24,7 @@ import { AssetIcon } from '@/components/AssetIcon';
 import { Details } from '@/components/Details';
 import { Icon, IconName } from '@/components/Icon';
 import { IconButton, type IconButtonProps } from '@/components/IconButton';
+import { Link } from '@/components/Link';
 import { Output, OutputType } from '@/components/Output';
 import { Panel } from '@/components/Panel';
 import { Toolbar } from '@/components/Toolbar';
@@ -36,12 +40,11 @@ import { openDialog } from '@/state/dialogs';
 import { isTruthy } from '@/lib/isTruthy';
 import { truncateAddress } from '@/lib/wallet';
 
-import { DYDXBalancePanel } from './token/rewards/DYDXBalancePanel';
-import { GovernancePanel } from './token/rewards/GovernancePanel';
-import { MigratePanel } from './token/rewards/MigratePanel';
-import { NewMarketsPanel } from './token/rewards/NewMarketsPanel';
-import { StakingPanel } from './token/staking/StakingPanel';
-import { StrideStakingPanel } from './token/staking/StrideStakingPanel';
+import { GovernancePanel } from './token/GovernancePanel';
+import { LaunchIncentivesPanel } from './token/LaunchIncentivesPanel';
+import { MigratePanel } from './token/MigratePanel';
+import { NewMarketsPanel } from './token/NewMarketsPanel';
+import { StakingPanel } from './token/StakingPanel';
 
 const ENS_CHAIN_ID = 1; // Ethereum
 
@@ -49,6 +52,7 @@ type Action = {
   key: string;
   label: string;
   icon: IconButtonProps;
+  state?: IconButtonProps['state'];
   href?: string;
   onClick?: () => void;
 };
@@ -58,14 +62,20 @@ const Profile = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
+  const deployerName = useEnvConfig('deployerName');
+
   const onboardingState = useAppSelector(getOnboardingState);
   const isConnected = onboardingState !== OnboardingState.Disconnected;
 
-  const { evmAddress, dydxAddress, walletType } = useAccounts();
+  const { sourceAccount, dydxAddress } = useAccounts();
   const { chainTokenLabel } = useTokenConfigs();
+  const { disableConnectButton } = useComplianceState();
 
   const { data: ensName } = useEnsName({
-    address: evmAddress,
+    address:
+      sourceAccount.chain === WalletNetworkType.Evm
+        ? (sourceAccount.address as EvmAddress)
+        : undefined,
     chainId: ENS_CHAIN_ID,
   });
 
@@ -127,6 +137,7 @@ const Profile = () => {
           key: 'connect',
           label: stringGetter({ key: STRING_KEYS.CONNECT }),
           icon: { iconName: IconName.Transfer },
+          state: { isDisabled: disableConnectButton },
           onClick: () => {
             dispatch(openDialog(DialogTypes.Onboarding()));
           },
@@ -135,33 +146,39 @@ const Profile = () => {
 
   return (
     <$MobileProfileLayout>
-      <$Header>
+      <header tw="row px-1 py-0 [grid-area:header]">
         <$ProfileIcon />
         <div>
-          <$Address>{isConnected ? ensName ?? truncateAddress(dydxAddress) : '-'}</$Address>
-          {isConnected && walletType ? (
+          <h1 tw="font-extra-medium">
+            {isConnected ? ensName ?? truncateAddress(dydxAddress) : '-'}
+          </h1>
+          {isConnected && sourceAccount.walletInfo ? (
             <$SubHeader>
               <$ConnectedIcon />
               <span>{stringGetter({ key: STRING_KEYS.CONNECTED_TO })}</span>
-              <span>{stringGetter({ key: wallets[walletType].stringKey })}</span>
+              <span>
+                {sourceAccount.walletInfo.connectorType === ConnectorType.Injected
+                  ? sourceAccount.walletInfo.name
+                  : stringGetter({ key: wallets[sourceAccount.walletInfo.name].stringKey })}
+              </span>
             </$SubHeader>
           ) : (
             <span>-</span>
           )}
         </div>
-      </$Header>
+      </header>
       <$Actions withSeparators={false}>
-        {actions.map(({ key, label, href, icon, onClick }) => {
+        {actions.map(({ key, label, href, icon, state, onClick }) => {
           const action = (
             <>
-              <$ActionButton {...icon} size={ButtonSize.Large} onClick={onClick} />
+              <$ActionButton {...icon} size={ButtonSize.Large} onClick={onClick} state={state} />
               <span>{label}</span>
             </>
           );
           return href ? (
-            <Link to={href} key={key}>
+            <ReactLink to={href} key={key}>
               {action}
-            </Link>
+            </ReactLink>
           ) : (
             // eslint-disable-next-line jsx-a11y/label-has-associated-control
             <label key={key}>{action}</label>
@@ -169,7 +186,7 @@ const Profile = () => {
         })}
       </$Actions>
 
-      <$SettingsButton
+      <$PanelButton
         slotHeader={
           <$InlineRow>
             <Icon iconName={IconName.Gear} />
@@ -177,8 +194,9 @@ const Profile = () => {
           </$InlineRow>
         }
         onClick={() => navigate(AppRoute.Settings)}
+        tw="[grid-area:settings]"
       />
-      <$HelpButton
+      <$PanelButton
         slotHeader={
           <$InlineRow>
             <Icon iconName={IconName.HelpCircle} />
@@ -186,11 +204,12 @@ const Profile = () => {
           </$InlineRow>
         }
         onClick={() => dispatch(openDialog(DialogTypes.Help()))}
+        tw="[grid-area:help]"
       />
 
-      <$MigratePanel />
+      <MigratePanel tw="[grid-area:migrate]" />
 
-      <$DYDXBalancePanel />
+      <StakingPanel tw="[grid-area:staking]" />
 
       <$RewardsPanel
         slotHeaderContent={stringGetter({ key: STRING_KEYS.TRADING_REWARDS })}
@@ -204,7 +223,7 @@ const Profile = () => {
               label: stringGetter({ key: STRING_KEYS.THIS_WEEK }),
               value: (
                 <Output
-                  slotRight={<$AssetIcon symbol={chainTokenLabel} />}
+                  slotRight={<AssetIcon symbol={chainTokenLabel} tw="ml-[0.5ch]" />}
                   type={OutputType.Asset}
                   value={currentWeekTradingReward?.amount}
                 />
@@ -214,10 +233,11 @@ const Profile = () => {
           layout="grid"
         />
       </$RewardsPanel>
-      <$FeesPanel
+      <Panel
         slotHeaderContent={stringGetter({ key: STRING_KEYS.FEES })}
         href={`${AppRoute.Portfolio}/${PortfolioRoute.Fees}`}
         hasSeparator
+        tw="[grid-area:fees]"
       >
         <$Details
           items={[
@@ -227,7 +247,7 @@ const Profile = () => {
           ]}
           layout="grid"
         />
-      </$FeesPanel>
+      </Panel>
 
       <$HistoryPanel
         slotHeaderContent={stringGetter({ key: STRING_KEYS.HISTORY })}
@@ -242,13 +262,25 @@ const Profile = () => {
             FillsTableColumnKey.AmountTag,
           ]}
           withInnerBorders={false}
+          initialPageSize={5}
         />
       </$HistoryPanel>
-
-      <$GovernancePanel />
-      <$NewMarketsPanel />
-      <$StakingPanel />
-      <$StrideStakingPanel />
+      <LaunchIncentivesPanel tw="[grid-area:incentives]" />
+      <Panel tw="text-color-text-0 [grid-area:legal]">
+        {stringGetter({
+          key: STRING_KEYS.SITE_OPERATED_BY_SHORT,
+          params: {
+            NAME_OF_DEPLOYER: deployerName,
+            LEARN_MORE_LINK: (
+              <Link isInline onClick={() => dispatch(openDialog(DialogTypes.Help()))}>
+                {stringGetter({ key: STRING_KEYS.LEARN_MORE_ARROW })}
+              </Link>
+            ),
+          },
+        })}
+      </Panel>
+      <GovernancePanel tw="[grid-area:governance]" />
+      <NewMarketsPanel tw="[grid-area:newMarkets]" />
     </$MobileProfileLayout>
   );
 };
@@ -269,11 +301,12 @@ const $MobileProfileLayout = styled.div`
     'actions actions'
     'settings help'
     'migrate migrate'
-    'balance balance'
+    'staking staking'
     'rewards fees'
     'history history'
     'governance newMarkets'
-    'keplr stride';
+    'incentives incentives'
+    'legal legal';
 
   @media ${breakpoints.mobile} {
     grid-template-areas:
@@ -281,22 +314,15 @@ const $MobileProfileLayout = styled.div`
       'actions actions'
       'settings help'
       'migrate migrate'
-      'balance balance'
+      'staking staking'
       'rewards fees'
       'history history'
       'governance governance'
       'newMarkets newMarkets'
-      'keplr keplr'
-      'stride stride';
+      'incentives incentives'
+      'legal legal';
   }
 `;
-
-const $Header = styled.header`
-  grid-area: header;
-  ${layoutMixins.row}
-  padding: 0 1rem;
-`;
-
 const $ProfileIcon = styled.div`
   width: 4rem;
   height: 4rem;
@@ -332,11 +358,6 @@ const $ConnectedIcon = styled.div`
   border-radius: 50%;
   box-shadow: 0 0 0 0.2rem var(--color-gradient-success);
 `;
-
-const $Address = styled.h1`
-  font: var(--font-extra-medium);
-`;
-
 const $Actions = styled(Toolbar)`
   ${layoutMixins.spacedRow}
   --stickyArea-topHeight: 5rem;
@@ -369,12 +390,14 @@ const $ActionButton = styled(IconButton)<{ iconName?: IconName }>`
           --button-textColor: var(--color-text-2);
           --button-backgroundColor: var(--color-accent);
         `}
+
+  &:disabled {
+    --button-backgroundColor: var(--color-layer-2);
+    --button-textColor: var(--color-text-0);
+  }
 `;
 
-const $Details = styled(Details)`
-  font: var(--font-small-book);
-  --details-value-font: var(--font-medium-book);
-`;
+const $Details = tw(Details)`font-small-book [--details-value-font:--font-medium-book]`;
 
 const $RewardsPanel = styled(Panel)`
   grid-area: rewards;
@@ -388,26 +411,20 @@ const $RewardsPanel = styled(Panel)`
     --details-grid-numColumns: 1;
   }
 `;
-
-const $FeesPanel = styled(Panel)`
-  grid-area: fees;
-`;
-
 const $HistoryPanel = styled(Panel)`
   grid-area: history;
   --panel-content-paddingY: 0;
   --panel-content-paddingX: 0;
 
   > div > div {
-    margin-top: 0.5rem;
-    --scrollArea-height: 10rem;
+    margin-top: 1px;
     border-radius: 0.875rem;
   }
 
   table {
-    max-height: 10rem;
     --tableCell-padding: 0.25rem 1rem;
     --tableRow-backgroundColor: var(--color-layer-3);
+    --tableStickyRow-backgroundColor: var(--color-layer-3);
     background-color: var(--color-layer-3);
     thead {
       color: var(--color-text-0);
@@ -424,48 +441,8 @@ const $HistoryPanel = styled(Panel)`
   }
 `;
 
-const $InlineRow = styled.div`
-  ${layoutMixins.inlineRow}
-  padding: 1rem;
-  gap: 0.5rem;
-`;
+const $InlineRow = tw.div`inlineRow gap-0.5 p-1`;
 
 const $PanelButton = styled(Panel)`
   --panel-paddingY: 0 --panel-paddingX: 0;
-`;
-
-const $SettingsButton = styled($PanelButton)`
-  grid-area: settings;
-`;
-
-const $HelpButton = styled($PanelButton)`
-  grid-area: help;
-`;
-
-const $MigratePanel = styled(MigratePanel)`
-  grid-area: migrate;
-`;
-
-const $DYDXBalancePanel = styled(DYDXBalancePanel)`
-  grid-area: balance;
-`;
-
-const $GovernancePanel = styled(GovernancePanel)`
-  grid-area: governance;
-`;
-
-const $StakingPanel = styled(StakingPanel)`
-  grid-area: keplr;
-`;
-
-const $NewMarketsPanel = styled(NewMarketsPanel)`
-  grid-area: newMarkets;
-`;
-
-const $StrideStakingPanel = styled(StrideStakingPanel)`
-  grid-area: stride;
-`;
-
-const $AssetIcon = styled(AssetIcon)`
-  margin-left: 0.5ch;
 `;

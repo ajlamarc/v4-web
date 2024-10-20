@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
+import { calculateFee, GasPrice, MsgTransferEncodeObject } from '@cosmjs/stargate';
+import { GAS_MULTIPLIER } from '@dydxprotocol/v4-client-js';
+import { useAccount as useAccountGraz, useStargateSigningClient } from 'graz';
 import { type NumberFormatValues } from 'react-number-format';
 import { shallowEqual } from 'react-redux';
 import styled from 'styled-components';
@@ -10,8 +13,23 @@ import erc20 from '@/abi/erc20.json';
 import erc20_usdt from '@/abi/erc20_usdt.json';
 import { TransferInputField, TransferInputTokenResource, TransferType } from '@/constants/abacus';
 import { AlertType } from '@/constants/alerts';
-import { AnalyticsEventPayloads, AnalyticsEvents } from '@/constants/analytics';
+import {
+  AnalyticsEventPayloads,
+  AnalyticsEvents,
+  DEFAULT_TRANSACTION_MEMO,
+} from '@/constants/analytics';
 import { ButtonSize } from '@/constants/buttons';
+import { NEUTRON_USDC_IBC_DENOM, OSMO_USDC_IBC_DENOM } from '@/constants/denoms';
+import { DialogTypes } from '@/constants/dialogs';
+import {
+  getNeutronChainId,
+  getNobleChainId,
+  getOsmosisChainId,
+  NEUTRON_GAS_PRICE,
+  NOBLE_GAS_PRICE,
+  OSMO_GAS_PRICE,
+  SUPPORTED_COSMOS_CHAINS,
+} from '@/constants/graz';
 import { STRING_KEYS } from '@/constants/localization';
 import { isMainnet } from '@/constants/networks';
 import { TransferNotificationTypes } from '@/constants/notifications';
@@ -22,13 +40,17 @@ import {
   MIN_CCTP_TRANSFER_AMOUNT,
   NumberSign,
 } from '@/constants/numbers';
-import { WalletType, type EvmAddress } from '@/constants/wallets';
+import { AppRoute, BASE_ROUTE } from '@/constants/routes';
+import { ConnectorType, type EvmAddress, WalletNetworkType, WalletType } from '@/constants/wallets';
 
 import { CHAIN_DEFAULT_TOKEN_ADDRESS, useAccountBalance } from '@/hooks/useAccountBalance';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useDydxClient } from '@/hooks/useDydxClient';
 import { useLocalNotifications } from '@/hooks/useLocalNotifications';
+import { usePhantomWallet } from '@/hooks/usePhantomWallet';
 import { useStringGetter } from '@/hooks/useStringGetter';
+import { useSubaccount } from '@/hooks/useSubaccount';
 import { useTokenConfigs } from '@/hooks/useTokenConfigs';
 
 import { formMixins } from '@/styles/formMixins';
@@ -38,24 +60,29 @@ import { DiffOutput } from '@/components/DiffOutput';
 import { FormInput } from '@/components/FormInput';
 import { FormMaxInputToggleButton } from '@/components/FormMaxInputToggleButton';
 import { InputType } from '@/components/Input';
+import { Link } from '@/components/Link';
 import { LoadingSpace } from '@/components/Loading/LoadingSpinner';
 import { OutputType } from '@/components/Output';
 import { Tag } from '@/components/Tag';
 import { WithDetailsReceipt } from '@/components/WithDetailsReceipt';
 import { WithTooltip } from '@/components/WithTooltip';
 
+import { getOnboardingGuards } from '@/state/accountSelectors';
 import { getSelectedDydxChainId } from '@/state/appSelectors';
-import { useAppSelector } from '@/state/appTypes';
+import { useAppDispatch, useAppSelector } from '@/state/appTypes';
+import { forceOpenDialog } from '@/state/dialogs';
 import { getTransferInputs } from '@/state/inputsSelectors';
 
 import abacusStateManager from '@/lib/abacus';
-import { track } from '@/lib/analytics';
+import { track } from '@/lib/analytics/analytics';
+import { dd } from '@/lib/analytics/datadog';
 import { MustBigNumber } from '@/lib/numbers';
-import { getNobleChainId, NATIVE_TOKEN_ADDRESS } from '@/lib/squid';
+import { NATIVE_TOKEN_ADDRESS } from '@/lib/skip';
 import { log } from '@/lib/telemetry';
+import { sleep } from '@/lib/timeUtils';
 import { parseWalletError } from '@/lib/wallet';
 
-import { NobleDeposit } from '../NobleDeposit';
+import { CoinbaseDeposit } from '../CoinbaseDeposit';
 import { DepositButtonAndReceipt } from './DepositForm/DepositButtonAndReceipt';
 import { SourceSelectMenu } from './SourceSelectMenu';
 import { TokenSelectMenu } from './TokenSelectMenu';
@@ -65,16 +92,39 @@ type DepositFormProps = {
   onError?: () => void;
 };
 
+enum DepositSteps {
+  Initial = 'initial',
+  Approval = 'approval',
+  Confirm = 'confirm',
+
+  KEPLR_APPROVAL = 'keplr_approval',
+}
+
 export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
   const stringGetter = useStringGetter();
+  const dispatch = useAppDispatch();
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [depositStep, setDepositStep] = useState<DepositSteps>(DepositSteps.Initial);
   const [requireUserActionInWallet, setRequireUserActionInWallet] = useState(false);
   const selectedDydxChainId = useAppSelector(getSelectedDydxChainId);
+  const { hasAcknowledgedTerms } = useAppSelector(getOnboardingGuards);
 
-  const { dydxAddress, evmAddress, signerWagmi, publicClientWagmi, nobleAddress } = useAccounts();
+  const {
+    dydxAddress,
+    signerWagmi,
+    publicClientWagmi,
+    nobleAddress,
+    sourceAccount,
+    saveHasAcknowledgedTerms,
+  } = useAccounts();
+  const { getAccountBalance } = useDydxClient();
+  const { depositCurrentBalance } = useSubaccount();
 
-  const { addTransferNotification } = useLocalNotifications();
+  const { addOrUpdateTransferNotification } = useLocalNotifications();
+  const { signTransaction: signTransactionPhantom } = usePhantomWallet();
+
+  const isKeplrWallet = sourceAccount.walletInfo?.name === WalletType.Keplr;
 
   const {
     requestPayload,
@@ -88,39 +138,55 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
     isCctp,
   } = useAppSelector(getTransferInputs, shallowEqual) ?? {};
   // todo are these guaranteed to be base 10?
-  // eslint-disable-next-line radix
-  const chainId = chainIdStr ? parseInt(chainIdStr) : undefined;
+  /* eslint-disable radix */
+  let chainId: number | string | undefined;
+  if (chainIdStr) chainId = chainIdStr;
+  if (chainIdStr && chainIdStr.startsWith('solana')) chainId = chainIdStr;
+  if (chainIdStr && !Number.isNaN(parseInt(chainIdStr))) chainId = parseInt(chainIdStr);
+  /* eslint-enable radix */
+
+  const nobleChainId = getNobleChainId();
+  const osmosisChainId = getOsmosisChainId();
+  const neutronChainId = getNeutronChainId();
 
   // User inputs
-  const sourceToken = useMemo(
-    () => (token ? resources?.tokenResources?.get(token) : undefined),
-    [token, resources]
-  );
+  const sourceToken = useMemo(() => {
+    return token ? resources?.tokenResources?.get(token) : undefined;
+  }, [token, resources]);
 
   const sourceChain = useMemo(
     () => (chainIdStr ? resources?.chainResources?.get(chainIdStr) : undefined),
-    [chainId, resources]
+    [chainIdStr, resources]
   );
 
   const [fromAmount, setFromAmount] = useState('');
   const [slippage, setSlippage] = useState(isCctp ? 0 : 0.01); // 1% slippage
-  const debouncedAmount = useDebounce<string>(fromAmount, 500);
+  const debouncedAmount = useDebounce<string>(fromAmount);
 
-  const { usdcLabel } = useTokenConfigs();
+  const { usdcLabel, usdcDenom } = useTokenConfigs();
+
+  const { data: accounts } = useAccountGraz({
+    chainId: SUPPORTED_COSMOS_CHAINS,
+    multiChain: true,
+  });
+  const { data: signingClient } = useStargateSigningClient({
+    chainId: SUPPORTED_COSMOS_CHAINS,
+    multiChain: true,
+  });
 
   // Async Data
   const { balance } = useAccountBalance({
     addressOrDenom: sourceToken?.address || CHAIN_DEFAULT_TOKEN_ADDRESS,
     chainId,
-    decimals: sourceToken?.decimals || undefined,
-    isCosmosChain: false,
+    isCosmosChain: isKeplrWallet,
   });
-
   // BN
   const debouncedAmountBN = MustBigNumber(debouncedAmount);
   const balanceBN = MustBigNumber(balance);
 
-  useEffect(() => setSlippage(isCctp ? 0 : 0.01), [isCctp]);
+  useEffect(() => {
+    setSlippage(isCctp || isKeplrWallet ? 0 : 0.01);
+  }, [isCctp, isKeplrWallet]);
 
   useEffect(() => {
     const hasInvalidInput =
@@ -132,13 +198,19 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
     });
 
     setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedAmountBN.toNumber()]);
 
   useEffect(() => {
-    if (dydxAddress && evmAddress) {
+    if (dydxAddress) {
       // TODO: this is for fixing a race condition where the sourceAddress is not set in time.
       // worth investigating a better fix on abacus
-      abacusStateManager.setTransfersSourceAddress(evmAddress);
+      if (sourceAccount.walletInfo?.name === WalletType.Keplr && nobleAddress) {
+        abacusStateManager.setTransfersSourceAddress(nobleAddress);
+      } else if (sourceAccount.address) {
+        abacusStateManager.setTransfersSourceAddress(sourceAccount.address);
+      }
+
       abacusStateManager.setTransferValue({
         field: TransferInputField.type,
         value: TransferType.deposit.rawValue,
@@ -147,40 +219,67 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
     return () => {
       abacusStateManager.resetInputState();
     };
-  }, [dydxAddress]);
+  }, [dydxAddress, sourceAccount.walletInfo, nobleAddress, sourceAccount.address]);
 
   useEffect(() => {
     if (error) onError?.();
   }, [error]);
 
-  const { walletType } = useAccounts();
-
   useEffect(() => {
-    if (walletType === WalletType.Privy) {
+    if (!sourceAccount.walletInfo) return;
+
+    if (sourceAccount.walletInfo.connectorType === ConnectorType.Privy) {
       abacusStateManager.setTransferValue({
         field: TransferInputField.exchange,
         value: 'coinbase',
       });
     }
-  }, [walletType]);
-
-  const onSelectNetwork = useCallback((name: string, type: 'chain' | 'exchange') => {
-    if (name) {
-      abacusStateManager.clearTransferInputValues();
-      setFromAmount('');
-      if (type === 'chain') {
-        abacusStateManager.setTransferValue({
-          field: TransferInputField.chain,
-          value: name,
-        });
-      } else {
-        abacusStateManager.setTransferValue({
-          field: TransferInputField.exchange,
-          value: name,
-        });
-      }
+    if (sourceAccount.walletInfo.connectorType === ConnectorType.PhantomSolana) {
+      abacusStateManager.setTransferValue({
+        field: TransferInputField.chain,
+        value: 'solana',
+      });
     }
-  }, []);
+    if (sourceAccount.walletInfo.connectorType === ConnectorType.Cosmos) {
+      abacusStateManager.setTransferValue({
+        field: TransferInputField.chain,
+        value: nobleChainId,
+      });
+    }
+  }, [nobleAddress, nobleChainId, sourceAccount.walletInfo]);
+
+  const onSelectNetwork = useCallback(
+    (name: string, type: 'chain' | 'exchange') => {
+      if (name) {
+        abacusStateManager.clearTransferInputValues();
+        setFromAmount('');
+        if (type === 'chain') {
+          abacusStateManager.setTransferValue({
+            field: TransferInputField.chain,
+            value: name,
+          });
+          if (name === osmosisChainId) {
+            abacusStateManager.setTransferValue({
+              field: TransferInputField.token,
+              value: OSMO_USDC_IBC_DENOM,
+            });
+          }
+          if (name === neutronChainId) {
+            abacusStateManager.setTransferValue({
+              field: TransferInputField.token,
+              value: NEUTRON_USDC_IBC_DENOM,
+            });
+          }
+        } else {
+          abacusStateManager.setTransferValue({
+            field: TransferInputField.exchange,
+            value: name,
+          });
+        }
+      }
+    },
+    [neutronChainId, osmosisChainId]
+  );
 
   const onSelectToken = useCallback((selectedToken: TransferInputTokenResource) => {
     if (selectedToken) {
@@ -205,16 +304,18 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
       setSlippage(newSlippage);
       // TODO: to be implemented via abacus
     },
-    [setSlippage, debouncedAmount]
+    [setSlippage]
   );
 
   const onClickMax = useCallback(() => {
     if (balance) {
       setFromAmount(balanceBN.toString());
     }
-  }, [balance, setFromAmount]);
+  }, [balance, balanceBN]);
 
   const validateTokenApproval = useCallback(async () => {
+    if (sourceAccount.chain !== WalletNetworkType.Evm)
+      throw new Error('Only EVM tokens need ERC-20 approvals');
     if (!signerWagmi || !publicClientWagmi) throw new Error('Missing signer');
     if (!sourceToken?.address || !sourceToken.decimals)
       throw new Error('Missing source token address');
@@ -226,15 +327,16 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
       address: sourceToken.address as EvmAddress,
       abi: erc20,
       functionName: 'allowance',
-      args: [evmAddress as EvmAddress, requestPayload.targetAddress as EvmAddress],
+      args: [sourceAccount.address as EvmAddress, requestPayload.targetAddress as EvmAddress],
     });
 
     const sourceAmountBN = parseUnits(debouncedAmount, sourceToken.decimals);
 
     if (sourceAmountBN > (allowance as bigint)) {
+      setDepositStep(DepositSteps.Approval);
       const simulateApprove = async (abi: Abi) =>
         publicClientWagmi.simulateContract({
-          account: evmAddress,
+          account: sourceAccount.address as EvmAddress,
           address: sourceToken.address as EvmAddress,
           abi,
           functionName: 'approve',
@@ -253,40 +355,219 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
         hash: approveTx,
       });
     }
-  }, [signerWagmi, sourceToken, sourceChain, requestPayload, publicClientWagmi]);
+  }, [
+    sourceAccount.chain,
+    sourceAccount.address,
+    signerWagmi,
+    publicClientWagmi,
+    sourceToken?.address,
+    sourceToken?.decimals,
+    requestPayload?.targetAddress,
+    requestPayload?.value,
+    debouncedAmount,
+  ]);
+
+  const waitForBalanceAndDeposit = useCallback(
+    async (initialBalance: string) => {
+      let currentBalance = initialBalance;
+      let iterCount = 0;
+      while (currentBalance === initialBalance) {
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(5000);
+        // we are polling so no need to parallelize the awaits
+        currentBalance =
+          // eslint-disable-next-line no-await-in-loop
+          (await getAccountBalance(dydxAddress as string, usdcDenom))?.amount || initialBalance;
+        iterCount += 1;
+        if (iterCount > 20) {
+          throw new Error('Balance update timed out');
+        }
+      }
+      setDepositStep(DepositSteps.KEPLR_APPROVAL);
+      await depositCurrentBalance();
+    },
+    [getAccountBalance, dydxAddress, usdcDenom, depositCurrentBalance]
+  );
+
+  // probably better to use skip submit endpoint for this
+  const onSubmitCosmos = useCallback(async () => {
+    if (!chainIdStr || !SUPPORTED_COSMOS_CHAINS.includes(chainIdStr)) {
+      throw new Error('chainIdStr not supported');
+    }
+
+    if (!requestPayload?.data) {
+      throw new Error('Missing request payload');
+    }
+
+    const transaction = JSON.parse(requestPayload.data);
+
+    const transferMsg: MsgTransferEncodeObject = {
+      typeUrl: transaction.typeUrl,
+      value: transaction.value,
+    };
+
+    const account = accounts?.[chainIdStr];
+    const signerAddress = account?.bech32Address;
+
+    if (!signerAddress) {
+      throw new Error('Missing signer address');
+    }
+
+    const memo = `${DEFAULT_TRANSACTION_MEMO} | ${signerAddress}`;
+
+    const gasEstimate = await signingClient?.[chainIdStr]?.simulate(
+      signerAddress,
+      [transferMsg],
+      memo
+    );
+
+    const gasPrice = (() => {
+      if (nobleChainId === chainIdStr) {
+        return GasPrice.fromString(NOBLE_GAS_PRICE);
+      }
+      if (osmosisChainId === chainIdStr) {
+        return GasPrice.fromString(OSMO_GAS_PRICE);
+      }
+      if (neutronChainId === chainIdStr) {
+        return GasPrice.fromString(NEUTRON_GAS_PRICE);
+      }
+      return undefined;
+    })();
+
+    if (!gasEstimate || !gasPrice) {
+      throw new Error('Failed to estimate gas');
+    }
+
+    const fee = calculateFee(Math.floor(gasEstimate * GAS_MULTIPLIER), gasPrice);
+
+    const initialBalance = await getAccountBalance(dydxAddress as string, usdcDenom);
+
+    if (!initialBalance) {
+      throw new Error('Failed to get wallet balance');
+    }
+
+    setDepositStep(DepositSteps.KEPLR_APPROVAL);
+
+    const tx = await signingClient?.[chainIdStr]?.signAndBroadcast(
+      signerAddress,
+      [transferMsg],
+      fee,
+      memo
+    );
+
+    const txHash = tx?.transactionHash;
+
+    if (txHash) {
+      const notification = {
+        txHash,
+        toChainId: selectedDydxChainId,
+        fromChainId: chainIdStr || undefined,
+        toAmount: summary?.usdcSize || undefined,
+        triggeredAt: Date.now(),
+        requestId: requestPayload.requestId ?? undefined,
+        type: TransferNotificationTypes.Deposit,
+      };
+      addOrUpdateTransferNotification(notification);
+
+      onDeposit?.({
+        chainId: chainIdStr || undefined,
+        tokenAddress: sourceToken?.address || undefined,
+        tokenSymbol: sourceToken?.symbol || undefined,
+        slippage: slippage || undefined,
+        gasFee: summary?.gasFee || undefined,
+        bridgeFee: summary?.bridgeFee || undefined,
+        exchangeRate: summary?.exchangeRate || undefined,
+        estimatedRouteDuration: summary?.estimatedRouteDurationSeconds || undefined,
+        toAmount: summary?.toAmount || undefined,
+        toAmountMin: summary?.toAmountMin || undefined,
+      });
+
+      abacusStateManager.clearTransferInputValues();
+      setFromAmount('');
+
+      setDepositStep(DepositSteps.Initial);
+
+      await waitForBalanceAndDeposit(initialBalance.amount);
+
+      addOrUpdateTransferNotification({
+        ...notification,
+        isSubaccountDepositCompleted: true,
+      });
+    }
+  }, [
+    requestPayload,
+    signerWagmi,
+    chainIdStr,
+    sourceToken,
+    sourceChain,
+    nobleChainId,
+    waitForBalanceAndDeposit,
+  ]);
 
   const onSubmit = useCallback(
     async (e: FormEvent) => {
+      const transferDepositContext = {
+        chainId: chainIdStr ?? undefined,
+        tokenAddress: sourceToken?.address ?? undefined,
+        tokenSymbol: sourceToken?.symbol ?? undefined,
+        slippage: slippage ?? undefined,
+        gasFee: summary?.gasFee ?? undefined,
+        bridgeFee: summary?.bridgeFee ?? undefined,
+        exchangeRate: summary?.exchangeRate ?? undefined,
+        estimatedRouteDuration: summary?.estimatedRouteDurationSeconds ?? undefined,
+        toAmount: summary?.toAmount ?? undefined,
+        toAmountMin: summary?.toAmountMin ?? undefined,
+        depositCTAString,
+      };
+      track(AnalyticsEvents.TransferDepositFundsClick(transferDepositContext));
+      dd.info('Transfer deposit click', transferDepositContext);
       try {
         e.preventDefault();
+        setIsLoading(true);
 
-        if (!signerWagmi) {
-          throw new Error('Missing signer');
-        }
-        if (!requestPayload?.targetAddress || !requestPayload.data || !requestPayload.value) {
-          throw new Error('Missing request payload');
+        if (chainIdStr && SUPPORTED_COSMOS_CHAINS.includes(chainIdStr)) {
+          await onSubmitCosmos();
+          return;
         }
 
         if (isCctp && !abacusStateManager.chainTransactions.isNobleClientConnected) {
           throw new Error('Noble RPC endpoint unaccessible');
         }
 
-        setIsLoading(true);
+        if (!hasAcknowledgedTerms) {
+          saveHasAcknowledgedTerms(true);
+        }
 
-        await validateTokenApproval();
+        let txHash: string | undefined;
+        if (sourceAccount.walletInfo?.name === WalletType.Phantom) {
+          if (!requestPayload?.data) {
+            throw new Error('Missing solana request payload');
+          }
 
-        const tx = {
-          to: requestPayload.targetAddress as EvmAddress,
-          data: requestPayload.data as EvmAddress,
-          gasLimit: BigInt(requestPayload.gasLimit || DEFAULT_GAS_LIMIT),
-          value: requestPayload.routeType !== 'SEND' ? BigInt(requestPayload.value) : undefined,
-        };
-        const txHash = await signerWagmi.sendTransaction(tx);
+          setDepositStep(DepositSteps.Confirm);
+          txHash = await signTransactionPhantom(Buffer.from(requestPayload.data, 'base64'));
+        } else {
+          if (!signerWagmi) {
+            throw new Error('Missing signer');
+          }
+          if (!requestPayload?.targetAddress || !requestPayload?.data || !requestPayload?.value) {
+            throw new Error('Missing request payload');
+          }
+          await validateTokenApproval();
 
+          const tx = {
+            to: requestPayload.targetAddress as EvmAddress,
+            data: requestPayload.data as EvmAddress,
+            gasLimit: BigInt(requestPayload.gasLimit || DEFAULT_GAS_LIMIT),
+            value: requestPayload.routeType !== 'SEND' ? BigInt(requestPayload.value) : undefined,
+          };
+          setDepositStep(DepositSteps.Confirm);
+          txHash = await signerWagmi.sendTransaction(tx);
+        }
         if (txHash) {
-          addTransferNotification({
+          addOrUpdateTransferNotification({
             txHash,
-            toChainId: !isCctp ? selectedDydxChainId : getNobleChainId(),
+            toChainId: !isCctp ? selectedDydxChainId : nobleChainId,
             fromChainId: chainIdStr || undefined,
             toAmount: summary?.usdcSize || undefined,
             triggeredAt: Date.now(),
@@ -296,28 +577,31 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
           });
           abacusStateManager.clearTransferInputValues();
           setFromAmount('');
-
-          onDeposit?.({
-            chainId: chainIdStr || undefined,
-            tokenAddress: sourceToken?.address || undefined,
-            tokenSymbol: sourceToken?.symbol || undefined,
-            slippage: slippage || undefined,
-            gasFee: summary?.gasFee || undefined,
-            bridgeFee: summary?.bridgeFee || undefined,
-            exchangeRate: summary?.exchangeRate || undefined,
-            estimatedRouteDuration: summary?.estimatedRouteDuration || undefined,
-            toAmount: summary?.toAmount || undefined,
-            toAmountMin: summary?.toAmountMin || undefined,
-          });
+          const submittedTransferDepositContext = {
+            ...transferDepositContext,
+            txHash,
+          };
+          onDeposit?.(submittedTransferDepositContext);
+          dd.info('Transfer deposit submitted', submittedTransferDepositContext);
         }
       } catch (err) {
         log('DepositForm/onSubmit', err);
         setError(err);
       } finally {
         setIsLoading(false);
+        setDepositStep(DepositSteps.Initial);
       }
     },
-    [requestPayload, signerWagmi, chainId, sourceToken, sourceChain]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      requestPayload,
+      signerWagmi,
+      chainIdStr,
+      sourceToken,
+      sourceChain,
+      nobleChainId,
+      signTransactionPhantom,
+    ]
   );
 
   const amountInputReceipt = [
@@ -375,15 +659,18 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
     }
 
     if (routeErrors) {
-      track(
-        AnalyticsEvents.RouteError({
-          transferType: TransferType.deposit.name,
-          errorMessage: routeErrorMessage ?? undefined,
-          amount: debouncedAmount,
-          chainId: chainIdStr ?? undefined,
-          assetId: sourceToken?.toString(),
-        })
-      );
+      const routeErrorContext = {
+        transferType: TransferType.deposit.name,
+        errorMessage: routeErrorMessage ?? undefined,
+        amount: debouncedAmount,
+        chainId: chainIdStr ?? undefined,
+        assetAddress: sourceToken?.address ?? undefined,
+        assetSymbol: sourceToken?.symbol ?? undefined,
+        assetName: sourceToken?.name ?? undefined,
+        assetId: sourceToken?.toString() ?? undefined,
+      };
+      track(AnalyticsEvents.RouteError(routeErrorContext));
+      dd.info('Route error received', routeErrorContext);
       return routeErrorMessage
         ? stringGetter({
             key: STRING_KEYS.SOMETHING_WENT_WRONG_WITH_MESSAGE,
@@ -423,6 +710,21 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
     debouncedAmountBN,
   ]);
 
+  const depositCTAString = useMemo(() => {
+    if (depositStep === DepositSteps.Approval) {
+      return stringGetter({ key: STRING_KEYS.PENDING_TOKEN_APPROVAL });
+    }
+    if (depositStep === DepositSteps.Confirm) {
+      return stringGetter({ key: STRING_KEYS.PENDING_DEPOSIT_CONFIRMATION });
+    }
+    if (depositStep === DepositSteps.KEPLR_APPROVAL) {
+      return 'Pending approval in wallet';
+    }
+    return hasAcknowledgedTerms
+      ? stringGetter({ key: STRING_KEYS.DEPOSIT_FUNDS })
+      : stringGetter({ key: STRING_KEYS.ACKNOWLEDGE_TERMS_AND_DEPOSIT });
+  }, [depositStep, stringGetter, hasAcknowledgedTerms]);
+
   const isDisabled =
     Boolean(errorMessage) ||
     !sourceToken ||
@@ -435,7 +737,7 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
   }
   return (
     <$Form onSubmit={onSubmit}>
-      <$Subheader>
+      <div tw="text-color-text-0">
         {stringGetter({
           key: STRING_KEYS.LOWEST_FEE_DEPOSITS,
           params: {
@@ -448,18 +750,22 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
             ),
           },
         })}
-      </$Subheader>
+      </div>
       <SourceSelectMenu
         selectedChain={chainIdStr || undefined}
         selectedExchange={exchange || undefined}
         onSelect={onSelectNetwork}
       />
       {exchange && nobleAddress ? (
-        <NobleDeposit />
+        <CoinbaseDeposit />
       ) : (
         <>
           <TokenSelectMenu selectedToken={sourceToken || undefined} onSelectToken={onSelectToken} />
-          <$WithDetailsReceipt side="bottom" detailItems={amountInputReceipt}>
+          <WithDetailsReceipt
+            side="bottom"
+            detailItems={amountInputReceipt}
+            tw="[--withReceipt-backgroundColor:--color-layer-2]"
+          >
             <FormInput
               type={InputType.Number}
               onChange={onChangeAmount}
@@ -476,7 +782,7 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
                 />
               }
             />
-          </$WithDetailsReceipt>
+          </WithDetailsReceipt>
           {errorMessage && <AlertMessage type={AlertType.Error}>{errorMessage}</AlertMessage>}
           {requireUserActionInWallet && (
             <AlertMessage type={AlertType.Warning}>
@@ -485,6 +791,7 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
           )}
           <$Footer>
             <DepositButtonAndReceipt
+              buttonLabel={depositCTAString}
               isDisabled={isDisabled}
               isLoading={isLoading}
               chainId={chainId || undefined}
@@ -494,6 +801,35 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
               setRequireUserActionInWallet={setRequireUserActionInWallet}
               setError={setError}
             />
+            {!hasAcknowledgedTerms && (
+              <div tw="mt-1 text-color-text-0 font-small-book">
+                {stringGetter({
+                  key: STRING_KEYS.DEPOSIT_ACKNOWLEDGEMENT,
+                  params: {
+                    TERMS_LINK: (
+                      <Link href={`${BASE_ROUTE}${AppRoute.Terms}`} isInline>
+                        {stringGetter({ key: STRING_KEYS.TERMS_OF_USE })}
+                      </Link>
+                    ),
+                    POLICY_LINK: (
+                      <Link href={`${BASE_ROUTE}${AppRoute.Privacy}`} isInline>
+                        {stringGetter({ key: STRING_KEYS.PRIVACY_POLICY })}
+                      </Link>
+                    ),
+                    VIEW_MORE_LINK: (
+                      <Link
+                        isInline
+                        onClick={() => {
+                          dispatch(forceOpenDialog(DialogTypes.AcknowledgeTerms()));
+                        }}
+                      >
+                        {stringGetter({ key: STRING_KEYS.VIEW_MORE })} →
+                      </Link>
+                    ),
+                  },
+                })}
+              </div>
+            )}
           </$Footer>
         </>
       )}
@@ -503,16 +839,7 @@ export const DepositForm = ({ onDeposit, onError }: DepositFormProps) => {
 const $Form = styled.form`
   ${formMixins.transfersForm}
 `;
-
-const $Subheader = styled.div`
-  color: var(--color-text-0);
-`;
-
 const $Footer = styled.footer`
   ${formMixins.footer}
   --stickyFooterBackdrop-outsetY: var(--dialog-content-paddingBottom);
-`;
-
-const $WithDetailsReceipt = styled(WithDetailsReceipt)`
-  --withReceipt-backgroundColor: var(--color-layer-2);
 `;

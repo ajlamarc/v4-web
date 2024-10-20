@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { shallowEqual } from 'react-redux';
 
+import { AbacusInputTypes } from '@/constants/abacus';
 import { EMPTY_ARR } from '@/constants/objects';
 
 import { type RootState } from './_store';
@@ -60,7 +61,7 @@ export const getCurrentInput = (state: RootState) => state.inputs.current;
  */
 export const getTradeInputErrors = (state: RootState) => {
   const currentInput = state.inputs.current;
-  return currentInput === 'trade' ? getInputErrors(state) : EMPTY_ARR;
+  return currentInput === AbacusInputTypes.Trade ? getInputErrors(state) : EMPTY_ARR;
 };
 
 /**
@@ -69,7 +70,7 @@ export const getTradeInputErrors = (state: RootState) => {
  */
 export const getClosePositionInputErrors = (state: RootState) => {
   const currentInput = state.inputs.current;
-  return currentInput === 'closePosition' ? getInputErrors(state) : EMPTY_ARR;
+  return currentInput === AbacusInputTypes.ClosePosition ? getInputErrors(state) : EMPTY_ARR;
 };
 
 /**
@@ -90,7 +91,7 @@ export const getTransferInputs = (state: RootState) => state.inputs.transferInpu
  */
 export const getTriggerOrdersInputErrors = (state: RootState) => {
   const currentInput = state.inputs.current;
-  return currentInput === 'triggerOrders' ? getInputErrors(state) : EMPTY_ARR;
+  return currentInput === AbacusInputTypes.TriggerOrders ? getInputErrors(state) : EMPTY_ARR;
 };
 
 /**
@@ -98,6 +99,12 @@ export const getTriggerOrdersInputErrors = (state: RootState) => {
  * @returns TriggerOrdersInputs
  */
 export const getTriggerOrdersInputs = (state: RootState) => state.inputs.triggerOrdersInputs;
+
+/**
+ * @param state
+ * @returns Trigger Form Input states for display. Abacus inputs should track these values.
+ */
+export const getTriggerFormInputs = (state: RootState) => state.inputs.triggerFormInputs;
 
 /**
  * @returns AdjustIsolatedMarginInputs
@@ -166,3 +173,9 @@ export const useTradeFormData = () => {
  * @returns Tradeform Input states for display. Abacus inputs should track these values.
  */
 export const getTradeFormInputs = (state: RootState) => state.inputs.tradeFormInputs;
+
+/**
+ * @returns ClosePositionForm Input states for display
+ */
+export const getClosePositionFormInputs = (state: RootState) =>
+  state.inputs.closePositionFormInputs;

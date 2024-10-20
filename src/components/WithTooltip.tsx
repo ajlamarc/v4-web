@@ -3,9 +3,10 @@ import type { ReactNode } from 'react';
 import { Arrow, Content, Portal, Provider, Root, Trigger } from '@radix-ui/react-tooltip';
 import styled from 'styled-components';
 
-import { STRING_KEYS } from '@/constants/localization';
-import { tooltipStrings } from '@/constants/tooltips';
+import { STRING_KEYS, TooltipStrings } from '@/constants/localization';
+import { TooltipStringKeys, tooltipStrings } from '@/constants/tooltips';
 
+import { useAllStatsigGateValues } from '@/hooks/useStatsig';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useURLConfigs } from '@/hooks/useURLConfigs';
 
@@ -16,7 +17,7 @@ import { Icon, IconName } from '@/components/Icon';
 import { Link } from '@/components/Link';
 
 type ElementProps = {
-  tooltip?: keyof typeof tooltipStrings;
+  tooltip?: TooltipStringKeys;
   tooltipString?: string;
   stringParams?: Record<string, string | undefined>;
   withIcon?: boolean;
@@ -43,8 +44,9 @@ export const WithTooltip = ({
 }: ElementProps & StyleProps) => {
   const stringGetter = useStringGetter();
   const urlConfigs = useURLConfigs();
+  const featureFlags = useAllStatsigGateValues();
 
-  const getTooltipStrings = tooltip && tooltipStrings[tooltip];
+  const getTooltipStrings: TooltipStrings[string] | undefined = tooltip && tooltipStrings[tooltip];
   if (!getTooltipStrings && !tooltipString && !slotTooltip) return children;
 
   let tooltipTitle;
@@ -56,6 +58,7 @@ export const WithTooltip = ({
       stringGetter,
       stringParams,
       urlConfigs,
+      featureFlags,
     });
     tooltipTitle = title;
     tooltipBody = body;
@@ -70,7 +73,7 @@ export const WithTooltip = ({
         <Trigger asChild>
           <$Abbr>
             {children}
-            {withIcon && <$Icon iconName={IconName.HelpCircle} />}
+            {withIcon && <Icon iconName={IconName.HelpCircle} tw="text-color-text-0" />}
           </$Abbr>
         </Trigger>
 
@@ -82,9 +85,9 @@ export const WithTooltip = ({
                 {tooltipBody && <dd>{tooltipBody}</dd>}
                 {tooltipLearnMore && (
                   <dd>
-                    <$LearnMore href={tooltipLearnMore}>
+                    <Link href={tooltipLearnMore} isAccent>
                       {stringGetter({ key: STRING_KEYS.LEARN_MORE })} →
-                    </$LearnMore>
+                    </Link>
                   </dd>
                 )}
                 <$Arrow />
@@ -96,6 +99,7 @@ export const WithTooltip = ({
     </Provider>
   );
 };
+
 const $Abbr = styled.abbr`
   ${layoutMixins.inlineRow}
 
@@ -108,7 +112,6 @@ const $Abbr = styled.abbr`
 `;
 
 const $Content = styled(Content)`
-  --tooltip-backgroundColor: var(--color-layer-4);
   --tooltip-backgroundColor: ${({ theme }) => theme.tooltipBackground};
 
   ${popoverMixins.popover}
@@ -135,6 +138,10 @@ const $Content = styled(Content)`
   dd {
     font: var(--font-mini-book);
   }
+
+  a {
+    text-decoration: underline;
+  }
 `;
 
 const $Arrow = styled(Arrow)`
@@ -144,12 +151,4 @@ const $Arrow = styled(Arrow)`
   polygon {
     fill: var(--tooltip-backgroundColor);
   }
-`;
-
-const $Icon = styled(Icon)`
-  color: var(--color-text-0);
-`;
-
-const $LearnMore = styled(Link)`
-  --link-color: var(--color-accent);
 `;

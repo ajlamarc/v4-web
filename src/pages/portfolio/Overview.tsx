@@ -5,30 +5,42 @@ import styled from 'styled-components';
 
 import { STRING_KEYS } from '@/constants/localization';
 import { AppRoute, PortfolioRoute } from '@/constants/routes';
+import { StatsigDynamicConfigs, StatsigFlags } from '@/constants/statsig';
 
+import { useAccounts } from '@/hooks/useAccounts';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useParameterizedSelector } from '@/hooks/useParameterizedSelector';
+import { useShouldShowTriggers } from '@/hooks/useShouldShowTriggers';
+import { useAllStatsigDynamicConfigValues, useStatsigGateValue } from '@/hooks/useStatsig';
 import { useStringGetter } from '@/hooks/useStringGetter';
 
 import { AttachedExpandingSection, DetachedSection } from '@/components/ContentSection';
 import { ContentSectionHeader } from '@/components/ContentSectionHeader';
+import { AffiliatesBanner } from '@/views/AffiliatesBanner';
+import { TelegramInviteBanner } from '@/views/TelegramInviteBanner';
 import { PositionsTable, PositionsTableColumnKey } from '@/views/tables/PositionsTable';
 
-import {
-  calculateShouldRenderActionsInPositionsTable,
-  calculateShouldRenderTriggersInPositionsTable,
-} from '@/state/accountCalculators';
-import { useAppSelector } from '@/state/appTypes';
+import { calculateShouldRenderActionsInPositionsTable } from '@/state/accountCalculators';
 
 import { isTruthy } from '@/lib/isTruthy';
 
 import { MaybeUnopenedIsolatedPositionsPanel } from '../trade/UnopenedIsolatedPositions';
 import { AccountDetailsAndHistory } from './AccountDetailsAndHistory';
+import { AccountOverviewSection } from './AccountOverviewSection';
 
 export const Overview = () => {
   const stringGetter = useStringGetter();
-  const { isTablet } = useBreakpoints();
   const navigate = useNavigate();
+
+  const { isTablet } = useBreakpoints();
+  const { dydxAddress } = useAccounts();
+
+  const dynamicConfigs = useAllStatsigDynamicConfigValues();
+  const feedbackRequestWalletAddresses =
+    dynamicConfigs?.[StatsigDynamicConfigs.dcHighestVolumeUsers];
+  const shouldShowTelegramInvite =
+    dydxAddress && feedbackRequestWalletAddresses?.includes(dydxAddress);
+  const affiliatesEnabled = useStatsigGateValue(StatsigFlags.ffEnableAffiliates);
 
   const handleViewUnopenedIsolatedOrders = useCallback(() => {
     navigate(`${AppRoute.Portfolio}/${PortfolioRoute.Orders}`, {
@@ -36,19 +48,35 @@ export const Overview = () => {
     });
   }, [navigate]);
 
-  const shouldRenderTriggers = useAppSelector(calculateShouldRenderTriggersInPositionsTable);
+  const shouldRenderTriggers = useShouldShowTriggers();
   const shouldRenderActions = useParameterizedSelector(
     calculateShouldRenderActionsInPositionsTable
   );
 
   return (
     <div>
+      {shouldShowTelegramInvite && (
+        <DetachedSection>
+          <TelegramInviteBanner />
+        </DetachedSection>
+      )}
+
+      <DetachedSection>
+        <AccountOverviewSection />
+      </DetachedSection>
+
       <DetachedSection>
         <AccountDetailsAndHistory />
       </DetachedSection>
 
-      <$AttachedExpandingSection>
-        <ContentSectionHeader title={stringGetter({ key: STRING_KEYS.OPEN_POSITIONS })} />
+      {affiliatesEnabled && (
+        <DetachedSection>
+          <AffiliatesBanner />
+        </DetachedSection>
+      )}
+
+      <AttachedExpandingSection tw="mt-1">
+        <$PortfolioContentSectionHeader title={stringGetter({ key: STRING_KEYS.OPEN_POSITIONS })} />
 
         <PositionsTable
           columnKeys={
@@ -79,23 +107,26 @@ export const Overview = () => {
           showClosePositionAction={shouldRenderActions}
           withOuterBorder
         />
+      </AttachedExpandingSection>
+      <DetachedSection>
         <$MaybeUnopenedIsolatedPositionsPanel
           header={
-            <ContentSectionHeader
+            <$PortfolioContentSectionHeader
               title={stringGetter({ key: STRING_KEYS.UNOPENED_ISOLATED_POSITIONS })}
             />
           }
           onViewOrders={handleViewUnopenedIsolatedOrders}
         />
-      </$AttachedExpandingSection>
+      </DetachedSection>
     </div>
   );
 };
 
-const $AttachedExpandingSection = styled(AttachedExpandingSection)`
-  margin-top: 1rem;
+const $PortfolioContentSectionHeader = styled(ContentSectionHeader)`
+  h3 {
+    font: var(--font-medium-medium);
+  }
 `;
-
 const $MaybeUnopenedIsolatedPositionsPanel = styled(MaybeUnopenedIsolatedPositionsPanel)`
   margin-top: 1rem;
   margin-bottom: 1rem;

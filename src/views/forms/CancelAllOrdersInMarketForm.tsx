@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { zipObject } from 'lodash';
 import { shallowEqual } from 'react-redux';
-import styled from 'styled-components';
 
 import { ButtonAction } from '@/constants/buttons';
+import { ErrorParams } from '@/constants/errors';
 import { STRING_KEYS } from '@/constants/localization';
 import { NumberSign } from '@/constants/numbers';
 import { EMPTY_ARR } from '@/constants/objects';
@@ -35,7 +35,7 @@ type CancelAllOrdersInMarketFormProps = {
 type OrderCancelStatus =
   | { type: 'pending' }
   | { type: 'success' }
-  | { type: 'error'; errorKey?: string };
+  | { type: 'error'; errorParams?: ErrorParams };
 
 export const CancelAllOrdersInMarketForm = ({
   marketId,
@@ -75,10 +75,10 @@ export const CancelAllOrdersInMarketForm = ({
         onSuccess: () => {
           setCancellingStatus((old) => ({ ...old, [p.id]: { type: 'success' } }));
         },
-        onError: (errorInfo) => {
+        onError: (errorParams) => {
           setCancellingStatus((old) => ({
             ...old,
-            [p.id]: { type: 'error', errorKey: errorInfo?.errorStringKey ?? undefined },
+            [p.id]: { type: 'error', errorParams },
           }));
         },
       })
@@ -102,7 +102,7 @@ export const CancelAllOrdersInMarketForm = ({
         key: 'open-orders',
         label: <span>{stringGetter({ key: STRING_KEYS.OPEN_ORDERS })}</span>,
         value: (
-          <$DiffOutput
+          <DiffOutput
             type={OutputType.Number}
             value={pendingPositionOrders.length}
             newValue={0}
@@ -115,7 +115,7 @@ export const CancelAllOrdersInMarketForm = ({
         key: 'position-margin',
         label: <span>{stringGetter({ key: STRING_KEYS.POSITION_MARGIN })}</span>,
         value: (
-          <$DiffOutput
+          <DiffOutput
             type={OutputType.Fiat}
             value={thisPendingPosition?.freeCollateral?.current ?? 0}
             newValue={0}
@@ -128,7 +128,7 @@ export const CancelAllOrdersInMarketForm = ({
         key: 'cross-free-collateral',
         label: <span>{stringGetter({ key: STRING_KEYS.CROSS_FREE_COLLATERAL })}</span>,
         value: (
-          <$DiffOutput
+          <DiffOutput
             type={OutputType.Fiat}
             value={crossFreeCollateral?.current}
             newValue={MustBigNumber(crossFreeCollateral?.current).plus(
@@ -149,10 +149,11 @@ export const CancelAllOrdersInMarketForm = ({
 
   const submitButtonWithReceipt = (
     <WithDetailsReceipt detailItems={detailItems}>
-      <$Button
+      <Button
         action={ButtonAction.Destroy}
         onClick={onCancel}
         state={{ isDisabled: isCancelling, isLoading: isCancelling }}
+        tw="w-full"
       >
         {pendingPositionOrders.length !== 1
           ? stringGetter({
@@ -162,12 +163,12 @@ export const CancelAllOrdersInMarketForm = ({
           : stringGetter({
               key: STRING_KEYS.CANCEL_ORDER,
             })}
-      </$Button>
+      </Button>
     </WithDetailsReceipt>
   );
   return (
     <div>
-      <$ConfirmationText>
+      <div tw="mb-1">
         {stringGetter({
           key: STRING_KEYS.CANCEL_ORDERS_CONFIRMATION,
           params: {
@@ -182,17 +183,8 @@ export const CancelAllOrdersInMarketForm = ({
             MARKET: marketId,
           },
         })}
-      </$ConfirmationText>
+      </div>
       {submitButtonWithReceipt}
     </div>
   );
 };
-
-const $ConfirmationText = styled.div`
-  margin-bottom: 1rem;
-`;
-const $Button = styled(Button)`
-  width: 100%;
-`;
-
-const $DiffOutput = styled(DiffOutput)``;

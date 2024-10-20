@@ -11,16 +11,22 @@ import { layoutMixins } from '@/styles/layoutMixins';
 
 import { AttachedExpandingSection } from '@/components/ContentSection';
 import { NavigationMenu } from '@/components/NavigationMenu';
+import { ExportHistoryDropdown } from '@/views/ExportHistoryDropdown';
+
+import { isTruthy } from '@/lib/isTruthy';
+import { testFlags } from '@/lib/testFlags';
 
 export const History = () => {
   const stringGetter = useStringGetter();
   const { isNotTablet } = useBreakpoints();
+  const { enableVaults } = testFlags;
 
   return (
     <AttachedExpandingSection>
       {isNotTablet && (
         <$NavigationMenu
           orientation="horizontal"
+          slotAfter={<ExportHistoryDropdown tw="ml-auto" />}
           items={[
             {
               group: 'navigation',
@@ -36,13 +42,19 @@ export const History = () => {
                   href: HistoryRoute.Transfers,
                   tag: 'USDC',
                 },
+                enableVaults && {
+                  value: HistoryRoute.VaultTransfers,
+                  label: <h3>{stringGetter({ key: STRING_KEYS.VAULT_TRANSFERS })}</h3>,
+                  href: HistoryRoute.VaultTransfers,
+                  tag: 'USDC',
+                },
                 // TODO - TRCL-1693 -
                 // {
                 //   value: HistoryRoute.Payments,
                 //   label: <h3>{stringGetter({ key: STRING_KEYS.PAYMENTS })}</h3>,
                 //   href: HistoryRoute.Payments,
                 // },
-              ],
+              ].filter(isTruthy),
             },
           ]}
         />

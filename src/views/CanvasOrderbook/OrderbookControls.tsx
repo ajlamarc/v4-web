@@ -1,41 +1,35 @@
 import { useCallback } from 'react';
 
 import { clamp } from 'lodash';
-import { shallowEqual } from 'react-redux';
+import { shallowEqual, useDispatch } from 'react-redux';
 import styled from 'styled-components';
 
 import { MarketOrderbookGrouping, Nullable, OrderbookGrouping } from '@/constants/abacus';
 import { ButtonShape, ButtonSize } from '@/constants/buttons';
-import { STRING_KEYS } from '@/constants/localization';
 import { USD_DECIMALS } from '@/constants/numbers';
-
-import { useStringGetter } from '@/hooks/useStringGetter';
+import { DisplayUnit } from '@/constants/trade';
 
 import { Button } from '@/components/Button';
 import { Output, OutputType } from '@/components/Output';
 import { ToggleGroup } from '@/components/ToggleGroup';
 
 import { useAppSelector } from '@/state/appTypes';
+import { setDisplayUnit } from '@/state/configs';
+import { getSelectedDisplayUnit } from '@/state/configsSelectors';
 import { getCurrentMarketConfig } from '@/state/perpetualsSelectors';
 
 import abacusStateManager from '@/lib/abacus';
 
 type OrderbookControlsProps = {
   className?: string;
-  assetName?: string;
-  selectedUnit: 'fiat' | 'asset';
-  setSelectedUnit(val: 'fiat' | 'asset'): void;
+  assetId?: string;
   grouping: Nullable<MarketOrderbookGrouping>;
 };
 
-export const OrderbookControls = ({
-  className,
-  assetName,
-  selectedUnit,
-  setSelectedUnit,
-  grouping,
-}: OrderbookControlsProps) => {
-  const stringGetter = useStringGetter();
+export const OrderbookControls = ({ className, assetId, grouping }: OrderbookControlsProps) => {
+  const dispatch = useDispatch();
+  const displayUnit = useAppSelector(getSelectedDisplayUnit);
+
   const modifyScale = useCallback(
     (direction: number) => {
       const start = grouping?.multiplier.ordinal ?? 0;
@@ -48,36 +42,30 @@ export const OrderbookControls = ({
   );
   const currentMarketConfig = useAppSelector(getCurrentMarketConfig, shallowEqual);
   const tickSizeDecimals = currentMarketConfig?.tickSizeDecimals ?? USD_DECIMALS;
-
+  const onToggleDisplayUnit = useCallback(
+    (newValue: DisplayUnit) => {
+      if (!assetId) return;
+      dispatch(
+        setDisplayUnit({
+          newDisplayUnit: newValue,
+          assetId,
+          entryPoint: 'orderbookControls',
+        })
+      );
+    },
+    [dispatch, assetId]
+  );
   return (
     <$OrderbookControlsContainer className={className}>
-      <$OrderbookUnitControl>
-        <$OrderbookLabel>{stringGetter({ key: STRING_KEYS.ORDERBOOK_UNITS })}</$OrderbookLabel>
-        <ToggleGroup
-          items={[
-            { label: assetName ?? '', value: 'asset' as const },
-            { label: 'USD', value: 'fiat' as const },
-          ]}
-          shape={ButtonShape.Rectangle}
-          value={selectedUnit}
-          onValueChange={setSelectedUnit}
-        />
-      </$OrderbookUnitControl>
-      <$OrderbookZoomControl>
-        <$OrderbookLabel>{stringGetter({ key: STRING_KEYS.ORDERBOOK_GROUPING })}</$OrderbookLabel>
-        <$ZoomControls>
-          <Output
-            value={grouping?.tickSize}
-            type={OutputType.Fiat}
-            fractionDigits={tickSizeDecimals === 1 ? 2 : tickSizeDecimals}
-          />
+      <div tw="flex justify-between gap-0.5">
+        <div tw="flex gap-0.5">
           <$ButtonGroup>
             <Button
               size={ButtonSize.XSmall}
               shape={ButtonShape.Square}
               onClick={() => modifyScale(-1)}
             >
-              <$MinusSymbolCenter>-</$MinusSymbolCenter>
+              <span tw="-mt-0.125">-</span>
             </Button>
             <Button
               size={ButtonSize.XSmall}
@@ -87,16 +75,27 @@ export const OrderbookControls = ({
               +
             </Button>
           </$ButtonGroup>
-        </$ZoomControls>
-      </$OrderbookZoomControl>
+          <Output
+            value={grouping?.tickSize}
+            type={OutputType.Fiat}
+            fractionDigits={tickSizeDecimals === 1 ? 2 : tickSizeDecimals}
+          />
+        </div>
+        {assetId && (
+          <ToggleGroup
+            items={[
+              { label: assetId, value: DisplayUnit.Asset },
+              { label: 'USD', value: DisplayUnit.Fiat },
+            ]}
+            shape={ButtonShape.Rectangle}
+            value={displayUnit}
+            onValueChange={onToggleDisplayUnit}
+          />
+        )}
+      </div>
     </$OrderbookControlsContainer>
   );
 };
-
-const $OrderbookLabel = styled.div`
-  display: inline-flex;
-  align-items: center;
-`;
 
 const $OrderbookControlsContainer = styled.div`
   color: var(--color-text-0);
@@ -111,33 +110,10 @@ const $OrderbookControlsContainer = styled.div`
     padding-bottom: 0.3rem;
   }
 `;
-const $ZoomControls = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
 const $ButtonGroup = styled.div`
   display: flex;
   gap: 0.25rem;
   > button {
     --button-font: var(--font-medium-book);
   }
-`;
-
-const $OrderbookUnitControl = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  border-bottom: var(--border);
-`;
-
-const $OrderbookZoomControl = styled.div`
-  gap: 1rem;
-  display: flex;
-  justify-content: space-between;
-  box-shadow: 0 0 0 var(--border-width) var(--border-color);
-`;
-
-const $MinusSymbolCenter = styled.span`
-  margin-top: -0.125rem;
 `;

@@ -4,6 +4,7 @@ import { shallowEqual } from 'react-redux';
 import styled from 'styled-components';
 
 import {
+  AbacusOrderType,
   ClosePositionInputField,
   ErrorType,
   ValidationError,
@@ -12,15 +13,19 @@ import {
 } from '@/constants/abacus';
 import { AlertType } from '@/constants/alerts';
 import { ButtonAction, ButtonShape, ButtonSize, ButtonType } from '@/constants/buttons';
+import { ErrorParams } from '@/constants/errors';
 import { STRING_KEYS } from '@/constants/localization';
 import { NotificationType } from '@/constants/notifications';
-import { TOKEN_DECIMALS } from '@/constants/numbers';
+import { TOKEN_DECIMALS, USD_DECIMALS } from '@/constants/numbers';
+import { StatsigFlags } from '@/constants/statsig';
 import { MobilePlaceOrderSteps } from '@/constants/trade';
 
 import { useBreakpoints } from '@/hooks/useBreakpoints';
+import { useClosePositionFormInputs } from '@/hooks/useClosePositionFormInputs';
 import { useIsFirstRender } from '@/hooks/useIsFirstRender';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useOnLastOrderIndexed } from '@/hooks/useOnLastOrderIndexed';
+import { useStatsigGateValue } from '@/hooks/useStatsig';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useSubaccount } from '@/hooks/useSubaccount';
 
@@ -30,10 +35,14 @@ import { layoutMixins } from '@/styles/layoutMixins';
 
 import { AlertMessage } from '@/components/AlertMessage';
 import { Button } from '@/components/Button';
+import { Checkbox } from '@/components/Checkbox';
+import { Collapsible } from '@/components/Collapsible';
 import { FormInput } from '@/components/FormInput';
 import { InputType } from '@/components/Input';
+import { Link } from '@/components/Link';
 import { Tag } from '@/components/Tag';
 import { ToggleGroup } from '@/components/ToggleGroup';
+import { WithTooltip } from '@/components/WithTooltip';
 import { PositionPreview } from '@/views/forms/TradeForm/PositionPreview';
 
 import { getCurrentMarketPositionData } from '@/state/accountSelectors';
@@ -46,15 +55,17 @@ import { getCurrentMarketConfig, getCurrentMarketId } from '@/state/perpetualsSe
 import abacusStateManager from '@/lib/abacus';
 import { MustBigNumber } from '@/lib/numbers';
 import { objectEntries } from '@/lib/objectHelpers';
+import { testFlags } from '@/lib/testFlags';
 import { getTradeInputAlert } from '@/lib/tradeData';
+import { orEmptyObj } from '@/lib/typeUtils';
 
 import { CanvasOrderbook } from '../CanvasOrderbook/CanvasOrderbook';
 import { PlaceOrderButtonAndReceipt } from './TradeForm/PlaceOrderButtonAndReceipt';
 
 const MAX_KEY = 'MAX';
 
-// Abacus only takes in these percent options
 const SIZE_PERCENT_OPTIONS = {
+  '10%': 0.1,
   '25%': 0.25,
   '50%': 0.5,
   '75%': 0.75,
@@ -81,6 +92,7 @@ export const ClosePositionForm = ({
   const dispatch = useAppDispatch();
   const { isTablet } = useBreakpoints();
   const isFirstRender = useIsFirstRender();
+  const enableLimitClose = useStatsigGateValue(StatsigFlags.ffEnableLimitClose);
 
   const [closePositionError, setClosePositionError] = useState<string | undefined>(undefined);
 
@@ -88,10 +100,27 @@ export const ClosePositionForm = ({
 
   const market = useAppSelector(getCurrentMarketId);
   const { id } = useAppSelector(getCurrentMarketAssetData, shallowEqual) ?? {};
-  const { stepSizeDecimals, tickSizeDecimals } =
-    useAppSelector(getCurrentMarketConfig, shallowEqual) ?? {};
-  const { size: sizeData, summary } = useAppSelector(getInputClosePositionData, shallowEqual) ?? {};
-  const { size, percent } = sizeData ?? {};
+  const { stepSizeDecimals, tickSizeDecimals } = orEmptyObj(
+    useAppSelector(getCurrentMarketConfig, shallowEqual)
+  );
+
+  const {
+    size: sizeData,
+    type,
+    summary,
+  } = orEmptyObj(useAppSelector(getInputClosePositionData, shallowEqual));
+
+  const {
+    amountInput,
+    limitPriceInput,
+    onAmountInput,
+    onLimitPriceInput,
+    setLimitPriceToMidPrice,
+  } = useClosePositionFormInputs();
+
+  const { percent } = sizeData ?? {};
+  const useLimit = type === AbacusOrderType.Limit;
+
   const closePositionInputErrors = useAppSelector(getClosePositionInputErrors, shallowEqual);
   const currentPositionData = useAppSelector(getCurrentMarketPositionData, shallowEqual);
   const { size: currentPositionSize } = currentPositionData ?? {};
@@ -117,11 +146,16 @@ export const ClosePositionForm = ({
   let alertContent;
   let alertType = AlertType.Error;
 
+  let alertContentLink;
+  let alertContentLinkText;
+
   if (closePositionError && !isErrorShownInOrderStatusToast) {
     alertContent = closePositionError;
   } else if (inputAlert) {
     alertContent = inputAlert.alertString;
     alertType = inputAlert.type;
+    alertContentLink = inputAlert.link;
+    alertContentLinkText = inputAlert.linkText;
   }
 
   useEffect(() => {
@@ -130,11 +164,6 @@ export const ClosePositionForm = ({
     abacusStateManager.setClosePositionValue({
       value: market,
       field: ClosePositionInputField.market,
-    });
-
-    abacusStateManager.setClosePositionValue({
-      value: SIZE_PERCENT_OPTIONS[MAX_KEY],
-      field: ClosePositionInputField.percent,
     });
   }, [market, currentStep]);
 
@@ -152,19 +181,6 @@ export const ClosePositionForm = ({
   const { setUnIndexedClientId } = useOnLastOrderIndexed({
     callback: onLastOrderIndexed,
   });
-
-  const onAmountInput = ({ floatValue }: { floatValue?: number }) => {
-    if (currentSize == null) return;
-
-    const closeAmount = MustBigNumber(floatValue)
-      .abs()
-      .toFixed(stepSizeDecimals ?? TOKEN_DECIMALS);
-
-    abacusStateManager.setClosePositionValue({
-      value: floatValue ? closeAmount : null,
-      field: ClosePositionInputField.size,
-    });
-  };
 
   const onSelectPercentage = (optionVal: string) => {
     abacusStateManager.setClosePositionValue({
@@ -200,9 +216,12 @@ export const ClosePositionForm = ({
     setClosePositionError(undefined);
 
     closePosition({
-      onError: (errorParams?: { errorStringKey?: Nullable<string> }) => {
+      onError: (errorParams: ErrorParams) => {
         setClosePositionError(
-          stringGetter({ key: errorParams?.errorStringKey ?? STRING_KEYS.SOMETHING_WENT_WRONG })
+          stringGetter({
+            key: errorParams.errorStringKey,
+            fallback: errorParams.errorMessage ?? '',
+          })
         );
         setCurrentStep?.(MobilePlaceOrderSteps.PlaceOrderFailed);
       },
@@ -215,21 +234,38 @@ export const ClosePositionForm = ({
   };
 
   const onClearInputs = () => {
+    abacusStateManager.clearClosePositionInputValues();
+  };
+
+  const midMarketPriceButton = (
+    <$MidPriceButton onClick={setLimitPriceToMidPrice} size={ButtonSize.XSmall}>
+      {stringGetter({ key: STRING_KEYS.MID_MARKET_PRICE_SHORT })}
+    </$MidPriceButton>
+  );
+
+  const onUseLimitCheckedChange = (checked: Boolean) => {
     abacusStateManager.setClosePositionValue({
-      value: null,
-      field: ClosePositionInputField.percent,
-    });
-    abacusStateManager.setClosePositionValue({
-      value: null,
-      field: ClosePositionInputField.size,
+      value: checked,
+      field: ClosePositionInputField.useLimit,
     });
   };
 
-  const alertMessage = alertContent && <AlertMessage type={alertType}>{alertContent}</AlertMessage>;
+  const alertMessage = alertContent && (
+    <AlertMessage type={alertType}>
+      <div tw="inline-block">
+        {alertContent}{' '}
+        {alertContentLinkText && alertContentLink && (
+          <Link isInline href={alertContentLink}>
+            {alertContentLinkText}
+          </Link>
+        )}
+      </div>
+    </AlertMessage>
+  );
 
   const inputs = (
     <$InputsColumn>
-      <$FormInput
+      <FormInput
         id="close-position-amount"
         label={
           <>
@@ -240,8 +276,9 @@ export const ClosePositionForm = ({
         decimals={stepSizeDecimals ?? TOKEN_DECIMALS}
         onInput={onAmountInput}
         type={InputType.Number}
-        value={size ?? ''}
+        value={amountInput}
         max={currentSize !== null ? currentSizeBN.toNumber() : undefined}
+        tw="w-full"
       />
 
       <$ToggleGroup
@@ -254,6 +291,43 @@ export const ClosePositionForm = ({
         shape={ButtonShape.Rectangle}
       />
 
+      {(enableLimitClose || testFlags.showLimitClose) && (
+        <Collapsible
+          slotTrigger={
+            <Checkbox
+              checked={useLimit}
+              onCheckedChange={onUseLimitCheckedChange}
+              id="limit-close"
+              label={
+                <WithTooltip tooltip="limit-close" side="right">
+                  {stringGetter({ key: STRING_KEYS.LIMIT_CLOSE })}
+                </WithTooltip>
+              }
+              tw="my-0.25"
+            />
+          }
+          open={useLimit}
+        >
+          <FormInput
+            key="close-position-limit-price"
+            id="close-position-limit-price"
+            type={InputType.Currency}
+            label={
+              <>
+                <WithTooltip tooltip="limit-price" side="right">
+                  {stringGetter({ key: STRING_KEYS.LIMIT_PRICE })}
+                </WithTooltip>
+                <Tag>USD</Tag>
+              </>
+            }
+            onChange={onLimitPriceInput}
+            value={limitPriceInput}
+            decimals={tickSizeDecimals ?? USD_DECIMALS}
+            slotRight={setLimitPriceToMidPrice ? midMarketPriceButton : undefined}
+          />
+        </Collapsible>
+      )}
+
       {alertMessage}
     </$InputsColumn>
   );
@@ -263,14 +337,14 @@ export const ClosePositionForm = ({
       {!isTablet ? (
         inputs
       ) : currentStep && currentStep !== MobilePlaceOrderSteps.EditOrder ? (
-        <$PreviewAndConfirmContent>
+        <div tw="flexColumn gap-[--form-input-gap]">
           <PositionPreview />
           {alertMessage}
-        </$PreviewAndConfirmContent>
+        </div>
       ) : (
         <$MobileLayout>
           <$OrderbookContainer>
-            <$Orderbook hideHeader />
+            <CanvasOrderbook hideHeader tw="min-h-full" />
           </$OrderbookContainer>
 
           <$Right>
@@ -281,8 +355,8 @@ export const ClosePositionForm = ({
       )}
 
       <$Footer>
-        {size != null && (
-          <$ButtonRow>
+        {amountInput != null && (
+          <div tw="row justify-self-end px-0 py-0.5">
             <Button
               type={ButtonType.Reset}
               action={ButtonAction.Reset}
@@ -292,7 +366,7 @@ export const ClosePositionForm = ({
             >
               {stringGetter({ key: STRING_KEYS.CLEAR })}
             </Button>
-          </$ButtonRow>
+          </div>
         )}
 
         <PlaceOrderButtonAndReceipt
@@ -341,12 +415,6 @@ const $ClosePositionForm = styled.form`
     }
   }
 `;
-
-const $PreviewAndConfirmContent = styled.div`
-  ${layoutMixins.flexColumn}
-  gap: var(--form-input-gap);
-`;
-
 const $MobileLayout = styled.div`
   height: 0;
   // Apply dialog's top/left/right padding to inner scroll areas
@@ -365,11 +433,6 @@ const $OrderbookContainer = styled.div`
   padding-top: var(--dialog-content-paddingTop);
   padding-bottom: var(--form-rowGap);
 `;
-
-const $Orderbook = styled(CanvasOrderbook)`
-  min-height: 100%;
-`;
-
 const $Right = styled.div`
   height: 0;
   min-height: 100%;
@@ -382,11 +445,6 @@ const $Right = styled.div`
   padding-bottom: var(--form-rowGap);
   gap: 1rem;
 `;
-
-const $FormInput = styled(FormInput)`
-  width: 100%;
-`;
-
 const $ToggleGroup = styled(ToggleGroup)`
   ${formMixins.inputToggleGroup}
 
@@ -404,13 +462,10 @@ const $Footer = styled.footer`
 
   ${layoutMixins.column}
 `;
-
-const $ButtonRow = styled.div`
-  ${layoutMixins.row}
-  justify-self: end;
-  padding: 0.5rem 0 0.5rem 0;
-`;
-
 const $InputsColumn = styled.div`
   ${formMixins.inputsColumn}
+`;
+
+const $MidPriceButton = styled(Button)`
+  ${formMixins.inputInnerButton}
 `;

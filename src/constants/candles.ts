@@ -1,5 +1,6 @@
 import { ResolutionString } from 'public/tradingview/charting_library';
 
+import { MetadataServiceCandlesTimeframes } from './assetMetadata';
 import { timeUnits } from './time';
 
 export interface Candle {
@@ -14,15 +15,31 @@ export interface Candle {
   usdVolume: string;
   trades: number;
   startingOpenInterest: string;
+  orderbookMidPriceOpen?: string;
+  orderbookMidPriceClose?: string;
 }
 
 export interface TradingViewBar {
+  // Properties corresponding to the TradingView.Bar interface, used by library for rendering
   time: number;
   low: number;
   high: number;
   open: number;
   close: number;
   volume: number;
+}
+
+export interface TradingViewChartBar extends TradingViewBar {
+  // Additional properties used to re-map Bars conditionally if orderbookCandles is enabled
+  tradeOpen: number;
+  tradeClose: number;
+  orderbookOpen?: number;
+  orderbookClose?: number;
+  tradeLow: number;
+  tradeHigh: number;
+  trades: number;
+  assetVolume: number;
+  usdVolume: number;
 }
 
 export interface TradingViewSymbol {
@@ -47,6 +64,19 @@ export enum CandleResolution {
 }
 
 /**
+ * @description ResolutionStrings used with TradingView's charting library mapped to time interval per candle in ms
+ */
+export const RESOLUTION_TO_INTERVAL_MS = {
+  '1': timeUnits.second,
+  '5': 5 * timeUnits.minute,
+  '15': 15 * timeUnits.minute,
+  '30': 30 * timeUnits.minute,
+  '60': timeUnits.hour,
+  '240': 4 * timeUnits.hour,
+  '1D': timeUnits.day,
+} as Record<ResolutionString, number>;
+
+/**
  * @description ResolutionStrings used with TradingView's charting library mapped to CandleResolution
  */
 export const RESOLUTION_MAP = {
@@ -58,6 +88,21 @@ export const RESOLUTION_MAP = {
   '240': CandleResolution.FOUR_HOURS,
   '1D': CandleResolution.ONE_DAY,
 } as Record<ResolutionString, CandleResolution>;
+
+/**
+ * @description ResolutionStrings used with TradingView's charting library mapped to MetadataServiceCandlesTimeframes
+ */
+export const RESOLUTION_TO_TIMEFRAME_MAP = {
+  '60': '1d',
+  '240': '7d',
+  '1D': '30d',
+} as Record<ResolutionString, MetadataServiceCandlesTimeframes>;
+
+export const LAUNCHABLE_MARKET_RESOLUTION_CONFIGS = {
+  '60': { defaultRange: timeUnits.day },
+  '240': { defaultRange: 7 * timeUnits.day },
+  '1D': { defaultRange: 30 * timeUnits.day },
+} as Record<ResolutionString, { defaultRange: number }>;
 
 export const DEFAULT_RESOLUTION = '1D';
 

@@ -89,7 +89,7 @@ export const NewMarketMessageDetailsDialog = ({
       setIsOpen={setIsOpen}
       title={stringGetter({ key: STRING_KEYS.MESSAGE_DETAILS })}
     >
-      <$ProposedMessageDetails>
+      <div tw="mt-1 flex w-full flex-col gap-1 rounded-[10px] bg-color-layer-3">
         <$Tabs
           items={toggleGroupItems}
           value={codeToggleGroup}
@@ -100,6 +100,7 @@ export const NewMarketMessageDetailsDialog = ({
             [CodeToggleGroup.CREATE_ORACLE]: (
               <$Code>
                 <$Details
+                  withOverflow
                   layout="column"
                   items={[
                     {
@@ -124,30 +125,35 @@ export const NewMarketMessageDetailsDialog = ({
                     },
                   ]}
                 />
-                <$ExchangeConfigs>
-                  <$Text0>
+                <div tw="mt-0.5">
+                  <span tw="text-color-text-0">
                     exchange_config_json
-                    {exchangeConfig && <$Tag type={TagType.Number}>{exchangeConfig.length}</$Tag>}
-                  </$Text0>
+                    {exchangeConfig && (
+                      <Tag type={TagType.Number} tw="mx-[0.5ch] my-0">
+                        {exchangeConfig.length}
+                      </Tag>
+                    )}
+                  </span>
                   [
                   {exchangeConfig?.map((exchange) => {
                     return (
-                      <$ExchangeObject
+                      <div
                         key={exchange.exchangeName}
                         style={{ padding: 0, margin: 0, paddingLeft: '0.5rem' }}
+                        tw="p-1"
                       >
                         {'{'}
                         {Object.keys(exchange).map((key) => (
-                          <$Line key={key}>
+                          <pre key={key} tw="ml-1">
                             {key}: <span>{exchange[key as keyof typeof exchange]}</span>
-                          </$Line>
+                          </pre>
                         ))}
                         {'},'}
-                      </$ExchangeObject>
+                      </div>
                     );
                   })}
                   ]
-                </$ExchangeConfigs>
+                </div>
               </$Code>
             ),
             [CodeToggleGroup.MSG_CREATE_PERPETUAL]: (
@@ -316,9 +322,9 @@ export const NewMarketMessageDetailsDialog = ({
                       key: 'summary',
                       label: 'summary',
                       value: (
-                        <$Summary>
+                        <p tw="ml-0.5 text-justify">
                           {utils.getGovAddNewMarketSummary(ticker, newMarketProposal.delayBlocks)}
-                        </$Summary>
+                        </p>
                       ),
                     },
                   ]}
@@ -327,39 +333,25 @@ export const NewMarketMessageDetailsDialog = ({
             ),
           }[codeToggleGroup]
         }
-      </$ProposedMessageDetails>
+      </div>
     </Dialog>
   );
 };
-
-const $ProposedMessageDetails = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-  background-color: var(--color-layer-3);
-  margin-top: 1rem;
-  border-radius: 10px;
-`;
-
 const $Tabs = styled(ToggleGroup)`
   overflow-x: auto;
 ` as typeof ToggleGroup;
 
 const $Details = styled(Details)`
   --details-item-height: 1.5rem;
-`;
 
-const $ExchangeConfigs = styled.div`
-  margin-top: 0.5rem;
-`;
+  dt {
+    width: max-content;
+  }
 
-const $Text0 = styled.span`
-  color: var(--color-text-0);
-`;
-
-const $Tag = styled(Tag)`
-  margin: 0 0.5ch;
+  dd {
+    overflow-x: auto;
+    text-overflow: ellipsis;
+  }
 `;
 
 const $Code = styled.div`
@@ -373,17 +365,4 @@ const $Code = styled.div`
   font-family: var(--fontFamily-monospace);
   margin-top: 1rem;
   gap: 0rem;
-`;
-
-const $ExchangeObject = styled.div`
-  padding: 1rem;
-`;
-
-const $Line = styled.pre`
-  margin-left: 1rem;
-`;
-
-const $Summary = styled.p`
-  text-align: justify;
-  margin-left: 0.5rem;
 `;

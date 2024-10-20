@@ -10,17 +10,15 @@ import { OnboardingState } from '@/constants/account';
 import { ComplianceStates } from '@/constants/compliance';
 import { STRING_KEYS } from '@/constants/localization';
 import { NumberSign } from '@/constants/numbers';
-import { AppRoute, BASE_ROUTE } from '@/constants/routes';
 
-import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useComplianceState } from '@/hooks/useComplianceState';
 import { useStringGetter } from '@/hooks/useStringGetter';
 
 import breakpoints from '@/styles/breakpoints';
 import { layoutMixins } from '@/styles/layoutMixins';
 
-import { Link } from '@/components/Link';
 import { Output, OutputType, ShowSign, formatDateOutput } from '@/components/Output';
+import { TermsOfUseLink } from '@/components/TermsOfUseLink';
 import { TriangleIndicator } from '@/components/TriangleIndicator';
 import { WithLabel } from '@/components/WithLabel';
 import { PnlChart, type PnlDatum } from '@/views/charts/PnlChart';
@@ -32,6 +30,7 @@ import { getSelectedLocale } from '@/state/localizationSelectors';
 
 import { isTruthy } from '@/lib/isTruthy';
 import { MustBigNumber } from '@/lib/numbers';
+import { orEmptyObj } from '@/lib/typeUtils';
 
 const usePortfolioValues = ({
   equity,
@@ -52,7 +51,7 @@ const usePortfolioValues = ({
             selectedLocale,
             dateFormat: 'medium',
           })
-        : stringGetter({ key: STRING_KEYS.PORTFOLIO_VALUE }),
+        : stringGetter({ key: STRING_KEYS.TRADING_ACCOUNT }),
     [activeDatum, selectedLocale, stringGetter]
   );
 
@@ -98,13 +97,11 @@ const usePortfolioValues = ({
 
 export const AccountDetailsAndHistory = () => {
   const stringGetter = useStringGetter();
-  const { isTablet } = useBreakpoints();
   const { complianceState } = useComplianceState();
   const selectedLocale = useAppSelector(getSelectedLocale);
   const onboardingState = useAppSelector(getOnboardingState);
 
-  const { buyingPower, equity, freeCollateral, leverage, marginUsage } =
-    useAppSelector(getSubaccount, shallowEqual) ?? {};
+  const { equity, leverage, marginUsage } = orEmptyObj(useAppSelector(getSubaccount, shallowEqual));
 
   const [tooltipContext, setTooltipContext] = useState<TooltipContextType<PnlDatum>>();
 
@@ -118,17 +115,11 @@ export const AccountDetailsAndHistory = () => {
     });
 
   const accountDetailsConfig = [
-    !isTablet && {
+    {
       key: 'MarginUsage',
       labelKey: STRING_KEYS.MARGIN_USAGE,
       type: OutputType.Percent,
       value: marginUsage?.current,
-    },
-    !isTablet && {
-      key: 'FreeCollateral',
-      labelKey: STRING_KEYS.FREE_COLLATERAL,
-      type: OutputType.Fiat,
-      value: freeCollateral?.current,
     },
     {
       key: 'Leverage',
@@ -136,26 +127,20 @@ export const AccountDetailsAndHistory = () => {
       type: OutputType.Multiple,
       value: leverage?.current,
     },
-    {
-      key: 'BuyingPower',
-      labelKey: STRING_KEYS.BUYING_POWER,
-      type: OutputType.Fiat,
-      value: MustBigNumber(buyingPower?.current).lt(0) ? undefined : buyingPower?.current, // show '-' when buying power is negative
-    },
   ].filter(isTruthy);
 
   return (
     <$AccountDetailsAndHistory>
       <$AccountValue>
         <$WithLabel label={accountValueLabel}>
-          <$AccountEquity>
+          <div tw="mt-1 text-color-text-2 font-large-book">
             <Output
               type={OutputType.Fiat}
               value={accountEquity}
               roundingMode={BigNumber.ROUND_FLOOR}
               withBaseFont
             />
-          </$AccountEquity>
+          </div>
           <$PnlDiff isPositive={MustBigNumber(pnlDiff).gte(0)}>
             {pnlDiff && <TriangleIndicator value={MustBigNumber(pnlDiff)} />}
             <Output type={OutputType.Fiat} showSign={ShowSign.None} value={pnlDiff} />
@@ -180,17 +165,13 @@ export const AccountDetailsAndHistory = () => {
         onVisibleDataChange={setVisibleData}
         selectedLocale={selectedLocale}
         slotEmpty={
-          <$EmptyChart>
+          <div tw="grid cursor-default">
             {complianceState === ComplianceStates.READ_ONLY ? (
               <$Card>
                 {stringGetter({
                   key: STRING_KEYS.BLOCKED_MESSAGE,
                   params: {
-                    TERMS_OF_USE_LINK: (
-                      <$Link href={`${BASE_ROUTE}${AppRoute.Terms}`} withIcon>
-                        {stringGetter({ key: STRING_KEYS.TERMS_OF_USE })}
-                      </$Link>
-                    ),
+                    TERMS_OF_USE_LINK: <TermsOfUseLink isInline tw="underline" />,
                   },
                 })}
               </$Card>
@@ -207,7 +188,7 @@ export const AccountDetailsAndHistory = () => {
                 <OnboardingTriggerButton />
               </$EmptyCard>
             ) : null}
-          </$EmptyChart>
+          </div>
         }
       />
     </$AccountDetailsAndHistory>
@@ -219,8 +200,7 @@ const $AccountDetailsAndHistory = styled.div<{ isSidebarOpen?: boolean }>`
   display: grid;
   grid-template:
     'PortfolioValue PortfolioValue Chart'
-    'MarginUsage FreeCollateral Chart'
-    'Leverage BuyingPower Chart'
+    'MarginUsage Leverage Chart'
     / 9.375rem 9.375rem 1fr;
 
   ${layoutMixins.withOuterBorderClipped}
@@ -229,7 +209,7 @@ const $AccountDetailsAndHistory = styled.div<{ isSidebarOpen?: boolean }>`
   @media ${breakpoints.tablet} {
     grid-template:
       'PortfolioValue PortfolioValue' auto
-      'Leverage BuyingPower' auto
+      'MarginUsage Leverage' auto
       'Chart Chart' 15rem
       / 1fr 1fr;
   }
@@ -252,12 +232,6 @@ const $AccountValue = styled.div`
     margin-bottom: 0.875rem;
   }
 `;
-
-const $AccountEquity = styled.div`
-  font: var(--font-extra-book);
-  color: var(--color-text-2);
-`;
-
 const $PnlDiff = styled.div<{ isPositive: boolean }>`
   color: var(--color-negative);
   display: flex;
@@ -300,12 +274,6 @@ const $PnlChart = styled(PnlChart)<{ pnlDiffSign: NumberSign }>`
       [NumberSign.Neutral]: 'var(--color-text-1)',
     })[pnlDiffSign]};
 `;
-
-const $EmptyChart = styled.div`
-  display: grid;
-  cursor: default;
-`;
-
 const $Card = styled.div`
   padding: 1.25rem;
   margin: auto;
@@ -317,7 +285,7 @@ const $Card = styled.div`
 `;
 
 const $EmptyCard = styled($Card)`
-  ${layoutMixins.column};
+  ${layoutMixins.column}
 
   display: grid;
   gap: 1rem;
@@ -325,9 +293,4 @@ const $EmptyCard = styled($Card)`
   button {
     width: fit-content;
   }
-`;
-
-const $Link = styled(Link)`
-  ${layoutMixins.inlineRow};
-  text-decoration: underline;
 `;

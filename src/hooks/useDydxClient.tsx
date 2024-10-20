@@ -8,6 +8,7 @@ import {
   IndexerConfig,
   LocalWallet,
   Network,
+  PnlTickInterval,
   SelectedGasDenom,
   ValidatorConfig,
   onboarding,
@@ -16,20 +17,24 @@ import {
 import type { ResolutionString } from 'public/tradingview/charting_library';
 
 import type { ConnectNetworkEvent, NetworkConfig } from '@/constants/abacus';
+import { RawSubaccountFill, RawSubaccountTransfer } from '@/constants/account';
 import { DEFAULT_TRANSACTION_MEMO } from '@/constants/analytics';
 import { RESOLUTION_MAP, type Candle } from '@/constants/candles';
 import { LocalStorageKey } from '@/constants/localStorage';
 import { isDev } from '@/constants/networks';
+import { StatsigFlags } from '@/constants/statsig';
 
 import { getSelectedNetwork } from '@/state/appSelectors';
 import { useAppSelector } from '@/state/appTypes';
 
 import abacusStateManager from '@/lib/abacus';
+import { parseToPrimitives } from '@/lib/abacus/parseToPrimitives';
 import { log } from '@/lib/telemetry';
 
 import { useEndpointsConfig } from './useEndpointsConfig';
 import { useLocalStorage } from './useLocalStorage';
 import { useRestrictions } from './useRestrictions';
+import { useStatsigGateValue } from './useStatsig';
 import { useTokenConfigs } from './useTokenConfigs';
 
 type DydxContextType = ReturnType<typeof useDydxClientContext>;
@@ -70,6 +75,8 @@ const useDydxClientContext = () => {
     return new IndexerClient(config);
   }, [indexerEndpoints]);
 
+  const enableTimestampNonce = useStatsigGateValue(StatsigFlags.ffEnableTimestampNonce);
+
   useEffect(() => {
     (async () => {
       if (
@@ -97,7 +104,8 @@ const useDydxClientContext = () => {
                   broadcastPollIntervalMs: 3_000,
                   broadcastTimeoutMs: 60_000,
                 },
-                DEFAULT_TRANSACTION_MEMO
+                DEFAULT_TRANSACTION_MEMO,
+                enableTimestampNonce
               )
             )
           );
@@ -143,8 +151,9 @@ const useDydxClientContext = () => {
   }, [compositeClient, setSelectedGasDenom]);
 
   // ------ Wallet Methods ------ //
-  const getWalletFromEvmSignature = async ({ signature }: { signature: string }) => {
+  const getWalletFromSignature = async ({ signature }: { signature: string }) => {
     const { mnemonic, privateKey, publicKey } =
+      // This method should be renamed to deriveHDKeyFromSignature as it is used for both solana and ethereum signatures
       onboarding.deriveHDKeyFromEthereumSignature(signature);
 
     return {
@@ -162,6 +171,179 @@ const useDydxClientContext = () => {
       return markets || [];
     } catch (error) {
       log('useDydxClient/getPerpetualMarkets', error);
+      return [];
+    }
+  };
+
+  const getMegavaultHistoricalPnl = useCallback(
+    async (resolution: PnlTickInterval = PnlTickInterval.day) => {
+      try {
+        return await indexerClient.vault.getMegavaultHistoricalPnl(resolution);
+      } catch (error) {
+        log('useDydxClient/getMegavaultHistoricalPnl', error);
+        return undefined;
+      }
+    },
+    [indexerClient.vault]
+  );
+
+  const getMegavaultPositions = useCallback(async () => {
+    try {
+      return await indexerClient.vault.getMegavaultPositions();
+    } catch (error) {
+      log('useDydxClient/getMegavaultPositions', error);
+      return undefined;
+    }
+  }, [indexerClient.vault]);
+
+  const getVaultsHistoricalPnl = useCallback(async () => {
+    try {
+      return await indexerClient.vault.getVaultsHistoricalPnl();
+    } catch (error) {
+      log('useDydxClient/getVaultsHistoricalPnl', error);
+      return undefined;
+    }
+  }, [indexerClient.vault]);
+
+  const getAllAccountTransfersBetween = useCallback(
+    async (
+      sourceAddress: string,
+      sourceSubaccountNumber: string,
+      recipientAddress: string,
+      recipientSubaccountNumber: string
+    ) => {
+      try {
+        return await indexerClient.account.getTransfersBetween(
+          sourceAddress,
+          sourceSubaccountNumber,
+          recipientAddress,
+          recipientSubaccountNumber
+        );
+      } catch (error) {
+        log('useDydxClient/getAllAccountTransfersBetween', error);
+        return undefined;
+      }
+    },
+    [indexerClient.account]
+  );
+
+  const getVaultWithdrawInfo = useCallback(
+    async (shares: number) => {
+      try {
+        const result = await compositeClient?.validatorClient.get.getMegavaultWithdrawalInfo(
+          BigInt(shares)
+        );
+        if (result == null) {
+          return result;
+        }
+        return parseToPrimitives(result);
+      } catch (error) {
+        log('useDydxClient/getVaultWithdrawInfo', error);
+        return undefined;
+      }
+    },
+    [compositeClient?.validatorClient.get]
+  );
+
+  const requestAllAccountFills = async (address: string, subaccountNumber: number) => {
+    try {
+      const {
+        fills = [],
+        totalResults,
+        pageSize,
+      } = await indexerClient.account.getParentSubaccountNumberFills(
+        address,
+        subaccountNumber,
+        undefined,
+        undefined,
+        100,
+        undefined,
+        undefined,
+        1
+      );
+
+      // We get all the pages but we should exclude the first one, we already have this data
+      const pages = Array.from(
+        {
+          length: Math.ceil(totalResults / pageSize) - 1,
+        },
+        (_, index) => index + 2
+      );
+
+      const results = await Promise.all(
+        pages.map((page) =>
+          indexerClient.account.getParentSubaccountNumberFills(
+            address,
+            subaccountNumber,
+            undefined,
+            undefined,
+            100,
+            undefined,
+            undefined,
+            page
+          )
+        )
+      );
+
+      const allFills: RawSubaccountFill[] = [...fills, ...results.map((data) => data.fills).flat()];
+
+      // sorts the data in descending order
+      return allFills.sort((fillA, fillB) => {
+        return new Date(fillB.createdAt).getTime() - new Date(fillA.createdAt).getTime();
+      });
+    } catch (error) {
+      log('useDydxClient/requestAllAccountFills', error);
+      return [];
+    }
+  };
+
+  const requestAllAccountTransfers = async (address: string, subaccountNumber: number) => {
+    try {
+      const {
+        transfers = [],
+        totalResults,
+        pageSize,
+      } = await indexerClient.account.getParentSubaccountNumberTransfers(
+        address,
+        subaccountNumber,
+        100,
+        undefined,
+        undefined,
+        1
+      );
+
+      // We get all the pages but we should exclude the first one, we already have this data
+      const pages = Array.from(
+        {
+          length: Math.ceil(totalResults / pageSize) - 1,
+        },
+        (_, index) => index + 2
+      );
+
+      const results = await Promise.all(
+        pages.map((page) =>
+          indexerClient.account.getParentSubaccountNumberTransfers(
+            address,
+            subaccountNumber,
+            100,
+            undefined,
+            undefined,
+            page
+          )
+        )
+      );
+
+      const allTransfers: RawSubaccountTransfer[] = [
+        ...transfers,
+        ...results.map((data) => data.transfers).flat(),
+      ];
+
+      // sorts the data in descending order
+      return allTransfers.sort((transferA, transferB) => {
+        return new Date(transferB.createdAt).getTime() - new Date(transferA.createdAt).getTime();
+      });
+    } catch (error) {
+      log('useDydxClient/requestAllAccountTransfers', error);
       return [];
     }
   };
@@ -293,7 +475,8 @@ const useDydxClientContext = () => {
   }) => indexerClient.markets.getPerpetualMarketSparklines(period);
 
   const getWithdrawalAndTransferGatingStatus = useCallback(async () => {
-    return compositeClient?.validatorClient.get.getWithdrawalAndTransferGatingStatus();
+    // The perpetualId is 0 (parent subaccount number)
+    return compositeClient?.validatorClient.get.getWithdrawalAndTransferGatingStatus(0);
   }, [compositeClient]);
 
   const getWithdrawalCapacityByDenom = useCallback(
@@ -306,6 +489,32 @@ const useDydxClientContext = () => {
   const getValidators = useCallback(async () => {
     return compositeClient?.validatorClient.get.getAllValidators();
   }, [compositeClient]);
+
+  const getAccountBalance = useCallback(
+    async (address: string, denom: string) => {
+      return compositeClient?.validatorClient.get.getAccountBalance(address, denom);
+    },
+    [compositeClient]
+  );
+
+  const getAffiliateInfo = useCallback(
+    async (address: string) => {
+      return compositeClient?.validatorClient.get.getAffiliateInfo(address);
+    },
+    [compositeClient]
+  );
+
+  const getAllAffiliateTiers = useCallback(async () => {
+    const tiers = await compositeClient?.validatorClient.get.getAllAffiliateTiers();
+    return tiers?.tiers?.tiers;
+  }, [compositeClient]);
+
+  const getReferredBy = useCallback(
+    async (address: string) => {
+      return compositeClient?.validatorClient.get.getReferredBy(address);
+    },
+    [compositeClient]
+  );
 
   return {
     // Client initialization
@@ -321,9 +530,11 @@ const useDydxClientContext = () => {
     selectedGasDenom: gasDenom,
 
     // Wallet Methods
-    getWalletFromEvmSignature,
+    getWalletFromSignature,
 
     // Public Methods
+    requestAllAccountTransfers,
+    requestAllAccountFills,
     requestAllPerpetualMarkets,
     requestAllGovernanceProposals,
     getCandlesForDatafeed,
@@ -334,5 +545,16 @@ const useDydxClientContext = () => {
     getWithdrawalAndTransferGatingStatus,
     getWithdrawalCapacityByDenom,
     getValidators,
+    getAccountBalance,
+    getAffiliateInfo,
+    getAllAffiliateTiers,
+    getReferredBy,
+
+    // vault methods
+    getMegavaultHistoricalPnl,
+    getMegavaultPositions,
+    getVaultsHistoricalPnl,
+    getAllAccountTransfersBetween,
+    getVaultWithdrawInfo,
   };
 };

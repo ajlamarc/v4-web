@@ -1,10 +1,4 @@
-import {
-  css,
-  keyframes,
-  type FlattenInterpolation,
-  type FlattenSimpleInterpolation,
-  type ThemeProps,
-} from 'styled-components';
+import { css, keyframes } from 'styled-components';
 
 const withOuterBorder = css`
   box-shadow: 0 0 0 var(--border-width) var(--border-color);
@@ -41,6 +35,64 @@ const scrollSnapItem = css`
   scroll-margin-bottom: var(--stickyArea-totalInsetBottom);
   scroll-margin-left: var(--stickyArea-totalInsetLeft);
   scroll-margin-right: var(--stickyArea-totalInsetRight);
+`;
+
+// Applies a fade to beginning of a scrollable container. Apply to the parent of layoutMixins.scrollArea
+const scrollAreaFadeStart = css`
+  /* Params */
+  --scrollArea-fade-zIndex: 1;
+  --scrollArea-fadeWidth: 1.5rem;
+
+  /* Rules */
+  position: relative;
+
+  &:before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 100%;
+    width: var(--scrollArea-fadeWidth);
+    background: linear-gradient(to left, transparent 10%, var(--color-layer-2));
+    z-index: var(--scrollArea-fade-zIndex);
+  }
+`;
+
+// Applies a fade to end of a scrollable container. Apply to the parent of layoutMixins.scrollArea
+const scrollAreaFadeEnd = css`
+  /* Params */
+  --scrollArea-fade-zIndex: 1;
+  --scrollArea-fadeWidth: 1.5rem;
+
+  /* Rules */
+  position: relative;
+
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    height: 100%;
+    width: var(--scrollArea-fadeWidth);
+    background: linear-gradient(to right, transparent 10%, var(--color-layer-2));
+    z-index: var(--scrollArea-fade-zIndex);
+  }
+`;
+
+// Applies a fade to a scrollable container. Apply to the parent of layoutMixins.scrollArea
+const scrollAreaFade = css`
+  ${scrollAreaFadeStart}
+  ${scrollAreaFadeEnd}
+`;
+
+const horizontalFadeScrollArea = css`
+  ${scrollAreaFade}
+
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+
+  transition: opacity 0.3s var(--ease-out-expo);
 `;
 
 // Creates a scrollable container that can contain sticky and/or scroll-snapped descendants.
@@ -108,6 +160,7 @@ const sticky = css`
   left: var(--stickyArea-totalInsetLeft, 0px);
   right: var(--stickyArea-totalInsetRight, 0px);
 
+  -webkit-backdrop-filter: var(--stickyArea-backdropFilter);
   backdrop-filter: var(--stickyArea-backdropFilter);
 `;
 
@@ -336,6 +389,12 @@ export const layoutMixins = {
     }
   `,
 
+  // a flex child that grows to fill any remaining space, but also shrinks past its min-content if necessary
+  flexExpandToSpace: css`
+    flex: 1;
+    min-width: 1px;
+  `,
+
   stack: css`
     display: grid;
     grid-template-areas: 'stack';
@@ -472,6 +531,11 @@ export const layoutMixins = {
 
     transition: right 0.3s var(--ease-out-expo);
   `,
+
+  scrollAreaFadeStart,
+  scrollAreaFadeEnd,
+  scrollAreaFade,
+  horizontalFadeScrollArea,
 
   scrollArea,
 
@@ -886,6 +950,13 @@ export const layoutMixins = {
     min-width: 1px;
   `,
 
+  textLineClamp: css`
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+  `,
+
   textOverflow: css`
     display: inline-block;
     overflow-x: auto;
@@ -951,4 +1022,4 @@ export const layoutMixins = {
     min-height: 100%;
     place-items: center;
   `,
-} satisfies Record<string, FlattenSimpleInterpolation | FlattenInterpolation<ThemeProps<any>>>;
+} satisfies Record<string, ReturnType<typeof css>>;

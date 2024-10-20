@@ -28,6 +28,7 @@ import { StringGetterFunction } from '@/constants/localization';
 
 import { useOrderbookValuesForDepthChart } from '@/hooks/Orderbook/useOrderbookValues';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
+import { useLocaleSeparators } from '@/hooks/useLocaleSeparators';
 
 import { LoadingSpace } from '@/components/Loading/LoadingSpinner';
 import { OutputType, formatNumberOutput } from '@/components/Output';
@@ -52,20 +53,6 @@ const theme = buildChartTheme({
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 const lerp = (percent: number, from: number, to: number) => from + percent * (to - from);
 
-const formatNumber = (n: number, selectedLocale: string, isCompact: boolean = n >= 10000) => {
-  const formattedNumber = Intl.NumberFormat(selectedLocale).format(n);
-
-  const compactNumber = formatNumberOutput(n, OutputType.CompactNumber, {
-    decimalSeparator: undefined,
-    groupSeparator: undefined,
-    locale: selectedLocale,
-  });
-
-  return isCompact && compactNumber.length < formattedNumber.length
-    ? compactNumber
-    : formattedNumber;
-};
-
 export const DepthChart = ({
   onChartClick,
   stringGetter,
@@ -78,6 +65,7 @@ export const DepthChart = ({
   // Context
 
   const { isMobile } = useBreakpoints();
+  const { decimal: decimalSeparator, group: groupSeparator } = useLocaleSeparators();
 
   // Chart data
   const { id = '' } = useAppSelector(getCurrentMarketAssetData, shallowEqual) ?? {};
@@ -159,6 +147,17 @@ export const DepthChart = ({
     [midMarketPrice]
   );
 
+  const formatNumber = useCallback(
+    (n: number) =>
+      formatNumberOutput(n, OutputType.Number, {
+        decimalSeparator,
+        groupSeparator,
+        selectedLocale,
+        fractionDigits: tickSizeDecimals,
+      }),
+    [decimalSeparator, groupSeparator, selectedLocale, tickSizeDecimals]
+  );
+
   // Render conditions
 
   if (!(zoomDomain && midMarketPrice && asks.length && bids.length))
@@ -215,11 +214,7 @@ export const DepthChart = ({
             onPointerMove={(point) => point && setChartPointAtPointer(getChartPoint(point))}
             onPointerPressedChange={(pointerPressed) => setIsPointerPressed(pointerPressed)}
           >
-            <Axis
-              orientation="bottom"
-              numTicks={5}
-              tickFormat={(n) => formatNumber(n, selectedLocale, zoomDomain >= 500)}
-            />
+            <Axis orientation="bottom" numTicks={4} tickFormat={formatNumber} />
 
             <Grid
               numTicks={4}
@@ -317,7 +312,7 @@ export const DepthChart = ({
               verticalCrosshairStyle={{ strokeWidth: 1, strokeDasharray: '5 5', opacity: 0.7 }}
               snapCrosshairToDatumX={!isEditingOrder}
               renderXAxisLabel={({ tooltipData }) => (
-                <$XAxisLabelOutput
+                <AxisLabelOutput
                   type={OutputType.Fiat}
                   value={
                     isEditingOrder && chartPointAtPointer
@@ -336,6 +331,7 @@ export const DepthChart = ({
                         : (tooltipData!.nearestDatum?.key as DepthChartSeries)
                     ]
                   }
+                  tw="shadow-[0_0_0.5rem_var(--color-layer-2)]"
                 />
               )}
               showHorizontalCrosshair
@@ -428,11 +424,6 @@ const $Container = styled.div`
     }
   }
 `;
-
-const $XAxisLabelOutput = styled(AxisLabelOutput)`
-  box-shadow: 0 0 0.5rem var(--color-layer-2);
-`;
-
 const $YAxisLabelOutput = styled(AxisLabelOutput)`
   --axisLabel-offset: 0.5rem;
 

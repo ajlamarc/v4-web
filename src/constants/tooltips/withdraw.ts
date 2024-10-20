@@ -1,8 +1,9 @@
 import { TOOLTIP_STRING_KEYS, type TooltipStrings } from '@/constants/localization';
 
-import { CCTP_MAINNET_CHAIN_NAMES_CAPITALIZED } from '../cctp';
+import { TransferType } from '../abacus';
+import { getLowestFeeChainNames } from '../cctp';
 
-export const withdrawTooltips: TooltipStrings = {
+export const withdrawTooltips = {
   'fast-withdraw-fee': ({ stringGetter }) => ({
     title: stringGetter({ key: TOOLTIP_STRING_KEYS.FAST_WITHDRAW_FEE_TITLE }),
     body: stringGetter({ key: TOOLTIP_STRING_KEYS.FAST_WITHDRAW_FEE_BODY }),
@@ -28,8 +29,8 @@ export const withdrawTooltips: TooltipStrings = {
     body: stringGetter({
       key: TOOLTIP_STRING_KEYS.LOWEST_FEE_WITHDRAWALS_BODY,
       params: {
-        LOWEST_FEE_TOKEN_NAMES: CCTP_MAINNET_CHAIN_NAMES_CAPITALIZED.join(', '),
+        LOWEST_FEE_TOKEN_NAMES: getLowestFeeChainNames(TransferType.withdrawal).join(', '),
       },
     }),
   }),
-} as const;
+} satisfies TooltipStrings;

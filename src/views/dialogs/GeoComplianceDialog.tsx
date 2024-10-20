@@ -52,9 +52,9 @@ const CountrySelector = ({
       label={label}
       withSearch
     >
-      <$SelectedCountry>
+      <div tw="text-start">
         {selectedCountry || stringGetter({ key: STRING_KEYS.SELECT_A_COUNTRY })}
-      </$SelectedCountry>
+      </div>
     </SearchSelectMenu>
   );
 };
@@ -98,9 +98,9 @@ export const GeoComplianceDialog = ({ setIsOpen }: DialogProps<GeoComplianceDial
             selectedCountry={residence}
             onSelect={setResidence}
           />
-          <$WithReceipt
+          <WithReceipt
             slotReceipt={
-              <$CheckboxContainer>
+              <div tw="p-1 text-color-text-0">
                 <Checkbox
                   checked={hasAcknowledged}
                   onCheckedChange={setHasAcknowledged}
@@ -109,8 +109,9 @@ export const GeoComplianceDialog = ({ setIsOpen }: DialogProps<GeoComplianceDial
                     key: STRING_KEYS.COMPLIANCE_ACKNOWLEDGEMENT,
                   })}
                 />
-              </$CheckboxContainer>
+              </div>
             }
+            tw="[--withReceipt-backgroundColor:--color-layer-2]"
           >
             <Button
               action={ButtonAction.Primary}
@@ -119,12 +120,15 @@ export const GeoComplianceDialog = ({ setIsOpen }: DialogProps<GeoComplianceDial
             >
               {stringGetter({ key: STRING_KEYS.SUBMIT })}
             </Button>
-          </$WithReceipt>
+          </WithReceipt>
         </$Form>
       ) : (
         <$Form>
           <p>{stringGetter({ key: STRING_KEYS.COMPLIANCE_BODY_FIRST_OFFENSE_1 })}</p>
           <p>{stringGetter({ key: STRING_KEYS.COMPLIANCE_BODY_FIRST_OFFENSE_2 })}</p>
+          <p>
+            <strong>{stringGetter({ key: STRING_KEYS.COMPLIANCE_BODY_FIRST_OFFENSE_3 })}</strong>
+          </p>
           <Button action={ButtonAction.Primary} onClick={() => setShowForm(true)}>
             {stringGetter({ key: STRING_KEYS.CONTINUE })}
           </Button>
@@ -135,17 +139,4 @@ export const GeoComplianceDialog = ({ setIsOpen }: DialogProps<GeoComplianceDial
 };
 const $Form = styled.form`
   ${formMixins.transfersForm}
-`;
-
-const $SelectedCountry = styled.div`
-  text-align: start;
-`;
-
-const $CheckboxContainer = styled.div`
-  padding: 1rem;
-  color: var(--color-text-0);
-`;
-
-const $WithReceipt = styled(WithReceipt)`
-  --withReceipt-backgroundColor: var(--color-layer-2);
 `;

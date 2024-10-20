@@ -9,21 +9,16 @@ import { MobilePlaceOrderSteps } from '@/constants/trade';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useStringGetter } from '@/hooks/useStringGetter';
 
-import { layoutMixins } from '@/styles/layoutMixins';
-
 import { Dialog, DialogPlacement } from '@/components/Dialog';
 import { GreenCheckCircle } from '@/components/GreenCheckCircle';
 import { Icon, IconName } from '@/components/Icon';
 import { Ring } from '@/components/Ring';
 import { TradeForm } from '@/views/forms/TradeForm';
 
-import { MarginModeSelector } from '../forms/TradeForm/MarginModeSelector';
-import { TargetLeverageButton } from '../forms/TradeForm/TargetLeverageButton';
-import { TradeSideToggle } from '../forms/TradeForm/TradeSideToggle';
-
 export const TradeDialog = ({ isOpen, setIsOpen, slotTrigger }: DialogProps<TradeDialogProps>) => {
   const { isMobile } = useBreakpoints();
   const stringGetter = useStringGetter();
+
   const [currentStep, setCurrentStep] = useState<MobilePlaceOrderSteps>(
     MobilePlaceOrderSteps.EditOrder
   );
@@ -44,36 +39,33 @@ export const TradeDialog = ({ isOpen, setIsOpen, slotTrigger }: DialogProps<Trad
       {...{
         [MobilePlaceOrderSteps.EditOrder]: {
           title: (
-            <$EditTradeHeader>
-              <$MarginControls>
-                <$MarginModeSelector openInTradeBox={false} />
-                <$TargetLeverageButton />
-              </$MarginControls>
-
-              <TradeSideToggle />
-            </$EditTradeHeader>
+            <div tw="inlineRow h-[--dialog-icon-size]">
+              {stringGetter({ key: STRING_KEYS.TRADE })}
+            </div>
           ),
         },
         [MobilePlaceOrderSteps.PreviewOrder]: {
           title: (
-            <$PreviewTitle>{stringGetter({ key: STRING_KEYS.PREVIEW_ORDER_TITLE })}</$PreviewTitle>
+            <div tw="inlineRow h-[--dialog-icon-size]">
+              {stringGetter({ key: STRING_KEYS.PREVIEW_ORDER_TITLE })}
+            </div>
           ),
           description: stringGetter({ key: STRING_KEYS.PREVIEW_ORDER_DESCRIPTION }),
         },
         [MobilePlaceOrderSteps.PlacingOrder]: {
           title: stringGetter({ key: STRING_KEYS.PLACING_ORDER_TITLE }),
           description: stringGetter({ key: STRING_KEYS.PLACING_ORDER_DESCRIPTION }),
-          slotIcon: <$Ring withAnimation value={0.25} />,
+          slotIcon: <Ring withAnimation value={0.25} tw="[--ring-color:--color-accent]" />,
         },
         [MobilePlaceOrderSteps.PlaceOrderFailed]: {
           title: stringGetter({ key: STRING_KEYS.PLACE_ORDER_FAILED }),
           description: stringGetter({ key: STRING_KEYS.PLACE_ORDER_FAILED_DESCRIPTION }),
-          slotIcon: <$WarningIcon iconName={IconName.Warning} />,
+          slotIcon: <Icon iconName={IconName.Warning} tw="text-[1.5rem] text-color-warning" />,
         },
         [MobilePlaceOrderSteps.Confirmation]: {
           title: stringGetter({ key: STRING_KEYS.CONFIRMED_TITLE }),
           description: stringGetter({ key: STRING_KEYS.CONFIRMED_DESCRIPTION }),
-          slotIcon: <$GreenCheckCircle />,
+          slotIcon: <GreenCheckCircle tw="[--icon-size:2rem]" />,
         },
       }[currentStep]}
     >
@@ -96,6 +88,10 @@ const $Dialog = styled(Dialog)<{ currentStep: MobilePlaceOrderSteps }>`
   --dialog-title-gap: 0.25rem;
   --dialog-icon-size: 2rem;
 
+  > div {
+    min-height: 1px;
+  }
+
   ${({ currentStep }) =>
     currentStep === MobilePlaceOrderSteps.EditOrder &&
     css`
@@ -103,50 +99,9 @@ const $Dialog = styled(Dialog)<{ currentStep: MobilePlaceOrderSteps }>`
     `}
 `;
 
-const $EditTradeHeader = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 0.5rem;
-`;
-
-const $MarginControls = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
-const $MarginModeSelector = styled(MarginModeSelector)`
-  flex: 1;
-`;
-
-const $TargetLeverageButton = styled(TargetLeverageButton)`
-  flex: 1;
-
-  button {
-    width: 100%;
-  }
-`;
-
 const $TradeForm = styled(TradeForm)`
   --tradeBox-content-paddingTop: 1rem;
   --tradeBox-content-paddingRight: 1.5rem;
   --tradeBox-content-paddingBottom: 1.5rem;
   --tradeBox-content-paddingLeft: 1.5rem;
-`;
-
-const $Ring = styled(Ring)`
-  --ring-color: var(--color-accent);
-`;
-
-const $GreenCheckCircle = styled(GreenCheckCircle)`
-  --icon-size: 2rem;
-`;
-
-const $WarningIcon = styled(Icon)`
-  color: var(--color-warning);
-  font-size: 1.5rem;
-`;
-
-const $PreviewTitle = styled.div`
-  ${layoutMixins.inlineRow}
-  height: var(--dialog-icon-size);
 `;

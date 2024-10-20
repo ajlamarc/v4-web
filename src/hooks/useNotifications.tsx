@@ -12,6 +12,7 @@ import { AnalyticsEvents } from '@/constants/analytics';
 import { LOCAL_STORAGE_VERSIONS, LocalStorageKey } from '@/constants/localStorage';
 import {
   NotificationCategoryPreferences,
+  NotificationParams,
   NotificationStatus,
   NotificationType,
   NotificationTypeCategory,
@@ -22,7 +23,8 @@ import {
   type Notifications,
 } from '@/constants/notifications';
 
-import { track } from '@/lib/analytics';
+import { track } from '@/lib/analytics/analytics';
+import { isAbacusNotificationSingleSession } from '@/lib/notifications';
 import { renderSvgToDataUrl } from '@/lib/renderSvgToDataUrl';
 
 import { useLocalStorage } from './useLocalStorage';
@@ -76,7 +78,10 @@ const useNotificationsContext = () => {
     // save notifications to localstorage, but filter out single session notifications
     const originalEntries = Object.entries(notifications);
     const filteredEntries = originalEntries.filter(
-      ([, value]) => !SingleSessionNotificationTypes.includes(value.type)
+      ([, value]) =>
+        !SingleSessionNotificationTypes.includes(value.type) ||
+        (value.type === NotificationType.AbacusGenerated &&
+          !isAbacusNotificationSingleSession(value.id))
     );
 
     const newNotifications = Object.fromEntries(filteredEntries);
@@ -128,7 +133,7 @@ const useNotificationsContext = () => {
     [getKey]
   );
 
-  const { markUnseen, markSeen, markCleared } = useMemo(
+  const { markUnseen, markSeen, markHidden, markCleared } = useMemo(
     () => ({
       markUnseen: (notification: Notification) => {
         if (notification.status < NotificationStatus.Unseen) {
@@ -140,6 +145,11 @@ const useNotificationsContext = () => {
           updateStatus(notification, NotificationStatus.Seen);
         }
       },
+      markHidden: (notification: Notification) => {
+        if (notification.status < NotificationStatus.Hidden) {
+          updateStatus(notification, NotificationStatus.Hidden);
+        }
+      },
       markCleared: (notification: Notification) => {
         if (notification.status < NotificationStatus.Cleared) {
           updateStatus(notification, NotificationStatus.Cleared);
@@ -147,6 +157,15 @@ const useNotificationsContext = () => {
       },
     }),
     [updateStatus]
+  );
+
+  const hideNotification = useCallback(
+    ({ type, id }: NotificationParams) => {
+      const key = getKey({ type, id });
+      const { [key]: notif } = notifications;
+      if (notif) markHidden(notif);
+    },
+    [notifications, markHidden, getKey]
   );
 
   const markAllCleared = useCallback(() => {
@@ -161,7 +180,7 @@ const useNotificationsContext = () => {
     useTrigger({
       // eslint-disable-next-line react-hooks/rules-of-hooks
       trigger: useCallback(
-        (id, displayData, updateKey, isNew = true) => {
+        (id, displayData, updateKey, isNew = true, shouldUnhide = false) => {
           const key = getKey({ type, id });
 
           const notification = notifications[key];
@@ -185,6 +204,9 @@ const useNotificationsContext = () => {
 
               thisNotification.updateKey = updateKey;
               updateStatus(thisNotification, NotificationStatus.Updated);
+            } else if (shouldUnhide && notification.status === NotificationStatus.Hidden) {
+              const thisNotification = notifications[key];
+              updateStatus(thisNotification, NotificationStatus.Updated);
             }
           } else {
             // Notification is disabled - remove it
@@ -196,6 +218,8 @@ const useNotificationsContext = () => {
         },
         [notifications, updateStatus, notificationPreferences[notificationCategory]]
       ),
+
+      hideNotification,
 
       lastUpdated: notificationsLastUpdated,
     });
@@ -285,6 +309,15 @@ const useNotificationsContext = () => {
   // Menu state
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // Unread
+  const hasUnreadNotifications = useMemo(
+    () =>
+      Object.values(notifications).some(
+        (notification) => notification.status < NotificationStatus.Seen
+      ),
+    [notifications]
+  );
+
   // Public
   return {
     notifications,
@@ -311,6 +344,9 @@ const useNotificationsContext = () => {
     // Menu state
     isMenuOpen,
     setIsMenuOpen,
+
+    // Unread
+    hasUnreadNotifications,
 
     // Notification Preferences
     notificationPreferences,

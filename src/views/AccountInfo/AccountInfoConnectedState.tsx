@@ -1,5 +1,5 @@
 import { shallowEqual } from 'react-redux';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 
 import type { Nullable, TradeState } from '@/constants/abacus';
 import { ButtonShape, ButtonSize } from '@/constants/buttons';
@@ -9,7 +9,6 @@ import { STRING_KEYS } from '@/constants/localization';
 import { DydxChainAsset } from '@/constants/wallets';
 
 import { useAccounts } from '@/hooks/useAccounts';
-import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useComplianceState } from '@/hooks/useComplianceState';
 import { useStringGetter } from '@/hooks/useStringGetter';
 
@@ -28,17 +27,14 @@ import { calculateIsAccountLoading } from '@/state/accountCalculators';
 import { getSubaccount } from '@/state/accountSelectors';
 import { useAppDispatch, useAppSelector } from '@/state/appTypes';
 import { openDialog } from '@/state/dialogs';
-import { getIsClosingIsolatedMarginPosition } from '@/state/inputsCalculator';
-import { getInputErrors } from '@/state/inputsSelectors';
 
 import { isNumber, MustBigNumber } from '@/lib/numbers';
-import { getTradeStateWithDoubleValuesHasDiff } from '@/lib/tradeData';
 
 import { AccountInfoDiffOutput } from './AccountInfoDiffOutput';
 
 enum AccountInfoItem {
-  BuyingPower = 'buying-power',
-  MarginUsage = 'margin-usage',
+  AvailableBalance = 'available-balance',
+  PortfolioValue = 'portfolio-value',
 }
 
 const getUsageValue = (value: Nullable<TradeState<number>>) => {
@@ -52,183 +48,123 @@ export const AccountInfoConnectedState = () => {
   const stringGetter = useStringGetter();
 
   const dispatch = useAppDispatch();
-  const { isTablet } = useBreakpoints();
   const { complianceState } = useComplianceState();
 
   const { dydxAccounts } = useAccounts();
 
-  const inputErrors = useAppSelector(getInputErrors, shallowEqual);
   const subAccount = useAppSelector(getSubaccount, shallowEqual);
   const isLoading = useAppSelector(calculateIsAccountLoading);
-  const isClosingIsolatedPosition = useAppSelector(getIsClosingIsolatedMarginPosition);
 
-  const listOfErrors = inputErrors?.map(({ code }: { code: string }) => code);
+  const { freeCollateral: availableBalance, marginUsage } = subAccount ?? {};
+  const portfolioValue = subAccount?.equity;
 
-  const { freeCollateral, marginUsage } = subAccount ?? {};
-
-  /**
-   * TODO: isClosingIsolatedPosition controls whether diff state is shown. Remove when diff state is fixed in Abacus.
-   */
-  const hasDiff =
-    !isClosingIsolatedPosition &&
-    ((!!marginUsage?.postOrder && getTradeStateWithDoubleValuesHasDiff(marginUsage)) ||
-      (!!freeCollateral?.postOrder && getTradeStateWithDoubleValuesHasDiff(freeCollateral)));
-
-  const showHeader = !hasDiff && !isTablet;
+  const isPostOrderBalanceNegative =
+    isNumber(availableBalance?.postOrder) && MustBigNumber(availableBalance?.postOrder).lt(0);
 
   return (
-    <$ConnectedAccountInfoContainer $showHeader={showHeader}>
-      {!showHeader ? null : (
-        <$Header>
-          <span>{stringGetter({ key: STRING_KEYS.ACCOUNT })}</span>
-          <$TransferButtons>
-            <$Button
-              state={{ isDisabled: !dydxAccounts }}
-              onClick={() => dispatch(openDialog(DialogTypes.Withdraw()))}
-              shape={ButtonShape.Rectangle}
-              size={ButtonSize.XSmall}
-            >
-              {stringGetter({ key: STRING_KEYS.WITHDRAW })}
-            </$Button>
-            {complianceState === ComplianceStates.FULL_ACCESS && (
-              <>
-                <$Button
-                  state={{ isDisabled: !dydxAccounts }}
-                  onClick={() => dispatch(openDialog(DialogTypes.Deposit()))}
-                  shape={ButtonShape.Rectangle}
-                  size={ButtonSize.XSmall}
-                >
-                  {stringGetter({ key: STRING_KEYS.DEPOSIT })}
-                </$Button>
-                <WithTooltip tooltipString={stringGetter({ key: STRING_KEYS.TRANSFER })}>
-                  <$IconButton
-                    shape={ButtonShape.Square}
-                    iconName={IconName.Send}
-                    onClick={() =>
-                      dispatch(
-                        openDialog(DialogTypes.Transfer({ selectedAsset: DydxChainAsset.USDC }))
-                      )
-                    }
-                  />
-                </WithTooltip>
-              </>
-            )}
-          </$TransferButtons>
-        </$Header>
-      )}
-      <$Stack>
-        {!showHeader && !isTablet && complianceState === ComplianceStates.FULL_ACCESS && (
-          <$CornerButton
+    <$ConnectedAccountInfoContainer>
+      <header tw="spacedRow px-1.25 py-0 font-small-book">
+        <span>{stringGetter({ key: STRING_KEYS.ACCOUNT })}</span>
+        <div tw="inlineRow gap-1">
+          <$Button
             state={{ isDisabled: !dydxAccounts }}
-            onClick={() => dispatch(openDialog(DialogTypes.Deposit()))}
+            onClick={() => dispatch(openDialog(DialogTypes.Withdraw()))}
+            shape={ButtonShape.Rectangle}
+            size={ButtonSize.XSmall}
           >
-            <$CircleContainer>
-              <Icon iconName={IconName.Transfer} />
-            </$CircleContainer>
-          </$CornerButton>
-        )}
+            {stringGetter({ key: STRING_KEYS.WITHDRAW })}
+          </$Button>
+          {complianceState === ComplianceStates.FULL_ACCESS && (
+            <>
+              <$Button
+                state={{ isDisabled: !dydxAccounts }}
+                onClick={() => dispatch(openDialog(DialogTypes.Deposit()))}
+                shape={ButtonShape.Rectangle}
+                size={ButtonSize.XSmall}
+              >
+                {stringGetter({ key: STRING_KEYS.DEPOSIT })}
+              </$Button>
+              <WithTooltip tooltipString={stringGetter({ key: STRING_KEYS.TRANSFER })}>
+                <$IconButton
+                  shape={ButtonShape.Square}
+                  iconName={IconName.Send}
+                  onClick={() =>
+                    dispatch(
+                      openDialog(DialogTypes.Transfer({ selectedAsset: DydxChainAsset.USDC }))
+                    )
+                  }
+                />
+              </WithTooltip>
+            </>
+          )}
+        </div>
+      </header>
+      <div tw="stack">
         <$Details
           items={[
             {
-              key: AccountInfoItem.MarginUsage,
-              hasError: listOfErrors?.includes('INVALID_NEW_ACCOUNT_MARGIN_USAGE'),
-              tooltip: 'cross-margin-usage',
-              isPositive: !MustBigNumber(marginUsage?.postOrder).gt(
-                MustBigNumber(marginUsage?.current)
+              key: AccountInfoItem.PortfolioValue,
+              hideDiff: true,
+              hasError: false,
+              isPositive: MustBigNumber(portfolioValue?.postOrder).gt(
+                MustBigNumber(portfolioValue?.current)
               ),
-              label: stringGetter({ key: STRING_KEYS.CROSS_MARGIN_USAGE }),
-              type: OutputType.Percent,
-              value: marginUsage,
-              slotRight: <MarginUsageRing value={getUsageValue(marginUsage)} />,
+              label: stringGetter({ key: STRING_KEYS.PORTFOLIO_VALUE }),
+              type: OutputType.Fiat,
+              value: portfolioValue,
             },
             {
-              key: AccountInfoItem.BuyingPower,
-              hasError:
-                isNumber(freeCollateral?.postOrder) &&
-                MustBigNumber(freeCollateral?.postOrder).lt(0),
-              tooltip: 'cross-free-collateral',
-              isPositive: MustBigNumber(freeCollateral?.postOrder).gt(
-                MustBigNumber(freeCollateral?.current)
+              key: AccountInfoItem.AvailableBalance,
+              hasError: isPostOrderBalanceNegative,
+              hideDiff: isPostOrderBalanceNegative,
+              isPositive: MustBigNumber(availableBalance?.postOrder).gt(
+                MustBigNumber(availableBalance?.current)
               ),
-              label: stringGetter({ key: STRING_KEYS.CROSS_FREE_COLLATERAL }),
+              label: stringGetter({ key: STRING_KEYS.AVAILABLE_BALANCE }),
               type: OutputType.Fiat,
               value:
-                MustBigNumber(freeCollateral?.current).lt(0) && freeCollateral?.postOrder === null
+                MustBigNumber(availableBalance?.current).lt(0) &&
+                availableBalance?.postOrder === null
                   ? undefined
-                  : freeCollateral,
+                  : availableBalance,
+              slotRight: (
+                <WithTooltip tooltip="cross-margin-usage">
+                  <MarginUsageRing value={getUsageValue(marginUsage)} />
+                </WithTooltip>
+              ),
             },
           ].map(
-            ({
-              key,
-              hasError,
-              tooltip = undefined,
-              isPositive,
-              label,
-              type,
-              value,
-              slotRight,
-            }) => ({
+            ({ key, hasError, hideDiff = false, isPositive, label, type, value, slotRight }) => ({
               key,
               label: (
-                <WithTooltip tooltip={tooltip}>
-                  <$WithUsage>
-                    {label}
-                    {hasError ? <$CautionIcon iconName={IconName.CautionCircle} /> : slotRight}
-                  </$WithUsage>
-                </WithTooltip>
+                <$WithUsage>
+                  {label}
+                  {hasError ? (
+                    <Icon iconName={IconName.CautionCircle} tw="text-color-error" />
+                  ) : (
+                    slotRight
+                  )}
+                </$WithUsage>
               ),
               value: (
                 <AccountInfoDiffOutput
                   hasError={hasError}
+                  hideDiff={hideDiff}
                   isPositive={isPositive}
                   type={type}
                   value={value}
-                  hideDiff={isClosingIsolatedPosition}
                 />
               ),
             })
           )}
-          layout="grid"
+          layout="column"
           withOverflow={false}
-          showHeader={showHeader}
           isLoading={isLoading}
         />
-      </$Stack>
+      </div>
     </$ConnectedAccountInfoContainer>
   );
 };
-const $Stack = styled.div`
-  ${layoutMixins.stack}
-`;
-
-const $CornerButton = styled(Button)`
-  ${layoutMixins.withOuterBorder}
-  z-index: 1;
-  place-self: start end;
-  padding: 0.33rem;
-
-  --button-height: var(--tabs-height);
-  --button-backgroundColor: var(--color-layer-1);
-  --button-radius: 0 0 0 0.5rem;
-  --button-border: none;
-
-  @media ${breakpoints.tablet} {
-    display: none;
-  }
-`;
-
-const $CircleContainer = styled.div`
-  display: inline-flex;
-  align-items: center;
-
-  background-color: var(--color-layer-3);
-  padding: 0.5em;
-  border-radius: 50%;
-`;
-
-const $CautionIcon = styled(Icon)`
-  color: var(--color-error);
-`;
 
 const $WithUsage = styled.div`
   ${layoutMixins.row}
@@ -242,19 +178,15 @@ const $WithUsage = styled.div`
   }
 `;
 
-const $Details = styled(Details)<{ showHeader?: boolean }>`
-  ${layoutMixins.withOuterAndInnerBorders}
+const $Details = styled(Details)`
   clip-path: inset(0.5rem 1px);
+  padding: 0.25rem 1rem;
 
   font: var(--font-mini-book);
 
   > * {
-    height: ${({ showHeader }) =>
-      !showHeader
-        ? `calc(var(--account-info-section-height))`
-        : `calc((var(--account-info-section-height) - var(--tabs-height)))`};
-
-    padding: 0.625rem 1rem;
+    padding: 0;
+    display: flex;
   }
 
   @media ${breakpoints.tablet} {
@@ -265,20 +197,9 @@ const $Details = styled(Details)<{ showHeader?: boolean }>`
     }
   }
 `;
-
-const $Header = styled.header`
-  ${layoutMixins.spacedRow}
-  font: var(--font-small-book);
-  padding: 0 1.25rem;
-`;
-
-const $TransferButtons = styled.div`
-  ${layoutMixins.inlineRow}
-  gap: 1rem;
-`;
-
-const $ConnectedAccountInfoContainer = styled.div<{ $showHeader?: boolean }>`
+const $ConnectedAccountInfoContainer = styled.div`
   ${layoutMixins.column}
+  grid-template-rows: var(--tabs-height) 1fr;
 
   @media ${breakpoints.notTablet} {
     ${layoutMixins.withOuterAndInnerBorders}
@@ -286,21 +207,10 @@ const $ConnectedAccountInfoContainer = styled.div<{ $showHeader?: boolean }>`
       box-shadow: none;
     }
   }
-
-  ${({ $showHeader }) =>
-    $showHeader &&
-    css`
-      grid-template-rows: var(--tabs-height) 1fr;
-    `}
 `;
 
 const $Button = styled(Button)`
   margin-right: -0.3rem;
-
-  svg {
-    width: 1.25em;
-    height: 1.25em;
-  }
 `;
 
 const $IconButton = styled(IconButton)`

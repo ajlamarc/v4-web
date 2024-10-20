@@ -73,6 +73,7 @@ export const ComboboxMenu = <
             value={searchValue}
             onValueChange={setSearchValue}
             placeholder={inputPlaceholder}
+            data-hj-allow
           />
         </$Header>
       )}
@@ -170,7 +171,9 @@ export const ComboboxMenu = <
             ))}
           </$Group>
         ))}
-        {slotEmpty && searchValue.trim() !== '' && <$Empty>{slotEmpty}</$Empty>}
+        {slotEmpty && searchValue.trim() !== '' && (
+          <Command.Empty tw="h-full p-1 text-color-text-0">{slotEmpty}</Command.Empty>
+        )}
       </$List>
     </$Command>
   );
@@ -338,10 +341,4 @@ const $ItemLabel = styled.div`
   }
 
   min-width: 0;
-`;
-
-const $Empty = styled(Command.Empty)`
-  color: var(--color-text-0);
-  padding: 1rem;
-  height: 100%;
 `;

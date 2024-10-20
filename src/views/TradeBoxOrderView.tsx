@@ -6,7 +6,6 @@ import { TradeInputField } from '@/constants/abacus';
 import { OnboardingState } from '@/constants/account';
 import { TradeTypes } from '@/constants/trade';
 
-import breakpoints from '@/styles/breakpoints';
 import { layoutMixins } from '@/styles/layoutMixins';
 
 import { Tabs } from '@/components/Tabs';
@@ -16,10 +15,9 @@ import { useAppSelector } from '@/state/appTypes';
 
 import abacusStateManager from '@/lib/abacus';
 
+import { TradeSideTabs } from './TradeSideTabs';
 import { TradeForm } from './forms/TradeForm';
-import { MarginModeSelector } from './forms/TradeForm/MarginModeSelector';
-import { TargetLeverageButton } from './forms/TradeForm/TargetLeverageButton';
-import { TradeSideToggle } from './forms/TradeForm/TradeSideToggle';
+import { MarginAndLeverageButtons } from './forms/TradeForm/MarginAndLeverageButtons';
 import { useTradeTypeOptions } from './forms/TradeForm/useTradeTypeOptions';
 
 export const TradeBoxOrderView = () => {
@@ -36,76 +34,42 @@ export const TradeBoxOrderView = () => {
   const allowChangingOrderType = onboardingState === OnboardingState.AccountConnected;
 
   return (
-    <$TradeBoxOrderViewContainer>
-      <$TopActionsRow>
-        <$MarginAndLeverageButtons>
-          <MarginModeSelector openInTradeBox />
-          <TargetLeverageButton />
-        </$MarginAndLeverageButtons>
-        <TradeSideToggle />
-      </$TopActionsRow>
-      <$Tabs
-        key={selectedTradeType}
-        value={selectedTradeType}
-        items={tradeTypeItems}
-        onValueChange={onTradeTypeChange}
-        withBorders={false}
-        disabled={!allowChangingOrderType}
-        sharedContent={
-          <$Container>
-            <TradeForm />
-          </$Container>
-        }
-      />
-    </$TradeBoxOrderViewContainer>
+    <TradeSideTabs
+      sharedContent={
+        <div tw="flex min-h-full flex-col">
+          <$MarginAndLeverageButtons openInTradeBox />
+          <$OrderTypeTabs
+            value={selectedTradeType}
+            items={tradeTypeItems}
+            onValueChange={onTradeTypeChange}
+            dividerStyle="underline"
+            disabled={!allowChangingOrderType}
+            sharedContent={
+              <$Container>
+                <TradeForm />
+              </$Container>
+            }
+          />
+        </div>
+      }
+    />
   );
 };
 
-const $TradeBoxOrderViewContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding-top: 0.875rem;
-  min-height: 100%;
-`;
-
 const $Container = styled.div`
   ${layoutMixins.scrollArea}
-  border-top: var(--border-width) solid var(--border-color);
 `;
 
-const $Tabs = styled(Tabs)`
-  overflow: hidden;
+const $MarginAndLeverageButtons = styled(MarginAndLeverageButtons)`
+  padding: 0.75rem 1rem;
+  box-shadow: inset 0 calc(-1 * var(--border-width)) var(--border-color);
+`;
+
+const $OrderTypeTabs = styled(Tabs)`
   --tabs-height: 2.125rem;
-  --trigger-active-backgroundColor: --trigger-backgroundColor;
-  --trigger-active-underline-size: 2px;
+  --trigger-active-backgroundColor: var(--trigger-backgroundColor);
 
   > header {
     justify-content: space-around;
   }
 ` as typeof Tabs;
-
-const $MarginAndLeverageButtons = styled.div`
-  ${layoutMixins.inlineRow}
-  gap: 0.5rem;
-  margin-right: 0.5rem;
-
-  abbr,
-  button {
-    width: 100%;
-    height: 2.5rem;
-  }
-`;
-
-const $TopActionsRow = styled.div`
-  display: grid;
-  grid-auto-flow: column;
-
-  padding-left: 1rem;
-  padding-right: 1rem;
-
-  @media ${breakpoints.tablet} {
-    grid-auto-columns: var(--orderbox-column-width) 1fr;
-    gap: var(--form-input-gap);
-  }
-`;

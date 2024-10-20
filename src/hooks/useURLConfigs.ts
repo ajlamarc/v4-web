@@ -15,6 +15,7 @@ export interface LinksConfigs {
   foundation?: string;
   governanceLearnMore?: string;
   help?: string;
+  vaultLearnMore?: string;
   initialMarginFractionLearnMore?: string;
   isolatedMarginLearnMore?: string;
   keplrDashboard?: string;
@@ -33,12 +34,17 @@ export interface LinksConfigs {
   walletLearnMore?: string;
   withdrawalGateLearnMore?: string;
   exchangeStats?: string;
-  complianceSupportEmail?: string;
-  fetAgixMarketWindDownProposal?: string;
   contractLossMechanismLearnMore?: string;
   mintscanValidatorsLearnMore?: string;
   protocolStaking: string;
   stakingAndClaimingRewardsLearnMore?: string;
+  vaultsLearnMore: string;
+  predictionMarketLearnMore?: string;
+  discoveryProgram?: string;
+  getInTouch?: string;
+  deployerTermsAndConditions?: string;
+  dydxLearnMore?: string;
+  affiliateProgram?: string;
 }
 
 export const useURLConfigs = (): LinksConfigs => {
@@ -55,6 +61,7 @@ export const useURLConfigs = (): LinksConfigs => {
     foundation: linksConfigs.foundation ?? FALLBACK_URL,
     governanceLearnMore: linksConfigs.governanceLearnMore ?? FALLBACK_URL,
     help: linksConfigs.help ?? FALLBACK_URL,
+    vaultLearnMore: linksConfigs.vaultLearnMore ?? FALLBACK_URL,
     initialMarginFractionLearnMore: linksConfigs.initialMarginFractionLearnMore ?? FALLBACK_URL,
     isolatedMarginLearnMore: linksConfigs.isolatedMarginLearnMore ?? FALLBACK_URL,
     keplrDashboard: linksConfigs.keplrDashboard ?? FALLBACK_URL,
@@ -72,13 +79,19 @@ export const useURLConfigs = (): LinksConfigs => {
     walletLearnMore: linksConfigs.walletLearnMore ?? FALLBACK_URL,
     withdrawalGateLearnMore: linksConfigs.withdrawalGateLearnMore ?? FALLBACK_URL,
     exchangeStats: linksConfigs.exchangeStats ?? FALLBACK_URL,
-    complianceSupportEmail: linksConfigs.complianceSupportEmail ?? FALLBACK_URL,
     adjustTargetLeverageLearnMore: linksConfigs.adjustTargetLeverageLearnMore ?? FALLBACK_URL,
-    fetAgixMarketWindDownProposal: linksConfigs.fetAgixMarketWindDownProposal,
     contractLossMechanismLearnMore: linksConfigs.contractLossMechanismLearnMore,
     mintscanValidatorsLearnMore: linksConfigs.mintscanValidatorsLearnMore,
     protocolStaking: linksConfigs.protocolStaking,
     stakingAndClaimingRewardsLearnMore:
       linksConfigs.stakingAndClaimingRewardsLearnMore ?? FALLBACK_URL,
+    // todo add to the link configs objects
+    vaultsLearnMore: linksConfigs.vaultsLearnMore ?? FALLBACK_URL,
+    predictionMarketLearnMore: linksConfigs.predictionMarketLearnMore,
+    discoveryProgram: linksConfigs.discoveryProgram,
+    getInTouch: linksConfigs.getInTouch,
+    deployerTermsAndConditions: linksConfigs.deployerTermsAndConditions,
+    dydxLearnMore: linksConfigs.dydxLearnMore ?? FALLBACK_URL,
+    affiliateProgram: linksConfigs.affiliateProgram,
   };
 };

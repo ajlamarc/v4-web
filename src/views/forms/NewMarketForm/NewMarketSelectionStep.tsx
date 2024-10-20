@@ -19,6 +19,7 @@ import {
 import { useAccountBalance } from '@/hooks/useAccountBalance';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useGovernanceVariables } from '@/hooks/useGovernanceVariables';
+import { useNextClobPairId } from '@/hooks/useNextClobPairId';
 import { usePotentialMarkets } from '@/hooks/usePotentialMarkets';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useTokenConfigs } from '@/hooks/useTokenConfigs';
@@ -29,7 +30,7 @@ import { layoutMixins } from '@/styles/layoutMixins';
 
 import { AlertMessage } from '@/components/AlertMessage';
 import { Button } from '@/components/Button';
-import { Details } from '@/components/Details';
+import { Details, DetailsItem } from '@/components/Details';
 import { Output, OutputType } from '@/components/Output';
 import { SearchSelectMenu } from '@/components/SearchSelectMenu';
 import { Tag } from '@/components/Tag';
@@ -41,12 +42,12 @@ import { useAppDispatch, useAppSelector } from '@/state/appTypes';
 import { openDialog } from '@/state/dialogs';
 import { getMarketIds } from '@/state/perpetualsSelectors';
 
+import { getDisplayableTickerFromMarket } from '@/lib/assetUtils';
 import { isTruthy } from '@/lib/isTruthy';
 import { MustBigNumber } from '@/lib/numbers';
 
 type NewMarketSelectionStepProps = {
   assetToAdd?: NewMarketProposal;
-  clobPairId?: number;
   setAssetToAdd: (assetToAdd?: NewMarketProposal) => void;
   onConfirmMarket: () => void;
   liquidityTier?: number;
@@ -57,7 +58,6 @@ type NewMarketSelectionStepProps = {
 
 export const NewMarketSelectionStep = ({
   assetToAdd,
-  clobPairId,
   setAssetToAdd,
   onConfirmMarket,
   liquidityTier,
@@ -75,6 +75,7 @@ export const NewMarketSelectionStep = ({
   const { potentialMarkets, liquidityTiers } = usePotentialMarkets();
   const stringGetter = useStringGetter();
   const { newMarketProposal } = useGovernanceVariables();
+  const { nextAvailableClobPairId } = useNextClobPairId();
   const initialDepositAmountBN = MustBigNumber(newMarketProposal.initialDepositAmount).div(
     Number(`1e${chainTokenDecimals}`)
   );
@@ -140,7 +141,7 @@ export const NewMarketSelectionStep = ({
             type={OutputType.Number}
             value={nativeTokenBalance}
             fractionDigits={TOKEN_DECIMALS}
-            slotRight={<$Tag>{chainTokenLabel}</$Tag>}
+            slotRight={<Tag tw="ml-[0.5ch]">{chainTokenLabel}</Tag>}
           />
         </$Balance>
       </h2>
@@ -153,7 +154,7 @@ export const NewMarketSelectionStep = ({
               filteredPotentialMarkets?.map((potentialMarket: NewMarketProposal) => ({
                 value: potentialMarket.baseAsset,
                 label: potentialMarket.meta.assetName,
-                tag: potentialMarket.params.ticker,
+                tag: getDisplayableTickerFromMarket(potentialMarket.params.ticker),
                 slotAfter: tickersFromProposals.has(potentialMarket.params.ticker) && (
                   <Tag isHighlighted>{stringGetter({ key: STRING_KEYS.VOTING_LIVE })}</Tag>
                 ),
@@ -166,9 +167,10 @@ export const NewMarketSelectionStep = ({
         label={stringGetter({ key: STRING_KEYS.MARKETS })}
       >
         {assetToAdd ? (
-          <$SelectedAsset>
-            {assetToAdd.meta.assetName} <Tag>{assetToAdd.params.ticker}</Tag>
-          </$SelectedAsset>
+          <span tw="text-color-text-2">
+            {assetToAdd.meta.assetName}{' '}
+            <Tag>{getDisplayableTickerFromMarket(assetToAdd.params.ticker)}</Tag>
+          </span>
         ) : (
           `${stringGetter({ key: STRING_KEYS.EG })} "BTC-USD"`
         )}
@@ -247,70 +249,75 @@ export const NewMarketSelectionStep = ({
       )}
       <WithReceipt
         slotReceipt={
-          <$ReceiptDetails
-            items={[
-              assetToAdd && {
-                key: 'reference-price',
-                label: stringGetter({ key: STRING_KEYS.REFERENCE_PRICE }),
-                tooltip: 'reference-price',
-                value: (
-                  <Output
-                    type={OutputType.Fiat}
-                    value={assetToAdd.meta?.referencePrice}
-                    fractionDigits={tickSizeDecimals}
-                  />
-                ),
-              },
-              assetToAdd && {
-                key: 'message-details',
-                label: stringGetter({ key: STRING_KEYS.MESSAGE_DETAILS }),
-                value: (
-                  <$Button
-                    action={ButtonAction.Navigation}
-                    size={ButtonSize.Small}
-                    onClick={() =>
-                      dispatch(
-                        openDialog(
-                          DialogTypes.NewMarketMessageDetails({
-                            assetData: assetToAdd,
-                            clobPairId,
-                            liquidityTier,
-                          })
+          <Details
+            items={(
+              [
+                assetToAdd && {
+                  key: 'reference-price',
+                  label: stringGetter({ key: STRING_KEYS.REFERENCE_PRICE }),
+                  tooltip: 'reference-price',
+                  value: (
+                    <Output
+                      type={OutputType.Fiat}
+                      value={assetToAdd.meta?.referencePrice}
+                      fractionDigits={tickSizeDecimals}
+                    />
+                  ),
+                },
+                assetToAdd && {
+                  key: 'message-details',
+                  label: stringGetter({ key: STRING_KEYS.MESSAGE_DETAILS }),
+                  value: (
+                    <Button
+                      action={ButtonAction.Navigation}
+                      size={ButtonSize.Small}
+                      onClick={() =>
+                        dispatch(
+                          openDialog(
+                            DialogTypes.NewMarketMessageDetails({
+                              assetData: assetToAdd,
+                              clobPairId: nextAvailableClobPairId,
+                              liquidityTier,
+                            })
+                          )
                         )
-                      )
-                    }
-                  >
-                    {stringGetter({ key: STRING_KEYS.VIEW_DETAILS })} →
-                  </$Button>
-                ),
-              },
-              {
-                key: 'dydx-required',
-                label: (
-                  <span>
-                    {stringGetter({ key: STRING_KEYS.REQUIRED_BALANCE })}{' '}
-                    <Tag>{chainTokenLabel}</Tag>
-                  </span>
-                ),
-                value: (
-                  <$Disclaimer>
-                    {stringGetter({
-                      key: STRING_KEYS.OR_MORE,
-                      params: {
-                        NUMBER: (
-                          <$Output
-                            useGrouping
-                            type={OutputType.Number}
-                            value={initialDepositAmountBN}
-                            fractionDigits={initialDepositAmountDecimals}
-                          />
-                        ),
-                      },
-                    })}
-                  </$Disclaimer>
-                ),
-              },
-            ].filter(isTruthy)}
+                      }
+                      tw="[--button-height:auto] [--button-padding:0]"
+                    >
+                      {stringGetter({ key: STRING_KEYS.VIEW_DETAILS })} →
+                    </Button>
+                  ),
+                },
+                {
+                  key: 'dydx-required',
+                  label: (
+                    <span>
+                      {stringGetter({ key: STRING_KEYS.REQUIRED_BALANCE })}{' '}
+                      <Tag>{chainTokenLabel}</Tag>
+                    </span>
+                  ),
+                  value: (
+                    <div tw="ml-[0.5ch] text-color-text-0">
+                      {stringGetter({
+                        key: STRING_KEYS.OR_MORE,
+                        params: {
+                          NUMBER: (
+                            <Output
+                              useGrouping
+                              type={OutputType.Number}
+                              value={initialDepositAmountBN}
+                              fractionDigits={initialDepositAmountDecimals}
+                              tw="inline-block"
+                            />
+                          ),
+                        },
+                      })}
+                    </div>
+                  ),
+                },
+              ] satisfies Array<DetailsItem | false | undefined>
+            ).filter(isTruthy)}
+            tw="px-0.75 pb-0.25 pt-0.375"
           />
         }
       >
@@ -319,7 +326,7 @@ export const NewMarketSelectionStep = ({
         ) : (
           <Button
             type={ButtonType.Submit}
-            state={{ isDisabled: !assetToAdd || !liquidityTier === undefined || !clobPairId }}
+            state={{ isDisabled: !assetToAdd || !liquidityTier === undefined }}
             action={ButtonAction.Primary}
           >
             {stringGetter({ key: STRING_KEYS.PREVIEW_MARKET_PROPOSAL })}
@@ -352,20 +359,6 @@ const $Balance = styled.span`
     margin-left: 0.5ch;
   }
 `;
-
-const $Tag = styled(Tag)`
-  margin-left: 0.5ch;
-`;
-
-const $SelectedAsset = styled.span`
-  color: var(--color-text-2);
-`;
-
-const $Disclaimer = styled.div`
-  color: var(--color-text-0);
-  margin-left: 0.5ch;
-`;
-
 const $Header = styled.div`
   display: flex;
   flex: 1;
@@ -415,17 +408,4 @@ const $Details = styled(Details)`
       margin-bottom: 0.5rem;
     }
   }
-`;
-
-const $ReceiptDetails = styled(Details)`
-  padding: 0.375rem 0.75rem 0.25rem;
-`;
-
-const $Output = styled(Output)`
-  display: inline-block;
-`;
-
-const $Button = styled(Button)`
-  --button-padding: 0;
-  --button-height: auto;
 `;

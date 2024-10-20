@@ -2,9 +2,10 @@ import { FormEvent, useMemo, useState } from 'react';
 
 import type { IndexedTx } from '@cosmjs/stargate';
 import { encodeJson } from '@dydxprotocol/v4-client-js';
-import { PerpetualMarketType } from '@dydxprotocol/v4-client-js/build/node_modules/@dydxprotocol/v4-proto/src/codegen/dydxprotocol/perpetuals/perpetual';
+import { PerpetualMarketType } from '@dydxprotocol/v4-proto/src/codegen/dydxprotocol/perpetuals/perpetual';
 import Long from 'long';
 import styled from 'styled-components';
+import tw from 'twin.macro';
 
 import { AlertType } from '@/constants/alerts';
 import { ButtonAction, ButtonSize, ButtonType } from '@/constants/buttons';
@@ -16,6 +17,7 @@ import type { NewMarketProposal } from '@/constants/potentialMarkets';
 
 import { useAccountBalance } from '@/hooks/useAccountBalance';
 import { useGovernanceVariables } from '@/hooks/useGovernanceVariables';
+import { useNextClobPairId } from '@/hooks/useNextClobPairId';
 import { usePotentialMarkets } from '@/hooks/usePotentialMarkets';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useSubaccount } from '@/hooks/useSubaccount';
@@ -39,12 +41,12 @@ import { WithDetailsReceipt } from '@/components/WithDetailsReceipt';
 import { useAppDispatch } from '@/state/appTypes';
 import { openDialog } from '@/state/dialogs';
 
+import { getDisplayableTickerFromMarket } from '@/lib/assetUtils';
 import { MustBigNumber } from '@/lib/numbers';
 import { log } from '@/lib/telemetry';
 
 type NewMarketPreviewStepProps = {
   assetData: NewMarketProposal;
-  clobPairId: number;
   liquidityTier: number;
   onBack: () => void;
   onSuccess: (hash: string) => void;
@@ -53,7 +55,6 @@ type NewMarketPreviewStepProps = {
 
 export const NewMarketPreviewStep = ({
   assetData,
-  clobPairId,
   liquidityTier,
   onBack,
   onSuccess,
@@ -68,6 +69,7 @@ export const NewMarketPreviewStep = ({
   const { submitNewMarketProposal } = useSubaccount();
   const { newMarketProposal } = useGovernanceVariables();
   const { newMarketProposalLearnMore } = useURLConfigs();
+  const { fetchNextClobPairId, nextAvailableClobPairId } = useNextClobPairId();
   const initialDepositAmountBN = MustBigNumber(newMarketProposal.initialDepositAmount).div(
     Number(`1e${chainTokenDecimals}`)
   );
@@ -136,6 +138,12 @@ export const NewMarketPreviewStep = ({
           setErrorMessage(undefined);
 
           try {
+            const { nextAvailableClobPairId: clobPairId } = await fetchNextClobPairId();
+
+            if (!clobPairId) {
+              throw new Error('Failed to calculate next available clobPairId');
+            }
+
             const tx = await submitNewMarketProposal({
               id: clobPairId,
               ticker,
@@ -187,7 +195,7 @@ export const NewMarketPreviewStep = ({
             type={OutputType.Number}
             value={nativeTokenBalance}
             fractionDigits={TOKEN_DECIMALS}
-            slotRight={<$Tag>{chainTokenLabel}</$Tag>}
+            slotRight={<Tag tw="ml-[0.5ch]">{chainTokenLabel}</Tag>}
           />
         </$Balance>
       </h2>
@@ -195,7 +203,7 @@ export const NewMarketPreviewStep = ({
         disabled
         label={stringGetter({ key: STRING_KEYS.MARKET })}
         type={InputType.Text}
-        value={ticker}
+        value={getDisplayableTickerFromMarket(ticker)}
       />
       <$WithDetailsReceipt
         side="bottom"
@@ -253,19 +261,24 @@ export const NewMarketPreviewStep = ({
             key: 'message-details',
             label: stringGetter({ key: STRING_KEYS.MESSAGE_DETAILS }),
             value: (
-              <$Button
+              <Button
                 action={ButtonAction.Navigation}
                 size={ButtonSize.Small}
                 onClick={() =>
                   dispatch(
                     openDialog(
-                      DialogTypes.NewMarketMessageDetails({ assetData, clobPairId, liquidityTier })
+                      DialogTypes.NewMarketMessageDetails({
+                        assetData,
+                        clobPairId: nextAvailableClobPairId,
+                        liquidityTier,
+                      })
                     )
                   )
                 }
+                tw="[--button-height:auto] [--button-padding:0]"
               >
                 {stringGetter({ key: STRING_KEYS.VIEW_DETAILS })} →
-              </$Button>
+              </Button>
             ),
           },
           {
@@ -322,7 +335,7 @@ export const NewMarketPreviewStep = ({
       {alertMessage && (
         <AlertMessage type={alertMessage.type}>{alertMessage.message} </AlertMessage>
       )}
-      <$ButtonRow>
+      <div tw="grid w-full grid-cols-[1fr_2fr] gap-1">
         <Button onClick={onBack}>{stringGetter({ key: STRING_KEYS.BACK })}</Button>
         <Button
           type={ButtonType.Submit}
@@ -333,8 +346,8 @@ export const NewMarketPreviewStep = ({
             ? stringGetter({ key: STRING_KEYS.PROPOSE_NEW_MARKET })
             : stringGetter({ key: STRING_KEYS.ACKNOWLEDGE_TERMS })}
         </Button>
-      </$ButtonRow>
-      <$DisclaimerContainer>
+      </div>
+      <div tw="w-min min-w-full">
         <$Disclaimer>
           {stringGetter({
             key: STRING_KEYS.PROPOSAL_DISCLAIMER_1,
@@ -342,14 +355,14 @@ export const NewMarketPreviewStep = ({
               NUM_TOKENS_REQUIRED: initialDepositAmount,
               NATIVE_TOKEN_DENOM: chainTokenLabel,
               HERE: (
-                <$Link href={newMarketProposalLearnMore}>
+                <Link href={newMarketProposalLearnMore} isAccent isInline>
                   {stringGetter({ key: STRING_KEYS.HERE })}
-                </$Link>
+                </Link>
               ),
             },
           })}
         </$Disclaimer>
-      </$DisclaimerContainer>
+      </div>
     </$Form>
   );
 };
@@ -376,11 +389,6 @@ const $Balance = styled.span`
     margin-left: 0.5ch;
   }
 `;
-
-const $Tag = styled(Tag)`
-  margin-left: 0.5ch;
-`;
-
 const $FormInput = styled(FormInput)`
   input {
     font-size: 1rem;
@@ -393,15 +401,7 @@ const $Icon = styled(Icon)<{ $hasError?: boolean }>`
   ${({ $hasError }) => ($hasError ? 'color: var(--color-error);' : 'color: var(--color-success);')}
 `;
 
-const $WithDetailsReceipt = styled(WithDetailsReceipt)`
-  --details-item-fontSize: 1rem;
-`;
-
-const $DisclaimerContainer = styled.div`
-  min-width: 100%;
-  width: min-content;
-`;
-
+const $WithDetailsReceipt = tw(WithDetailsReceipt)`[--details-item-fontSize:1rem]`;
 const $Disclaimer = styled.div<{ textAlign?: string }>`
   font: var(--font-small-book);
   color: var(--color-text-0);
@@ -409,21 +409,4 @@ const $Disclaimer = styled.div<{ textAlign?: string }>`
   margin-left: 0.5ch;
 
   ${({ textAlign }) => textAlign && `text-align: ${textAlign};`}
-`;
-
-const $ButtonRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 1rem;
-  width: 100%;
-`;
-
-const $Button = styled(Button)`
-  --button-padding: 0;
-  --button-height: auto;
-`;
-
-const $Link = styled(Link)`
-  --link-color: var(--color-accent);
-  display: inline;
 `;

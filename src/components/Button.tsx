@@ -1,11 +1,6 @@
 import { forwardRef } from 'react';
 
-import styled, {
-  css,
-  type FlattenInterpolation,
-  type FlattenSimpleInterpolation,
-  type ThemeProps,
-} from 'styled-components';
+import styled, { css } from 'styled-components';
 
 import { ButtonAction, ButtonShape, ButtonSize, ButtonState } from '@/constants/buttons';
 
@@ -27,6 +22,7 @@ type ElementProps = {
   slotLeft?: React.ReactNode;
   slotRight?: React.ReactNode;
   state?: ButtonState | ButtonStateConfig;
+  withContentOnLoading?: boolean;
 };
 
 type StyleProps = {
@@ -48,6 +44,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
       children,
       slotLeft = null,
       slotRight = null,
+      withContentOnLoading = false,
 
       ...otherProps
     },
@@ -67,7 +64,12 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
         {...{ ref, action, size, shape, state, ...otherProps }}
       >
         {state[ButtonState.Loading] ? (
-          <LoadingDots size={3} />
+          <>
+            {withContentOnLoading && slotLeft}
+            {withContentOnLoading && children}
+            {withContentOnLoading && slotRight}
+            <LoadingDots size={3} />
+          </>
         ) : (
           <>
             {slotLeft}
@@ -148,7 +150,7 @@ const getDisabledStateForButtonAction = (action?: ButtonAction) => {
 
 const buttonStateVariants = (
   action?: ButtonAction
-): Record<ButtonState, FlattenSimpleInterpolation | FlattenInterpolation<ThemeProps<any>>> => ({
+): Record<ButtonState, ReturnType<typeof css>> => ({
   [ButtonState.Default]: css``,
 
   [ButtonState.Disabled]: getDisabledStateForButtonAction(action),

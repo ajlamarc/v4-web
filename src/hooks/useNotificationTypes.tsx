@@ -3,34 +3,39 @@ import { useEffect } from 'react';
 import { groupBy, isEqual } from 'lodash';
 import { shallowEqual } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import tw from 'twin.macro';
 
 import { ComplianceStatus } from '@/constants/abacus';
 import { ComplianceStates } from '@/constants/compliance';
 import { DialogTypes } from '@/constants/dialogs';
+import { SUPPORTED_COSMOS_CHAINS } from '@/constants/graz';
 import {
   STRING_KEYS,
   STRING_KEY_VALUES,
   type StringGetterFunction,
   type StringKey,
 } from '@/constants/localization';
+import { PREDICTION_MARKET } from '@/constants/markets';
 import {
-  CURRENT_SEASON_NUMBER,
   DEFAULT_TOAST_AUTO_CLOSE_MS,
-  INCENTIVES_DISTRIBUTED_NOTIFICATION_ID,
+  FeedbackRequestNotificationIds,
   INCENTIVES_SEASON_NOTIFICATION_ID,
+  MarketLaunchNotificationIds,
+  MarketUpdateNotificationIds,
   MarketWindDownNotificationIds,
   NotificationDisplayData,
   NotificationType,
-  REWARD_DISTRIBUTION_SEASON_NUMBER,
   ReleaseUpdateNotificationIds,
   TransferNotificationTypes,
   type NotificationTypeConfig,
 } from '@/constants/notifications';
-import { AppRoute, TokenRoute } from '@/constants/routes';
+import { AppRoute } from '@/constants/routes';
+import { StatsigDynamicConfigs, StatsigFlags } from '@/constants/statsig';
 import { DydxChainAsset } from '@/constants/wallets';
 
 import { useLocalNotifications } from '@/hooks/useLocalNotifications';
+
+import { KeplrIcon, PhantomIcon } from '@/icons';
 
 import { AssetIcon } from '@/components/AssetIcon';
 import { Icon, IconName } from '@/components/Icon';
@@ -38,23 +43,26 @@ import { Link } from '@/components/Link';
 import { Output, OutputType } from '@/components/Output';
 // eslint-disable-next-line import/no-cycle
 import { BlockRewardNotification } from '@/views/notifications/BlockRewardNotification';
+import { CancelAllNotification } from '@/views/notifications/CancelAllNotification';
+import { CloseAllPositionsNotification } from '@/views/notifications/CloseAllPositionsNotification';
 import { IncentiveSeasonDistributionNotification } from '@/views/notifications/IncentiveSeasonDistributionNotification';
+import { MarketLaunchTrumpwinNotification } from '@/views/notifications/MarketLaunchTrumpwinNotification';
 import { OrderCancelNotification } from '@/views/notifications/OrderCancelNotification';
 import { OrderStatusNotification } from '@/views/notifications/OrderStatusNotification';
-import { StakingLiveNotification } from '@/views/notifications/StakingLiveNotification';
 import { TradeNotification } from '@/views/notifications/TradeNotification';
 import { TransferStatusNotification } from '@/views/notifications/TransferStatusNotification';
 
-import {
-  getLocalCancelOrders,
-  getLocalPlaceOrders,
-  getSubaccountFills,
-  getSubaccountOrders,
-} from '@/state/accountSelectors';
+import { getSubaccountFills, getSubaccountOrders } from '@/state/accountSelectors';
 import { getSelectedDydxChainId } from '@/state/appSelectors';
 import { useAppDispatch, useAppSelector } from '@/state/appTypes';
 import { openDialog } from '@/state/dialogs';
-import { getAbacusNotifications } from '@/state/notificationsSelectors';
+import {
+  getLocalCancelAlls,
+  getLocalCancelOrders,
+  getLocalCloseAllPositions,
+  getLocalPlaceOrders,
+} from '@/state/localOrdersSelectors';
+import { getAbacusNotifications, getCustomNotifications } from '@/state/notificationsSelectors';
 import { getMarketIds } from '@/state/perpetualsSelectors';
 
 import { formatSeconds } from '@/lib/timeUtils';
@@ -62,8 +70,9 @@ import { formatSeconds } from '@/lib/timeUtils';
 import { useAccounts } from './useAccounts';
 import { useApiState } from './useApiState';
 import { useComplianceState } from './useComplianceState';
-import { useEnvFeatures } from './useEnvFeatures';
+import { useIncentivesSeason } from './useIncentivesSeason';
 import { useQueryChaosLabsIncentives } from './useQueryChaosLabsIncentives';
+import { useAllStatsigDynamicConfigValues, useAllStatsigGateValues } from './useStatsig';
 import { useStringGetter } from './useStringGetter';
 import { useTokenConfigs } from './useTokenConfigs';
 import { useURLConfigs } from './useURLConfigs';
@@ -107,7 +116,7 @@ export const notificationTypes: NotificationTypeConfig[] = [
           switch (abacusNotificationType) {
             case 'order': {
               const order = ordersById[id]?.[0];
-              const clientId: number | undefined = order?.clientId ?? undefined;
+              const clientId: string | undefined = order?.clientId ?? undefined;
               const localOrderExists =
                 clientId && localPlaceOrders.some((ordr) => ordr.clientId === clientId);
 
@@ -202,7 +211,7 @@ export const notificationTypes: NotificationTypeConfig[] = [
     },
   },
   {
-    type: NotificationType.SquidTransfer,
+    type: NotificationType.SkipTransfer,
     useTrigger: ({ trigger }) => {
       const stringGetter = useStringGetter();
       const { transferNotifications } = useLocalNotifications();
@@ -211,23 +220,35 @@ export const notificationTypes: NotificationTypeConfig[] = [
       useEffect(() => {
         // eslint-disable-next-line no-restricted-syntax
         for (const transfer of transferNotifications) {
-          const { fromChainId, status, txHash, toAmount, type, isExchange } = transfer;
-          const isFinished =
-            (Boolean(status) && status?.squidTransactionStatus !== 'ongoing') || isExchange;
-          const icon = <Icon iconName={isFinished ? IconName.Transfer : IconName.Clock} />;
-
+          const { id, fromChainId, toChainId, status, txHash, toAmount, type, isExchange } =
+            transfer;
           const transferType =
             type ??
             (fromChainId === selectedDydxChainId
               ? TransferNotificationTypes.Withdrawal
               : TransferNotificationTypes.Deposit);
 
-          const title = stringGetter({
-            key: {
-              deposit: isFinished ? STRING_KEYS.DEPOSIT : STRING_KEYS.DEPOSIT_IN_PROGRESS,
-              withdrawal: isFinished ? STRING_KEYS.WITHDRAW : STRING_KEYS.WITHDRAW_IN_PROGRESS,
-            }[transferType],
-          });
+          const isCosmosDeposit =
+            SUPPORTED_COSMOS_CHAINS.includes(fromChainId ?? '') &&
+            fromChainId !== selectedDydxChainId &&
+            toChainId === selectedDydxChainId;
+
+          const isFinished =
+            (Boolean(status) && status?.latestRouteStatusSummary !== 'ongoing') || isExchange;
+          const icon = isCosmosDeposit ? (
+            <$AssetIcon symbol="USDC" />
+          ) : (
+            <Icon iconName={isFinished ? IconName.Transfer : IconName.Clock} />
+          );
+
+          const title = isCosmosDeposit
+            ? stringGetter({ key: STRING_KEYS.CONFIRM_PENDING_DEPOSIT })
+            : stringGetter({
+                key: {
+                  deposit: isFinished ? STRING_KEYS.DEPOSIT : STRING_KEYS.DEPOSIT_IN_PROGRESS,
+                  withdrawal: isFinished ? STRING_KEYS.WITHDRAW : STRING_KEYS.WITHDRAW_IN_PROGRESS,
+                }[transferType],
+              });
 
           const toChainEta = status?.toChain?.chainData?.estimatedRouteDuration ?? 0;
           // TODO: remove typeguards once skip implements estimatedrouteduration
@@ -243,7 +264,7 @@ export const notificationTypes: NotificationTypeConfig[] = [
           });
 
           trigger(
-            txHash,
+            id ?? txHash,
             {
               icon,
               title,
@@ -260,12 +281,12 @@ export const notificationTypes: NotificationTypeConfig[] = [
                 />
               ),
               toastSensitivity: 'foreground',
-              groupKey: NotificationType.SquidTransfer,
+              groupKey: NotificationType.SkipTransfer,
             },
             [isFinished]
           );
         }
-      }, [transferNotifications, stringGetter]);
+      }, [transferNotifications, stringGetter, selectedDydxChainId]);
     },
     useNotificationAction: () => {
       return () => {};
@@ -274,124 +295,95 @@ export const notificationTypes: NotificationTypeConfig[] = [
   {
     type: NotificationType.ReleaseUpdates,
     useTrigger: ({ trigger }) => {
+      const { discoveryProgram } = useURLConfigs();
       const { chainTokenLabel } = useTokenConfigs();
       const stringGetter = useStringGetter();
-      const { isStakingEnabled } = useEnvFeatures();
+      const featureFlags = useAllStatsigGateValues();
+      const { incentivesDistributedSeasonId, rewardDistributionSeasonNumber } =
+        useIncentivesSeason();
 
-      const incentivesExpirationDate = new Date('2024-07-17T23:59:59');
-      const conditionalOrdersExpirationDate = new Date('2024-06-01T23:59:59');
-      const fokDeprecationExpirationDate = new Date('2024-07-01T23:59:59');
-      const isolatedMarginLiveExpirationDate = new Date('2024-07-12T23:59:59');
-      const stakingLiveExpirationDate = new Date('2024-08-24T23:59:59');
-
-      const { isolatedMarginLearnMore } = useURLConfigs();
-
+      const tradeUSElectionExpirationDate = new Date('2024-10-21T23:59:59');
       const currentDate = new Date();
 
       useEffect(() => {
-        if (currentDate <= incentivesExpirationDate) {
+        if (discoveryProgram) {
           trigger(
-            INCENTIVES_SEASON_NOTIFICATION_ID,
+            ReleaseUpdateNotificationIds.DiscoveryProgram,
             {
               icon: <AssetIcon symbol={chainTokenLabel} />,
               title: stringGetter({
-                key: 'NOTIFICATIONS.INCENTIVES_SEASON_BEGUN.TITLE',
-                params: { SEASON_NUMBER: CURRENT_SEASON_NUMBER },
+                key: 'NOTIFICATIONS.DISCOVERY_PROGRAM.TITLE',
               }),
               body: stringGetter({
-                key: 'NOTIFICATIONS.INCENTIVES_SEASON_BEGUN.BODY',
+                key: 'NOTIFICATIONS.DISCOVERY_PROGRAM.BODY',
                 params: {
-                  PREV_SEASON_NUMBER: CURRENT_SEASON_NUMBER - 2, // we generally only have data for rewards from 2 seasons ago because the new season launches before the previous season's rewards are distributed
-                  DYDX_AMOUNT: '52',
-                  USDC_AMOUNT: '100',
-                },
-              }),
-              toastSensitivity: 'foreground',
-              groupKey: INCENTIVES_SEASON_NOTIFICATION_ID,
-            },
-            []
-          );
-        }
-
-        if (currentDate <= conditionalOrdersExpirationDate) {
-          trigger(
-            ReleaseUpdateNotificationIds.RevampedConditionalOrders,
-            {
-              icon: <AssetIcon symbol={chainTokenLabel} />,
-              title: stringGetter({
-                key: 'NOTIFICATIONS.CONDITIONAL_ORDERS_REVAMP.TITLE',
-              }),
-              body: stringGetter({
-                key: 'NOTIFICATIONS.CONDITIONAL_ORDERS_REVAMP.BODY',
-                params: {
-                  TWITTER_LINK: (
-                    <$Link href="https://twitter.com/dYdX/status/1785339109268935042">
+                  HERE_LINK: (
+                    <Link href={discoveryProgram} isAccent isInline>
                       {stringGetter({ key: STRING_KEYS.HERE })}
-                    </$Link>
+                    </Link>
                   ),
                 },
               }),
               toastSensitivity: 'foreground',
-              groupKey: ReleaseUpdateNotificationIds.RevampedConditionalOrders,
+              groupKey: ReleaseUpdateNotificationIds.DiscoveryProgram,
             },
             []
           );
         }
 
-        if (currentDate <= fokDeprecationExpirationDate) {
+        if (
+          featureFlags?.[StatsigFlags.ffShowPredictionMarketsUi] &&
+          currentDate <= tradeUSElectionExpirationDate
+        ) {
           trigger(
-            ReleaseUpdateNotificationIds.FOKDeprecation,
+            MarketLaunchNotificationIds.TrumpWin,
             {
-              icon: <AssetIcon symbol={chainTokenLabel} />,
-              title: stringGetter({
-                key: 'NOTIFICATIONS.FOK_DEPRECATION.TITLE',
-              }),
+              title: stringGetter({ key: STRING_KEYS.TRUMPWIN_MARKET_LAUNCH_TITLE }),
               body: stringGetter({
-                key: 'NOTIFICATIONS.FOK_DEPRECATION.BODY',
+                key: STRING_KEYS.TRUMPWIN_MARKET_LAUNCH_BODY,
+                params: { MARKET: PREDICTION_MARKET.TRUMPWIN },
               }),
-              toastSensitivity: 'foreground',
-              groupKey: ReleaseUpdateNotificationIds.FOKDeprecation,
-            },
-            []
-          );
-        }
-
-        if (currentDate <= isolatedMarginLiveExpirationDate) {
-          trigger(
-            ReleaseUpdateNotificationIds.IsolatedMarginLive,
-            {
-              icon: <AssetIcon symbol={chainTokenLabel} />,
-              title: stringGetter({
-                key: 'NOTIFICATIONS.ISOLATED_MARGIN_LIVE.TITLE',
-              }),
-              body: stringGetter({
-                key: 'NOTIFICATIONS.ISOLATED_MARGIN_LIVE.BODY',
-                params: {
-                  LEARN_MORE: (
-                    <$Link href={isolatedMarginLearnMore}>
-                      {stringGetter({ key: STRING_KEYS.HERE })}
-                    </$Link>
-                  ),
-                },
-              }),
-              toastSensitivity: 'foreground',
-              groupKey: ReleaseUpdateNotificationIds.IsolatedMarginLive,
-            },
-            []
-          );
-        }
-
-        if (isStakingEnabled && currentDate <= stakingLiveExpirationDate) {
-          trigger(
-            ReleaseUpdateNotificationIds.InAppStakingLive,
-            {
-              title: stringGetter({ key: 'NOTIFICATIONS.IN_APP_STAKING_LIVE.TITLE' }),
-              body: stringGetter({ key: 'NOTIFICATIONS.IN_APP_STAKING_LIVE.BODY' }),
               renderCustomBody({ isToast, notification }) {
-                return <StakingLiveNotification isToast={isToast} notification={notification} />;
+                return (
+                  <MarketLaunchTrumpwinNotification isToast={isToast} notification={notification} />
+                );
               },
               toastSensitivity: 'foreground',
-              groupKey: ReleaseUpdateNotificationIds.InAppStakingLive,
+              groupKey: MarketLaunchNotificationIds.TrumpWin,
+            },
+            []
+          );
+        }
+
+        if (featureFlags?.[StatsigFlags.ffEnableKeplr]) {
+          trigger(
+            ReleaseUpdateNotificationIds.KeplrSupport,
+            {
+              icon: <KeplrIcon />,
+              title: stringGetter({ key: STRING_KEYS.KEPLR_SUPPORT_TITLE }),
+              body: stringGetter({
+                key: STRING_KEYS.KEPLR_SUPPORT_BODY,
+              }),
+              toastSensitivity: 'foreground',
+              groupKey: ReleaseUpdateNotificationIds.KeplrSupport,
+            },
+            []
+          );
+        }
+
+        const phantomNotificationExpirationDate = new Date('2024-10-07T15:00:29.517926238Z');
+
+        if (currentDate < phantomNotificationExpirationDate) {
+          trigger(
+            ReleaseUpdateNotificationIds.PhantomSupport,
+            {
+              icon: <PhantomIcon />,
+              title: stringGetter({ key: STRING_KEYS.PHANTOM_SUPPORT_TITLE }),
+              body: stringGetter({
+                key: STRING_KEYS.PHANTOM_SUPPORT_BODY,
+              }),
+              toastSensitivity: 'foreground',
+              groupKey: ReleaseUpdateNotificationIds.KeplrSupport,
             },
             []
           );
@@ -401,26 +393,44 @@ export const notificationTypes: NotificationTypeConfig[] = [
       const { dydxAddress } = useAccounts();
       const { data, status } = useQueryChaosLabsIncentives({
         dydxAddress,
-        season: 3,
+        season: rewardDistributionSeasonNumber,
       });
 
       const { dydxRewards } = data ?? {};
 
       useEffect(() => {
-        if (dydxAddress && status === 'success') {
+        trigger(
+          INCENTIVES_SEASON_NOTIFICATION_ID,
+          {
+            icon: <Icon iconName={IconName.RewardStar} />,
+            title: stringGetter({
+              key: STRING_KEYS.INCENTIVES_SEASON_ENDED_TITLE,
+              params: { SEASON_NUMBER: 6 }, // last season, will just hardcode
+            }),
+            body: stringGetter({ key: STRING_KEYS.INCENTIVES_SEASON_ENDED_BODY }),
+            toastSensitivity: 'foreground',
+            groupKey: INCENTIVES_SEASON_NOTIFICATION_ID,
+          },
+          []
+        );
+      }, [stringGetter]);
+
+      useEffect(() => {
+        const rewards = dydxRewards ?? 0;
+        if (dydxAddress && status === 'success' && rewards > 0) {
           trigger(
-            INCENTIVES_DISTRIBUTED_NOTIFICATION_ID,
+            incentivesDistributedSeasonId,
             {
               icon: <AssetIcon symbol={chainTokenLabel} />,
               title: stringGetter({
                 key: 'NOTIFICATIONS.REWARDS_DISTRIBUTED.TITLE',
-                params: { SEASON_NUMBER: REWARD_DISTRIBUTION_SEASON_NUMBER },
+                params: { SEASON_NUMBER: rewardDistributionSeasonNumber },
               }),
               body: stringGetter({
                 key: 'NOTIFICATIONS.REWARDS_DISTRIBUTED.BODY',
                 params: {
-                  SEASON_NUMBER: REWARD_DISTRIBUTION_SEASON_NUMBER,
-                  DYDX_AMOUNT: dydxRewards ?? 0,
+                  SEASON_NUMBER: rewardDistributionSeasonNumber,
+                  DYDX_AMOUNT: rewards,
                 },
               }),
               renderCustomBody({ isToast, notification }) {
@@ -429,14 +439,14 @@ export const notificationTypes: NotificationTypeConfig[] = [
                     isToast={isToast}
                     notification={notification}
                     data={{
-                      points: dydxRewards ?? 0,
+                      points: rewards,
                       chainTokenLabel,
                     }}
                   />
                 );
               },
               toastSensitivity: 'foreground',
-              groupKey: INCENTIVES_DISTRIBUTED_NOTIFICATION_ID,
+              groupKey: incentivesDistributedSeasonId,
             },
             []
           );
@@ -445,103 +455,129 @@ export const notificationTypes: NotificationTypeConfig[] = [
     },
     useNotificationAction: () => {
       const { chainTokenLabel } = useTokenConfigs();
-      const { isStakingEnabled } = useEnvFeatures();
+      const { incentivesDistributedSeasonId } = useIncentivesSeason();
 
       const navigate = useNavigate();
 
       return (notificationId: string) => {
-        if (notificationId === INCENTIVES_SEASON_NOTIFICATION_ID) {
-          if (isStakingEnabled) {
-            navigate(`${chainTokenLabel}`);
-          } else {
-            navigate(`${chainTokenLabel}/${TokenRoute.TradingRewards}`);
-          }
-        } else if (notificationId === INCENTIVES_DISTRIBUTED_NOTIFICATION_ID) {
-          if (isStakingEnabled) {
-            navigate(`${chainTokenLabel}`);
-          } else {
-            navigate(`${chainTokenLabel}/${TokenRoute.StakingRewards}`);
-          }
+        if (
+          notificationId === INCENTIVES_SEASON_NOTIFICATION_ID ||
+          notificationId === incentivesDistributedSeasonId
+        ) {
+          navigate(`${chainTokenLabel}`);
         }
       };
+    },
+  },
+  {
+    type: NotificationType.MarketUpdate,
+    useTrigger: ({ trigger }) => {
+      const stringGetter = useStringGetter();
+      const proposal148VoteEndDate = new Date('2024-09-02T15:00:29.517926238Z');
+      const proposal148ExpirationDate = new Date('2024-09-09T15:00:29.517926238Z');
+      const currentDate = new Date();
+      const { chainTokenLabel } = useTokenConfigs();
+
+      useEffect(() => {
+        if (currentDate >= proposal148VoteEndDate && currentDate <= proposal148ExpirationDate) {
+          trigger(
+            MarketUpdateNotificationIds.MarketUpdateSolLiquidityTier,
+            {
+              icon: <AssetIcon symbol={chainTokenLabel} />,
+              title: stringGetter({ key: 'NOTIFICATIONS.LIQUIDITY_TIER_UPDATE_SOL_USD.TITLE' }),
+              body: stringGetter({ key: 'NOTIFICATIONS.LIQUIDITY_TIER_UPDATE_SOL_USD.BODY' }),
+              toastSensitivity: 'foreground',
+              groupKey: MarketUpdateNotificationIds.MarketUpdateSolLiquidityTier,
+            },
+            []
+          );
+        }
+      }, [stringGetter]);
+    },
+    useNotificationAction: () => {
+      return () => {};
     },
   },
   {
     type: NotificationType.MarketWindDown,
     useTrigger: ({ trigger }) => {
       const stringGetter = useStringGetter();
+      const dynamicConfigs = useAllStatsigDynamicConfigValues();
+      const maticWindDownProposal = dynamicConfigs?.[StatsigDynamicConfigs.dcMaticProposalNotif];
+      const { contractLossMechanismLearnMore } = useURLConfigs();
 
-      const { fetAgixMarketWindDownProposal, contractLossMechanismLearnMore } = useURLConfigs();
+      const MATICWindDownProposalExpirationDate = '2024-09-02T14:33:25.000Z';
+      const MATICWindDownDate = MATICWindDownProposalExpirationDate;
+      const MATICWindDownExpirationDate = '2024-10-04T23:59:59.000Z';
+      const MATICMarket = 'MATIC-USD';
 
-      const marketWindDownProposalExpirationDate = '2024-06-11T16:53:00';
-      const marketWindDownDate = marketWindDownProposalExpirationDate;
-      const marketWindDownExpirationDate = '2024-07-11T16:53:00'; // 30 days after wind down
       const currentDate = new Date();
-
-      const outputDate = <$Output type={OutputType.DateTime} value={marketWindDownDate} />;
-
-      const firstMarket = 'FET-USD';
-      const secondMarket = 'AGIX-USD';
+      const outputDate = (
+        <Output tw="inline-block" type={OutputType.DateTime} value={MATICWindDownDate} />
+      );
 
       useEffect(() => {
-        if (currentDate <= new Date(marketWindDownProposalExpirationDate)) {
-          trigger(MarketWindDownNotificationIds.MarketWindDownProposalFetAgix, {
+        if (
+          maticWindDownProposal &&
+          maticWindDownProposal !== '' &&
+          currentDate <= new Date(MATICWindDownProposalExpirationDate)
+        ) {
+          trigger(MarketWindDownNotificationIds.MarketWindDownProposalMatic, {
             title: stringGetter({
-              key: 'NOTIFICATIONS.TWO_MARKET_WIND_DOWN_PROPOSAL.TITLE',
+              key: 'NOTIFICATIONS.MARKET_WIND_DOWN_PROPOSAL.TITLE',
               params: {
-                MARKET_1: firstMarket,
-                MARKET_2: secondMarket,
+                MARKET: MATICMarket,
               },
             }),
             body: stringGetter({
-              key: 'NOTIFICATIONS.TWO_MARKET_WIND_DOWN_PROPOSAL.BODY',
+              key: 'NOTIFICATIONS.MARKET_WIND_DOWN_PROPOSAL.BODY',
               params: {
-                MARKET_1: firstMarket,
-                MARKET_2: secondMarket,
+                MARKET: MATICMarket,
                 DATE: outputDate,
                 HERE_LINK: (
-                  <$Link href={fetAgixMarketWindDownProposal}>
+                  <Link isInline isAccent href={maticWindDownProposal}>
                     {stringGetter({ key: STRING_KEYS.HERE })}
-                  </$Link>
+                  </Link>
                 ),
               },
             }),
             toastSensitivity: 'foreground',
-            groupKey: MarketWindDownNotificationIds.MarketWindDownProposalFetAgix,
+            groupKey: MarketWindDownNotificationIds.MarketWindDownProposalMatic,
           });
         }
       }, [stringGetter]);
 
       useEffect(() => {
         if (
-          currentDate >= new Date(marketWindDownDate) &&
-          currentDate <= new Date(marketWindDownExpirationDate)
+          maticWindDownProposal &&
+          maticWindDownProposal !== '' &&
+          contractLossMechanismLearnMore &&
+          currentDate >= new Date(MATICWindDownDate) &&
+          currentDate <= new Date(MATICWindDownExpirationDate)
         ) {
           trigger(
-            MarketWindDownNotificationIds.MarketWindDownFetAgix,
+            MarketWindDownNotificationIds.MarketWindDownMatic,
             {
               title: stringGetter({
-                key: 'NOTIFICATIONS.TWO_MARKET_WIND_DOWN.TITLE',
+                key: 'NOTIFICATIONS.MARKET_WIND_DOWN.TITLE',
                 params: {
-                  MARKET_1: firstMarket,
-                  MARKET_2: secondMarket,
+                  MARKET: MATICMarket,
                 },
               }),
               body: stringGetter({
-                key: 'NOTIFICATIONS.TWO_MARKET_WIND_DOWN.BODY',
+                key: 'NOTIFICATIONS.MARKET_WIND_DOWN.BODY',
                 params: {
-                  MARKET_1: firstMarket,
-                  MARKET_2: secondMarket,
+                  MARKET: MATICMarket,
                   DATE: outputDate,
                   HERE_LINK: (
-                    <$Link href={contractLossMechanismLearnMore}>
+                    <Link isInline isAccent href={contractLossMechanismLearnMore}>
                       {stringGetter({ key: STRING_KEYS.HERE })}
-                    </$Link>
+                    </Link>
                   ),
                 },
               }),
               toastSensitivity: 'foreground',
-              groupKey: MarketWindDownNotificationIds.MarketWindDownFetAgix,
+              groupKey: MarketWindDownNotificationIds.MarketWindDownMatic,
             },
             []
           );
@@ -554,7 +590,7 @@ export const notificationTypes: NotificationTypeConfig[] = [
   },
   {
     type: NotificationType.ApiError,
-    useTrigger: ({ trigger }) => {
+    useTrigger: ({ trigger, hideNotification }) => {
       const stringGetter = useStringGetter();
       const { statusErrorMessage } = useApiState();
       const { statusPage } = useURLConfigs();
@@ -575,10 +611,18 @@ export const notificationTypes: NotificationTypeConfig[] = [
                 <Link href={statusPage}>{stringGetter({ key: STRING_KEYS.STATUS_PAGE })} →</Link>
               ),
             },
-            []
+            [],
+            true,
+            true // unhide on new error (i.e. normal -> not normal api status)
           );
+        } else {
+          // hide/expire existing notification if no error
+          hideNotification({
+            type: NotificationType.ApiError,
+            id: NotificationType.ApiError,
+          });
         }
-      }, [stringGetter, statusErrorMessage?.body, statusErrorMessage?.title]);
+      }, [stringGetter, statusErrorMessage?.body, statusErrorMessage?.title, hideNotification]);
     },
     useNotificationAction: () => {
       return () => {};
@@ -621,6 +665,9 @@ export const notificationTypes: NotificationTypeConfig[] = [
     useTrigger: ({ trigger }) => {
       const localPlaceOrders = useAppSelector(getLocalPlaceOrders, shallowEqual);
       const localCancelOrders = useAppSelector(getLocalCancelOrders, shallowEqual);
+      const localCancelAlls = useAppSelector(getLocalCancelAlls, shallowEqual);
+      const localCloseAllPositions = useAppSelector(getLocalCloseAllPositions, shallowEqual);
+
       const allOrders = useAppSelector(getSubaccountOrders, shallowEqual);
       const stringGetter = useStringGetter();
 
@@ -644,7 +691,7 @@ export const notificationTypes: NotificationTypeConfig[] = [
                 />
               ),
             },
-            [localPlace.submissionStatus, localPlace.errorStringKey],
+            [localPlace.submissionStatus, localPlace.errorParams],
             true
           );
         }
@@ -656,6 +703,9 @@ export const notificationTypes: NotificationTypeConfig[] = [
           // ensure order exists
           const existingOrder = allOrders?.find((order) => order.id === localCancel.orderId);
           if (!existingOrder) return;
+
+          // skip if this is from a cancel all operation and isn't an error
+          if (localCancel.isSubmittedThroughCancelAll && !localCancel.errorParams) return;
 
           // share same notification with existing local order if exists
           // so that canceling a local order will not add an extra notification
@@ -677,11 +727,61 @@ export const notificationTypes: NotificationTypeConfig[] = [
                 />
               ),
             },
-            [localCancel.submissionStatus, localCancel.errorStringKey],
+            [localCancel.submissionStatus, localCancel.errorParams],
             true
           );
         }
       }, [localCancelOrders]);
+
+      useEffect(() => {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const cancelAll of Object.values(localCancelAlls)) {
+          trigger(
+            cancelAll.key,
+            {
+              icon: null,
+              title: stringGetter({ key: STRING_KEYS.CANCEL_ALL_ORDERS }),
+              toastSensitivity: 'background',
+              groupKey: cancelAll.key,
+              toastDuration: DEFAULT_TOAST_AUTO_CLOSE_MS,
+              renderCustomBody: ({ isToast, notification }) => (
+                <CancelAllNotification
+                  isToast={isToast}
+                  localCancelAll={cancelAll}
+                  notification={notification}
+                />
+              ),
+            },
+            [cancelAll.canceledOrderIds, cancelAll.failedOrderIds, cancelAll.errorParams],
+            true
+          );
+        }
+      }, [localCancelAlls]);
+
+      useEffect(() => {
+        if (!localCloseAllPositions) return;
+        const localCloseAllKey = localCloseAllPositions.submittedOrderClientIds.join('-');
+        // eslint-disable-next-line no-restricted-syntax
+        trigger(
+          localCloseAllKey,
+          {
+            icon: null,
+            title: stringGetter({ key: STRING_KEYS.CLOSE_ALL_POSITIONS }),
+            toastSensitivity: 'background',
+            groupKey: localCloseAllKey,
+            toastDuration: DEFAULT_TOAST_AUTO_CLOSE_MS,
+            renderCustomBody: ({ isToast, notification }) => (
+              <CloseAllPositionsNotification
+                isToast={isToast}
+                localCloseAllPositions={localCloseAllPositions}
+                notification={notification}
+              />
+            ),
+          },
+          [localCloseAllPositions],
+          true
+        );
+      }, [localCloseAllPositions]);
     },
     useNotificationAction: () => {
       const dispatch = useAppDispatch();
@@ -695,22 +795,61 @@ export const notificationTypes: NotificationTypeConfig[] = [
       };
     },
   },
+  {
+    type: NotificationType.FeedbackRequest,
+    useTrigger: ({ trigger }) => {
+      const { dydxAddress } = useAccounts();
+      const { getInTouch } = useURLConfigs();
+      const stringGetter = useStringGetter();
+
+      const dynamicConfigs = useAllStatsigDynamicConfigValues();
+      const feedbackRequestWalletAddresses =
+        dynamicConfigs?.[StatsigDynamicConfigs.dcHighestVolumeUsers];
+
+      useEffect(() => {
+        if (dydxAddress && feedbackRequestWalletAddresses?.includes(dydxAddress) && getInTouch) {
+          trigger(FeedbackRequestNotificationIds.Top100UserSupport, {
+            icon: <Icon iconName={IconName.SpeechBubble} />,
+            title: stringGetter({ key: STRING_KEYS.TOP_100_WALLET_ADDRESSES_TITLE }),
+            body: stringGetter({ key: STRING_KEYS.TOP_100_WALLET_ADDRESSES_BODY }),
+            toastSensitivity: 'foreground',
+            groupKey: NotificationType.FeedbackRequest,
+            toastDuration: Infinity,
+            withClose: false,
+            // our generate script only knows to generate string keys for title and body
+            actionAltText: stringGetter({ key: 'NOTIFICATIONS.TOP_100_WALLET_ADDRESSES.ACTION' }),
+            renderActionSlot: () => (
+              <Link href={getInTouch} isAccent>
+                {stringGetter({ key: 'NOTIFICATIONS.TOP_100_WALLET_ADDRESSES.ACTION' })}
+              </Link>
+            ),
+          });
+        }
+      }, [dydxAddress]);
+    },
+
+    useNotificationAction: () => {
+      const { getInTouch } = useURLConfigs();
+      return () => {
+        window.open(getInTouch, '_blank', 'noopener, noreferrer');
+      };
+    },
+  },
+  {
+    type: NotificationType.Custom,
+    useTrigger: ({ trigger }) => {
+      const customNotifications = useAppSelector(getCustomNotifications);
+      useEffect(() => {
+        customNotifications.forEach((notification) => {
+          trigger(notification.id, notification.displayData);
+        });
+      }, [customNotifications, trigger]);
+    },
+  },
 ];
 
-const $Icon = styled.img`
-  height: 1.5rem;
-  width: 1.5rem;
-`;
+const $Icon = tw.img`h-1.5 w-1.5`;
 
-const $WarningIcon = styled(Icon)`
-  color: var(--color-warning);
-`;
+const $AssetIcon = tw(AssetIcon)`text-[1.5rem]`;
 
-const $Link = styled(Link)`
-  --link-color: var(--color-accent);
-  display: inline-block;
-`;
-
-const $Output = styled(Output)`
-  display: inline-block;
-`;
+const $WarningIcon = tw(Icon)`text-color-warning`;

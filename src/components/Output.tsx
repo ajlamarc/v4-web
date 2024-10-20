@@ -113,22 +113,23 @@ export function formatNumberOutput(
     // required
     decimalSeparator,
     groupSeparator,
+    selectedLocale,
+
     // optional
     useGrouping = true,
     roundingMode = BigNumber.ROUND_HALF_UP,
     fractionDigits,
     minimumFractionDigits,
-    locale = navigator.language || 'en-US',
     showSign = ShowSign.Negative,
   }: {
     decimalSeparator: string | undefined;
     groupSeparator: string | undefined;
+    selectedLocale: string;
 
     fractionDigits?: number | null;
     minimumFractionDigits?: number;
     roundingMode?: BigNumber.RoundingMode;
     useGrouping?: boolean;
-    locale?: string;
     showSign?: ShowSign;
   }
 ) {
@@ -171,33 +172,29 @@ export function formatNumberOutput(
   const numberRenderers = {
     [OutputType.CompactNumber]: () => {
       if (!isNumber(value)) {
-        throw new Error('value must be a number for compact number output');
+        return null;
       }
 
-      return Intl.NumberFormat(locale, {
+      return Intl.NumberFormat(selectedLocale, {
         style: 'decimal',
         notation: 'compact',
         maximumSignificantDigits: 3,
-      })
-        .format(Math.abs(value))
-        .toLowerCase();
+      }).format(Math.abs(value));
     },
     [OutputType.Number]: () => getFormattedVal(valueBN, 0),
     [OutputType.Fiat]: () => getFormattedVal(valueBN, USD_DECIMALS, { prefix: '$' }),
     [OutputType.SmallFiat]: () => getFormattedVal(valueBN, SMALL_USD_DECIMALS, { prefix: '$' }),
     [OutputType.CompactFiat]: () => {
       if (!isNumber(value)) {
-        throw new Error('value must be a number for compact fiat output');
+        return null;
       }
 
-      return Intl.NumberFormat(locale, {
+      return Intl.NumberFormat(selectedLocale, {
         style: 'currency',
         currency: 'USD',
         notation: 'compact',
         maximumSignificantDigits: 3,
-      })
-        .format(Math.abs(value))
-        .toLowerCase();
+      }).format(Math.abs(value));
     },
     [OutputType.Asset]: () => getFormattedVal(valueBN, TOKEN_DECIMALS),
     [OutputType.Percent]: () =>
@@ -257,16 +254,23 @@ type FormattingOptions = {
 type ElementProps = {
   type: OutputType;
   value?: BigNumberish | null;
+
+  // general props
   isLoading?: boolean;
+  tag?: React.ReactNode;
+  slotLeft?: React.ReactNode;
+  slotRight?: React.ReactNode;
+
+  // only for numbers, but they are most common so we hoist
   fractionDigits?: number | null;
   minimumFractionDigits?: number;
   showSign?: ShowSign;
-  slotLeft?: React.ReactNode;
-  slotRight?: React.ReactNode;
   useGrouping?: boolean;
   roundingMode?: BigNumber.RoundingMode;
+  withParentheses?: boolean;
   withSubscript?: boolean;
-  relativeTimeFormatOptions?: {
+
+  relativeTimeOptions?: {
     format: 'long' | 'short' | 'narrow' | 'singleCharacter';
     resolution?: number;
     stripRelativeWords?: boolean;
@@ -277,9 +281,6 @@ type ElementProps = {
   dateOptions?: {
     format?: 'full' | 'long' | 'medium' | 'short' | undefined;
   };
-  tag?: React.ReactNode;
-  withParentheses?: boolean;
-  locale?: string;
 };
 
 type StyleProps = {
@@ -290,33 +291,33 @@ type StyleProps = {
 export type OutputProps = ElementProps & StyleProps;
 
 export const Output = ({
-  type,
   value,
   isLoading,
-  fractionDigits,
-  minimumFractionDigits,
-  showSign = ShowSign.Negative,
   slotLeft,
   slotRight,
+  tag,
+  className,
+  withBaseFont,
+  type,
+
   useGrouping = true,
-  withSubscript = false,
+  fractionDigits,
+  minimumFractionDigits,
   roundingMode = BigNumber.ROUND_HALF_UP,
-  relativeTimeFormatOptions = {
+  withSubscript = false,
+  withParentheses,
+  showSign = ShowSign.Negative,
+
+  dateOptions,
+  relativeTimeOptions = {
     format: 'singleCharacter',
   },
   timeOptions,
-  dateOptions,
-  tag,
-  withParentheses,
-  locale = navigator.language || 'en-US',
-  className,
-  withBaseFont,
 }: OutputProps) => {
   const selectedLocale = useAppSelector(getSelectedLocale);
   const stringGetter = useStringGetter();
   const isDetailsLoading = useContext(LoadingContext);
-  const { decimal: LOCALE_DECIMAL_SEPARATOR, group: LOCALE_GROUP_SEPARATOR } =
-    useLocaleSeparators();
+  const { decimal: decimalSeparator, group: groupSeparator } = useLocaleSeparators();
 
   if (!!isLoading || !!isDetailsLoading) {
     return <LoadingOutput />;
@@ -342,7 +343,7 @@ export const Output = ({
       const timestamp = getTimestamp(value);
       if (!timestamp) return null;
 
-      if (relativeTimeFormatOptions.format === 'singleCharacter') {
+      if (relativeTimeOptions.format === 'singleCharacter') {
         const { timeString, unitStringKey } = getStringsForDateTimeDiff(
           DateTime.fromMillis(timestamp)
         );
@@ -355,7 +356,7 @@ export const Output = ({
           >
             <time
               dateTime={new Date(timestamp).toISOString()}
-              title={new Date(timestamp).toLocaleString(locale)}
+              title={new Date(timestamp).toLocaleString(selectedLocale)}
             >
               {timeString}
               {stringGetter({ key: unitStringKey })}
@@ -372,7 +373,7 @@ export const Output = ({
           title={`${value ?? ''}${tag ? ` ${tag}` : ''}`}
           className={className}
         >
-          <RelativeTime timestamp={timestamp} {...relativeTimeFormatOptions} />
+          <RelativeTime timestamp={timestamp} {...relativeTimeOptions} />
 
           {tag && <Tag>{tag}</Tag>}
         </$Text>
@@ -403,9 +404,23 @@ export const Output = ({
     case OutputType.Percent:
     case OutputType.SmallPercent:
     case OutputType.Multiple: {
+      const formattedNumber = formatNumberOutput(value, type, {
+        decimalSeparator,
+        groupSeparator,
+        selectedLocale,
+        useGrouping,
+        fractionDigits,
+        minimumFractionDigits,
+        roundingMode,
+        showSign: ShowSign.None,
+      });
+
+      const renderedNumber = <NumberValue value={formattedNumber} withSubscript={withSubscript} />;
+
       const hasValue = value !== null && value !== undefined;
-      const isNegative = MustBigNumber(value).isNegative();
-      const isPositive = MustBigNumber(value).isPositive() && !MustBigNumber(value).isZero();
+      const containsNonZeroNumber = /[1-9]/.test(formattedNumber);
+      const isNegative = MustBigNumber(value).isNegative() && containsNonZeroNumber;
+      const isPositive = MustBigNumber(value).isPositive() && containsNonZeroNumber;
 
       const sign: string | undefined = {
         [ShowSign.Both]: isNegative ? UNICODE.MINUS : isPositive ? UNICODE.PLUS : undefined,
@@ -413,21 +428,6 @@ export const Output = ({
         [ShowSign.None]: undefined,
       }[showSign];
 
-      const renderedNumber = (
-        <NumberValue
-          value={formatNumberOutput(value, type, {
-            decimalSeparator: LOCALE_DECIMAL_SEPARATOR,
-            groupSeparator: LOCALE_GROUP_SEPARATOR,
-            useGrouping,
-            fractionDigits,
-            minimumFractionDigits,
-            locale,
-            roundingMode,
-            showSign: ShowSign.None,
-          })}
-          withSubscript={withSubscript}
-        />
-      );
       return (
         <$Number
           key={value?.toString()}
@@ -444,10 +444,10 @@ export const Output = ({
           withBaseFont={withBaseFont}
         >
           {slotLeft}
-          {sign && <$Sign>{sign}</$Sign>}
+          {sign && <span tw="text-[color:--output-sign-color]">{sign}</span>}
           {hasValue && renderedNumber}
           {slotRight}
-          {tag && <$Tag>{tag}</$Tag>}
+          {tag && <Tag tw="ml-[0.5ch]">{tag}</Tag>}
         </$Number>
       );
     }
@@ -469,7 +469,7 @@ const $Text = styled.output<{ withParentheses?: boolean }>`
     opacity: 0.5;
 
     &:after {
-      content: '-' var(--output-afterString);
+      content: '—' var(--output-afterString);
     }
   }
 
@@ -488,15 +488,6 @@ const $Text = styled.output<{ withParentheses?: boolean }>`
       --output-afterString: ')';
     `}
 `;
-
-const $Tag = styled(Tag)`
-  margin-left: 0.5ch;
-`;
-
-const $Sign = styled.span`
-  color: var(--output-sign-color);
-`;
-
 const $Number = styled($Text)<{ withBaseFont?: boolean }>`
   ${({ withBaseFont }) =>
     !withBaseFont &&

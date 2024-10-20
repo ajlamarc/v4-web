@@ -1,8 +1,7 @@
-// @ts-nocheck
-import React, { Key, useCallback, useEffect, useState } from 'react';
+import React, { Key, useCallback, useMemo, useState } from 'react';
 
 import {
-  Cell, // CollectionBuilderContext,
+  Cell,
   Column,
   Row,
   TableBody,
@@ -26,7 +25,6 @@ import {
   useTableRow,
   useTableRowGroup,
 } from 'react-aria';
-import { useAsyncList } from 'react-stately';
 import styled, { css } from 'styled-components';
 
 import { MediaQueryKeys, useBreakpoints } from '@/hooks/useBreakpoints';
@@ -36,8 +34,10 @@ import breakpoints from '@/styles/breakpoints';
 import { layoutMixins } from '@/styles/layoutMixins';
 
 import { MustBigNumber } from '@/lib/numbers';
+import { testFlags } from '@/lib/testFlags';
 
 import { Icon, IconName } from './Icon';
+import { SortIcon } from './SortIcon';
 import { PAGE_SIZES, PageSize, TablePaginationRow } from './Table/TablePaginationRow';
 import { Tag } from './Tag';
 
@@ -91,6 +91,7 @@ export type ColumnDef<TableRowData extends BaseTableRowData | CustomRowConfig> =
   isActionable?: boolean;
   hideOnBreakpoint?: MediaQueryKeys;
   width?: ColumnSize;
+  align?: 'start' | 'center' | 'end';
 } & (SortableColumnDef<TableRowData> | NonSortableColumnDef);
 
 export type TableElementProps<TableRowData extends BaseTableRowData | CustomRowConfig> = {
@@ -106,6 +107,7 @@ export type TableElementProps<TableRowData extends BaseTableRowData | CustomRowC
   slotEmpty?: React.ReactNode;
   initialPageSize?: PageSize;
   paginationBehavior?: 'paginate' | 'showAll';
+  firstClickSortDirection?: 'ascending' | 'descending';
 };
 
 export type TableStyleProps = {
@@ -145,6 +147,7 @@ export const Table = <TableRowData extends BaseTableRowData | CustomRowConfig>({
   withInnerBorders = false,
   withScrollSnapColumns = false,
   withScrollSnapRows = false,
+  firstClickSortDirection = 'descending',
   className,
   style,
 }: AllTableProps<TableRowData>) => {
@@ -162,42 +165,46 @@ export const Table = <TableRowData extends BaseTableRowData | CustomRowConfig>({
 
   const collator = useCollator();
 
-  const sortFn = (
-    a: TableRowData | CustomRowConfig,
-    b: TableRowData | CustomRowConfig,
-    sortColumn?: Key,
-    sortDirection?: SortDirection
-  ) => {
-    if (!sortColumn) return 0;
+  const sortFn = useCallback(
+    (
+      a: TableRowData | CustomRowConfig,
+      b: TableRowData | CustomRowConfig,
+      sortColumn?: Key,
+      sortDirection?: SortDirection
+    ) => {
+      if (!sortColumn) return 0;
 
-    const column = columns.find((c) => c.columnKey === sortColumn);
-    if (column == null || column.allowsSorting === false) {
-      return 0;
-    }
-    const first = (isCustomRow(a) ? 0 : column.getCellValue(a)) ?? undefined;
-    const second = (isCustomRow(b) ? 0 : column.getCellValue(b)) ?? undefined;
-
-    if (first == null || second == null) {
-      if (first === second) {
+      const column = columns.find((c) => c.columnKey === sortColumn);
+      if (column == null || column.allowsSorting === false) {
         return 0;
       }
-      if (first != null) {
-        return 1;
-      }
-      return -1;
-    }
+      const first = (isCustomRow(a) ? 0 : column.getCellValue(a)) ?? undefined;
+      const second = (isCustomRow(b) ? 0 : column.getCellValue(b)) ?? undefined;
+      const sortDirectionAsNumber = sortDirection === 'descending' ? -1 : 1;
 
-    return (
-      // Compare the items by the sorted column
-      (Number.isNaN(Number(first))
-        ? // String
-          collator.compare(String(first), String(second))
-        : // Number
-          MustBigNumber(first).comparedTo(MustBigNumber(second))) *
-      // Flip the direction if descending order is specified.
-      (sortDirection === 'descending' ? -1 : 1)
-    );
-  };
+      if (first == null || second == null) {
+        if (first === second) {
+          return 0;
+        }
+        if (first != null) {
+          return sortDirectionAsNumber;
+        }
+        return -1 * sortDirectionAsNumber;
+      }
+
+      return (
+        // Compare the items by the sorted column
+        (Number.isNaN(Number(first))
+          ? // String
+            collator.compare(String(first), String(second))
+          : // Number
+            MustBigNumber(first).comparedTo(MustBigNumber(second))) *
+        // Flip the direction if descending order is specified.
+        sortDirectionAsNumber
+      );
+    },
+    [collator, columns]
+  );
 
   const internalGetRowKey = useCallback(
     (row: TableRowData | CustomRowConfig) => {
@@ -206,28 +213,23 @@ export const Table = <TableRowData extends BaseTableRowData | CustomRowConfig>({
     [getRowKey]
   );
 
-  const list = useAsyncList<TableRowData | CustomRowConfig>({
-    getKey: internalGetRowKey,
-    load: async ({ sortDescriptor }) => ({
-      items: sortDescriptor?.column
-        ? data.sort((a, b) => sortFn(a, b, sortDescriptor?.column, sortDescriptor?.direction))
-        : data,
-    }),
-
-    initialSortDescriptor: defaultSortDescriptor,
-
-    sort: async ({ items, sortDescriptor }) => ({
-      items: items.sort((a, b) => sortFn(a, b, sortDescriptor?.column, sortDescriptor?.direction)),
-    }),
-  });
-
-  // FIX: refactor table so we don't have to manually reload
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => list.reload(), [data]);
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>(defaultSortDescriptor ?? {});
+  const items = useMemo(() => {
+    return sortDescriptor?.column
+      ? [...data].sort((a, b) => sortFn(a, b, sortDescriptor?.column, sortDescriptor?.direction))
+      : data;
+  }, [data, sortDescriptor?.column, sortDescriptor?.direction, sortFn]);
 
   const isEmpty = data.length === 0;
   const shouldPaginate = paginationBehavior === 'paginate' && data.length > Math.min(...PAGE_SIZES);
 
+  const bodyListItems = useMemo(
+    () =>
+      shouldPaginate && items.length > pageSize
+        ? items.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
+        : items,
+    [currentPage, items, pageSize, shouldPaginate]
+  );
   return (
     <$TableWrapper
       className={className}
@@ -239,8 +241,8 @@ export const Table = <TableRowData extends BaseTableRowData | CustomRowConfig>({
       {!isEmpty ? (
         <TableRoot
           aria-label={label}
-          sortDescriptor={list.sortDescriptor}
-          onSortChange={list.sort}
+          sortDescriptor={sortDescriptor}
+          onSortChange={setSortDescriptor}
           selectedKeys={selectedKeys}
           setSelectedKeys={setSelectedKeys}
           selectionMode={selectionMode}
@@ -262,6 +264,7 @@ export const Table = <TableRowData extends BaseTableRowData | CustomRowConfig>({
           withScrollSnapColumns={withScrollSnapColumns}
           withScrollSnapRows={withScrollSnapRows}
           numColumns={shownColumns.length}
+          firstClickSortDirection={firstClickSortDirection}
           paginationRow={
             shouldPaginate ? (
               <TablePaginationRow
@@ -290,13 +293,7 @@ export const Table = <TableRowData extends BaseTableRowData | CustomRowConfig>({
             )}
           </TableHeader>
 
-          <TableBody
-            items={
-              shouldPaginate && list.items.length > pageSize
-                ? list.items.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
-                : list.items
-            }
-          >
+          <TableBody items={bodyListItems}>
             {(item) => (
               <Row key={internalGetRowKey(item)}>
                 {(columnKey) => (
@@ -333,6 +330,7 @@ const TableRoot = <TableRowData extends BaseTableRowData | CustomRowConfig>(prop
   children: TableStateProps<TableRowData>['children'];
   numColumns: number;
   paginationRow?: React.ReactNode;
+  firstClickSortDirection?: 'ascending' | 'descending';
 
   hideHeader?: boolean;
   withGradientCardRows?: boolean;
@@ -357,12 +355,24 @@ const TableRoot = <TableRowData extends BaseTableRowData | CustomRowConfig>(prop
     withInnerBorders,
     withScrollSnapColumns,
     withScrollSnapRows,
+    firstClickSortDirection,
   } = props;
 
-  const state = useTableState<TableRowData>({
+  const baseState = useTableState<TableRowData>({
     ...props,
     showSelectionCheckboxes: selectionMode === 'multiple' && selectionBehavior !== 'replace',
   });
+  const state: typeof baseState = {
+    ...baseState,
+    sort: (columnKey, direction) => {
+      const { column: currentColumnKey, direction: currentDirection } = baseState.sortDescriptor;
+      // first time touching this column sort
+      if (direction == null && (columnKey !== currentColumnKey || currentDirection == null)) {
+        return baseState.sort(columnKey, firstClickSortDirection);
+      }
+      return baseState.sort(columnKey, direction);
+    },
+  };
 
   const ref = React.useRef<HTMLTableElement>(null);
   const { collection } = state;
@@ -397,17 +407,14 @@ const TableRoot = <TableRowData extends BaseTableRowData | CustomRowConfig>(prop
             state={state}
             withScrollSnapRows={withScrollSnapRows}
           >
-            {[...headerRow.childNodes].map(
-              (column) => (
-                <TableColumnHeader
-                  key={column.key}
-                  column={column}
-                  state={state}
-                  withScrollSnapColumns={withScrollSnapColumns}
-                />
-              )
-              // )
-            )}
+            {[...headerRow.childNodes].map((column) => (
+              <TableColumnHeader
+                key={column.key}
+                column={column}
+                state={state}
+                withScrollSnapColumns={withScrollSnapColumns}
+              />
+            ))}
           </TableHeaderRow>
         ))}
       </TableHeadRowGroup>
@@ -423,7 +430,6 @@ const TableRoot = <TableRowData extends BaseTableRowData | CustomRowConfig>(prop
               item: row,
               state,
               ...getRowAttributes?.(row.value!),
-              withGradientCardRows,
               withFocusStickyRows,
               withScrollSnapRows,
               children: null,
@@ -435,7 +441,6 @@ const TableRoot = <TableRowData extends BaseTableRowData | CustomRowConfig>(prop
               state={state}
               hasRowAction={!!onRowAction}
               {...getRowAttributes?.(row.value!)}
-              withGradientCardRows={withGradientCardRows}
               withFocusStickyRows={withFocusStickyRows}
               withScrollSnapRows={withScrollSnapRows}
             >
@@ -459,7 +464,10 @@ const TableRoot = <TableRowData extends BaseTableRowData | CustomRowConfig>(prop
       </TableBodyRowGroup>
       {paginationRow && (
         <$Tfoot>
-          <$PaginationTr key="pagination">
+          <tr
+            key="pagination"
+            tw="shadow-[0_calc(-1_*_var(--border-width))_0_0_var(--border-color)]"
+          >
             <td
               colSpan={numColumns}
               onMouseDown={(e) => e.preventDefault()}
@@ -467,7 +475,7 @@ const TableRoot = <TableRowData extends BaseTableRowData | CustomRowConfig>(prop
             >
               {paginationRow}
             </td>
-          </$PaginationTr>
+          </tr>
         </$Tfoot>
       )}
     </$Table>
@@ -552,29 +560,43 @@ const TableColumnHeader = <TableRowData extends BaseTableRowData>({
   const { columnHeaderProps } = useTableColumnHeader({ node: column }, state, ref);
   const { focusProps } = useFocusRing();
 
+  const { uiRefresh } = testFlags;
+
   return (
     <$Th
       {...mergeProps(columnHeaderProps, focusProps)}
       // data-focused={isFocusVisible || undefined}
-      style={{ width: column.props?.width }}
+      style={{
+        width: column.props?.width,
+        textAlign: (column?.value as any)?.align,
+      }}
       ref={ref}
       allowSorting={column.props?.allowsSorting ?? true}
       withScrollSnapColumns={withScrollSnapColumns}
     >
-      <$Row>
+      <$Row uiRefreshEnabled={uiRefresh}>
         {column.rendered}
-        {(column.props.allowsSorting ?? true) && (
-          <$SortArrow
-            aria-hidden="true"
-            sortDirection={
-              state.sortDescriptor?.column === column.key
-                ? state.sortDescriptor?.direction ?? 'none'
-                : 'none'
-            }
-          >
-            <Icon iconName={IconName.Triangle} aria-hidden="true" />
-          </$SortArrow>
-        )}
+        {(column.props.allowsSorting ?? true) &&
+          (uiRefresh ? (
+            <SortIcon
+              sortDirection={
+                state.sortDescriptor?.column === column.key
+                  ? state.sortDescriptor?.direction ?? 'none'
+                  : 'none'
+              }
+            />
+          ) : (
+            <$SortArrow
+              aria-hidden="true"
+              sortDirection={
+                state.sortDescriptor?.column === column.key
+                  ? state.sortDescriptor?.direction ?? 'none'
+                  : 'none'
+              }
+            >
+              <Icon iconName={IconName.Triangle} aria-hidden="true" />
+            </$SortArrow>
+          ))}
       </$Row>
     </$Th>
   );
@@ -585,7 +607,6 @@ export const TableRow = <TableRowData extends BaseTableRowData>({
   children,
   state,
   hasRowAction,
-  withGradientCardRows,
   withFocusStickyRows,
   withScrollSnapRows,
   ...attrs
@@ -594,7 +615,6 @@ export const TableRow = <TableRowData extends BaseTableRowData>({
   children: React.ReactNode;
   state: TableState<TableRowData>;
   hasRowAction?: boolean;
-  withGradientCardRows?: boolean;
   withFocusStickyRows?: boolean;
   withScrollSnapRows?: boolean;
 }) => {
@@ -673,6 +693,7 @@ const $TableWrapper = styled.div<{
   --tableStickyRow-textColor: var(--color-text-0, inherit);
   --tableStickyRow-backgroundColor: inherit;
   --table-header-height: 2rem;
+  --table-footer-height: 0rem;
 
   --tableRow-hover-backgroundColor: var(--color-layer-3);
   --tableRow-backgroundColor: ;
@@ -728,7 +749,7 @@ const $Table = styled.table<StyledTableStyleProps>`
   ${layoutMixins.stickyArea1}
   --stickyArea1-background: var(--color-layer-2);
   --stickyArea1-topHeight: var(--table-header-height);
-  --stickyArea1-bottomHeight: var(--table-header-height);
+  --stickyArea1-bottomHeight: var(--table-footer-height);
 
   ${({ hideHeader }) =>
     hideHeader &&
@@ -1010,11 +1031,9 @@ const $Tbody = styled.tbody<TableStyleProps>`
     `}
 `;
 
-const $Row = styled.div`
+const $Row = styled.div<{ uiRefreshEnabled: boolean }>`
   ${layoutMixins.inlineRow}
   padding: var(--tableCell-padding);
-`;
 
-const $PaginationTr = styled.tr`
-  box-shadow: 0 calc(-1 * var(--border-width)) 0 0 var(--border-color);
+  gap: ${({ uiRefreshEnabled }) => (uiRefreshEnabled ? css`0.25ch;` : css`0.5ch`)};
 `;

@@ -30,7 +30,9 @@ import { getInputTradeTargetLeverage } from '@/state/inputsSelectors';
 import { getCurrentMarketConfig } from '@/state/perpetualsSelectors';
 
 import abacusStateManager from '@/lib/abacus';
-import { BIG_NUMBERS, MustBigNumber } from '@/lib/numbers';
+import { getLeverageOptionsForMaxLeverage } from '@/lib/leverage';
+import { calculateMarketMaxLeverage } from '@/lib/marketsHelpers';
+import { MustBigNumber } from '@/lib/numbers';
 import { orEmptyObj } from '@/lib/typeUtils';
 
 export const AdjustTargetLeverageForm = ({
@@ -50,15 +52,7 @@ export const AdjustTargetLeverageForm = ({
   const leverageBN = MustBigNumber(leverage);
 
   const maxLeverage = useMemo(() => {
-    if (effectiveInitialMarginFraction) {
-      return BIG_NUMBERS.ONE.div(effectiveInitialMarginFraction).toNumber();
-    }
-
-    if (initialMarginFraction) {
-      return BIG_NUMBERS.ONE.div(initialMarginFraction).toNumber();
-    }
-
-    return 10; // default
+    return calculateMarketMaxLeverage({ initialMarginFraction, effectiveInitialMarginFraction });
   }, [initialMarginFraction, effectiveInitialMarginFraction]);
 
   return (
@@ -105,11 +99,13 @@ export const AdjustTargetLeverageForm = ({
       </$InputContainer>
 
       <$ToggleGroup
-        items={[1, 2, 3, 5, 10].map((leverageAmount: number) => ({
-          label: `${leverageAmount}×`,
-          value: MustBigNumber(leverageAmount).toFixed(LEVERAGE_DECIMALS),
-          disabled: leverageAmount > maxLeverage,
-        }))}
+        items={getLeverageOptionsForMaxLeverage(MustBigNumber(maxLeverage)).map(
+          (leverageAmount: number) => ({
+            label: `${leverageAmount}×`,
+            value: MustBigNumber(leverageAmount).toFixed(LEVERAGE_DECIMALS),
+            disabled: leverageAmount > maxLeverage,
+          })
+        )}
         value={leverageBN.abs().toFixed(LEVERAGE_DECIMALS)} // sign agnostic
         onValueChange={(value: string) => setLeverage(value)}
         shape={ButtonShape.Rectangle}
@@ -146,7 +142,6 @@ const $Form = styled.form`
 
 const $Description = styled.div`
   color: var(--color-text-0);
-  --link-color: var(--color-text-1);
   a {
     display: inline-grid;
     margin-left: 0.5ch;
@@ -156,6 +151,7 @@ const $Description = styled.div`
 const $InputContainer = styled.div`
   ${formMixins.inputContainer}
   --input-height: 3.5rem;
+  --form-input-paddingY: 0.33rem;
 
   padding: var(--form-input-paddingY) var(--form-input-paddingX);
 
@@ -169,8 +165,6 @@ const $WithLabel = styled(WithLabel)`
 `;
 
 const $LeverageSlider = styled(Slider)`
-  margin-top: 0.25rem;
-
   --slider-track-background: linear-gradient(
     90deg,
     var(--color-layer-7) 0%,

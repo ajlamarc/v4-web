@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { shallowEqual } from 'react-redux';
 import styled from 'styled-components';
+import tw from 'twin.macro';
 
 import { TransferInputTokenResource } from '@/constants/abacus';
 import { ButtonAction, ButtonSize, ButtonType } from '@/constants/buttons';
@@ -12,10 +13,8 @@ import { ConnectionErrorType, useApiState } from '@/hooks/useApiState';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useTokenConfigs } from '@/hooks/useTokenConfigs';
 
-import { layoutMixins } from '@/styles/layoutMixins';
-
 import { Button } from '@/components/Button';
-import { Details, DetailsItem } from '@/components/Details';
+import { Details } from '@/components/Details';
 import { DiffOutput } from '@/components/DiffOutput';
 import { Output, OutputType } from '@/components/Output';
 import { Tag } from '@/components/Tag';
@@ -30,6 +29,7 @@ import { getTransferInputs } from '@/state/inputsSelectors';
 
 import { isTruthy } from '@/lib/isTruthy';
 
+import { RouteWarningMessage } from '../RouteWarningMessage';
 import { SlippageEditor } from '../SlippageEditor';
 
 type ElementProps = {
@@ -55,13 +55,20 @@ export const WithdrawButtonAndReceipt = ({
   const stringGetter = useStringGetter();
 
   const { leverage } = useAppSelector(getSubaccount, shallowEqual) ?? {};
-  const { summary, requestPayload, exchange } =
-    useAppSelector(getTransferInputs, shallowEqual) ?? {};
+  const {
+    summary,
+    requestPayload,
+    exchange,
+    warning: routeWarning,
+  } = useAppSelector(getTransferInputs, shallowEqual) ?? {};
   const canAccountTrade = useAppSelector(calculateCanAccountTrade, shallowEqual);
   const { usdcLabel } = useTokenConfigs();
   const { connectionError } = useApiState();
 
-  const submitButtonReceipt: DetailsItem[] = [
+  const showExchangeRate =
+    !exchange || (withdrawToken && typeof summary?.exchangeRate === 'number' && !exchange);
+
+  const submitButtonReceipt = [
     {
       key: 'expected-amount-received',
 
@@ -75,38 +82,20 @@ export const WithdrawButtonAndReceipt = ({
         <Output type={OutputType.Asset} value={summary?.toAmount} fractionDigits={TOKEN_DECIMALS} />
       ),
     },
-    {
-      key: 'minimum-amount-received',
-      label: (
-        <$RowWithGap>
-          {stringGetter({ key: STRING_KEYS.MINIMUM_AMOUNT_RECEIVED })}
-          {withdrawToken && <Tag>{withdrawToken?.symbol}</Tag>}
-        </$RowWithGap>
-      ),
-      value: (
-        <Output
-          type={OutputType.Asset}
-          value={summary?.toAmountMin}
-          fractionDigits={TOKEN_DECIMALS}
-        />
-      ),
-      tooltip: 'minimum-amount-received',
-    },
-    !exchange && {
+    showExchangeRate && {
       key: 'exchange-rate',
       label: <span>{stringGetter({ key: STRING_KEYS.EXCHANGE_RATE })}</span>,
-      value:
-        withdrawToken && typeof summary?.exchangeRate === 'number' ? (
-          <$RowWithGap>
-            <Output type={OutputType.Asset} value={1} fractionDigits={0} tag={usdcLabel} />
-            =
-            <Output
-              type={OutputType.Asset}
-              value={summary?.exchangeRate}
-              tag={withdrawToken?.symbol}
-            />
-          </$RowWithGap>
-        ) : undefined,
+      value: (
+        <$RowWithGap>
+          <Output type={OutputType.Asset} value={1} fractionDigits={0} tag={usdcLabel} />
+          =
+          <Output
+            type={OutputType.Asset}
+            value={summary?.exchangeRate}
+            tag={withdrawToken?.symbol}
+          />
+        </$RowWithGap>
+      ),
     },
     typeof summary?.gasFee === 'number' && {
       key: 'gas-fees',
@@ -140,16 +129,16 @@ export const WithdrawButtonAndReceipt = ({
       key: 'estimated-route-duration',
       label: <span>{stringGetter({ key: STRING_KEYS.ESTIMATED_TIME })}</span>,
       value:
-        summary != null && typeof summary.estimatedRouteDuration === 'number' ? (
+        typeof summary?.estimatedRouteDurationSeconds === 'number' ? (
           <Output
             type={OutputType.Text}
             value={stringGetter({
               key: STRING_KEYS.X_MINUTES_LOWERCASED,
               params: {
                 X:
-                  summary.estimatedRouteDuration < 60
+                  summary.estimatedRouteDurationSeconds < 60
                     ? '< 1'
-                    : Math.round(summary.estimatedRouteDuration / 60),
+                    : Math.round(summary.estimatedRouteDurationSeconds / 60),
               },
             })}
           />
@@ -159,51 +148,59 @@ export const WithdrawButtonAndReceipt = ({
       key: 'leverage',
       label: <span>{stringGetter({ key: STRING_KEYS.ACCOUNT_LEVERAGE })}</span>,
       value: (
-        <$DiffOutput
+        <DiffOutput
           type={OutputType.Multiple}
           value={leverage?.current}
           newValue={leverage?.postOrder}
           sign={NumberSign.Negative}
-          withDiff={Boolean(leverage?.current && leverage.current !== leverage?.postOrder)}
+          withDiff={Boolean(
+            leverage?.current && leverage?.postOrder && leverage.current !== leverage?.postOrder
+          )}
+          tw="[--diffOutput-valueWithDiff-fontSize:1em]"
         />
       ),
     },
   ].filter(isTruthy);
 
+  const [hasAcknowledged, setHasAcknowledged] = useState(false);
+  const requiresAcknowledgement = Boolean(routeWarning && !hasAcknowledged);
   const isFormValid =
-    !isDisabled && !isEditingSlippage && connectionError !== ConnectionErrorType.CHAIN_DISRUPTION;
+    !isDisabled &&
+    !isEditingSlippage &&
+    connectionError !== ConnectionErrorType.CHAIN_DISRUPTION &&
+    !requiresAcknowledgement;
+
+  if (!canAccountTrade) {
+    return (
+      <$WithReceipt slotReceipt={<$Details items={submitButtonReceipt} />}>
+        <OnboardingTriggerButton size={ButtonSize.Base} />
+      </$WithReceipt>
+    );
+  }
 
   return (
     <$WithReceipt slotReceipt={<$Details items={submitButtonReceipt} />}>
-      {!canAccountTrade ? (
-        <OnboardingTriggerButton size={ButtonSize.Base} />
-      ) : (
-        <Button
-          action={ButtonAction.Primary}
-          type={ButtonType.Submit}
-          state={{
-            isDisabled: !isFormValid,
-            isLoading: (isFormValid && !requestPayload) || isLoading,
-          }}
-        >
-          {stringGetter({ key: STRING_KEYS.WITHDRAW })}
-        </Button>
-      )}
+      <RouteWarningMessage
+        hasAcknowledged={hasAcknowledged}
+        setHasAcknowledged={setHasAcknowledged}
+        routeWarningJSON={routeWarning}
+      />
+      <Button
+        action={ButtonAction.Primary}
+        type={ButtonType.Submit}
+        state={{
+          isDisabled: !isFormValid,
+          isLoading: (isFormValid && !requestPayload) || isLoading,
+        }}
+      >
+        {stringGetter({ key: STRING_KEYS.WITHDRAW })}
+      </Button>
     </$WithReceipt>
   );
 };
-const $DiffOutput = styled(DiffOutput)`
-  --diffOutput-valueWithDiff-fontSize: 1em;
-`;
+const $RowWithGap = tw.span`row gap-[0.5ch]`;
 
-const $RowWithGap = styled.span`
-  ${layoutMixins.row}
-  gap: 0.5ch;
-`;
-
-const $WithReceipt = styled(WithReceipt)`
-  --withReceipt-backgroundColor: var(--color-layer-2);
-`;
+const $WithReceipt = tw(WithReceipt)`[--withReceipt-backgroundColor:--color-layer-2]`;
 
 const $Details = styled(Details)`
   --details-item-vertical-padding: 0.33rem;

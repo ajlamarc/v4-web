@@ -1,30 +1,33 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { OfflineSigner } from '@cosmjs/proto-signing';
 import { LocalWallet, NOBLE_BECH32_PREFIX, type Subaccount } from '@dydxprotocol/v4-client-js';
 import { usePrivy } from '@privy-io/react-auth';
 import { AES, enc } from 'crypto-js';
 
-import { OnboardingGuard, OnboardingState, type EvmDerivedAddresses } from '@/constants/account';
-import { LOCAL_STORAGE_VERSIONS, LocalStorageKey } from '@/constants/localStorage';
+import { OnboardingGuard, OnboardingState } from '@/constants/account';
+import { getNobleChainId } from '@/constants/graz';
+import { LocalStorageKey } from '@/constants/localStorage';
 import {
+  ConnectorType,
   DydxAddress,
-  EvmAddress,
   PrivateInformation,
-  TEST_WALLET_EVM_ADDRESS,
-  WalletConnectionType,
-  WalletType,
+  WalletNetworkType,
 } from '@/constants/wallets';
 
 import { setOnboardingGuard, setOnboardingState } from '@/state/account';
-import { getHasSubaccount } from '@/state/accountSelectors';
+import { getGeo, getHasSubaccount } from '@/state/accountSelectors';
+import { getSelectedDydxChainId } from '@/state/appSelectors';
 import { useAppDispatch, useAppSelector } from '@/state/appTypes';
+import { clearSavedEncryptedSignature } from '@/state/wallet';
+import { getSourceAccount } from '@/state/walletSelectors';
 
 import abacusStateManager from '@/lib/abacus';
+import { isBlockedGeo } from '@/lib/compliance';
 import { log } from '@/lib/telemetry';
-import { testFlags } from '@/lib/testFlags';
+import { sleep } from '@/lib/timeUtils';
 
 import { useDydxClient } from './useDydxClient';
+import { useEnvFeatures } from './useEnvFeatures';
 import { useLocalStorage } from './useLocalStorage';
 import useSignForWalletDerivation from './useSignForWalletDerivation';
 import { useWalletConnection } from './useWalletConnection';
@@ -39,99 +42,54 @@ export const AccountsProvider = ({ ...props }) => (
 
 export const useAccounts = () => useContext(AccountsContext)!;
 
-async function sleep(ms = 1000) {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(null), ms);
-  });
-}
-
 const useAccountsContext = () => {
   const dispatch = useAppDispatch();
+  const geo = useAppSelector(getGeo);
+  const { checkForGeo } = useEnvFeatures();
+  const selectedDydxChainId = useAppSelector(getSelectedDydxChainId);
 
   // Wallet connection
   const {
-    walletType,
-    walletConnectionType,
-    selectWalletType,
-    selectedWalletType,
+    selectWallet,
+    selectedWallet,
     selectedWalletError,
-    evmAddress,
     signerWagmi,
     publicClientWagmi,
-    dydxAddress: connectedDydxAddress,
-    signerGraz,
+    getCosmosOfflineSigner,
+    isConnectedGraz,
+    dydxAccountGraz,
   } = useWalletConnection();
 
-  // EVM wallet connection
-  const [previousEvmAddress, setPreviousEvmAddress] = useState(evmAddress);
   const hasSubAccount = useAppSelector(getHasSubaccount);
-
-  useEffect(() => {
-    // Wallet accounts switched
-    if (previousEvmAddress && evmAddress && evmAddress !== previousEvmAddress) {
-      // Disconnect local wallet
-      disconnectLocalDydxWallet();
-
-      // Forget EVM signature
-      forgetEvmSignature(previousEvmAddress);
-    }
-
-    if (evmAddress) {
-      abacusStateManager.setTransfersSourceAddress(evmAddress);
-    }
-
-    setPreviousEvmAddress(evmAddress);
-  }, [evmAddress, hasSubAccount]);
+  const sourceAccount = useAppSelector(getSourceAccount);
 
   const { ready, authenticated } = usePrivy();
 
-  // EVM → dYdX account derivation
+  const blockedGeo = useMemo(() => {
+    return geo && isBlockedGeo(geo) && checkForGeo;
+  }, [geo, checkForGeo]);
 
-  const [evmDerivedAddresses, saveEvmDerivedAddresses] = useLocalStorage({
-    key: LocalStorageKey.EvmDerivedAddresses,
-    defaultValue: {} as EvmDerivedAddresses,
-  });
-
+  const [previousAddress, setPreviousAddress] = useState(sourceAccount.address);
   useEffect(() => {
-    // Clear data stored with deprecated LocalStorageKey
-    if (evmDerivedAddresses.version !== LOCAL_STORAGE_VERSIONS[LocalStorageKey.EvmDerivedAddresses])
-      saveEvmDerivedAddresses({});
-  }, []);
+    const { address, chain } = sourceAccount;
+    // wallet accounts switched
+    if (previousAddress && address !== previousAddress) {
+      // Disconnect local wallet
+      disconnectLocalDydxWallet();
+    }
 
-  const saveEvmDerivedAccount = ({
-    evmAddressInner,
-    dydxAddress,
-  }: {
-    evmAddressInner: EvmAddress;
-    dydxAddress?: DydxAddress;
-  }) => {
-    saveEvmDerivedAddresses({
-      ...evmDerivedAddresses,
-      version: LOCAL_STORAGE_VERSIONS[LocalStorageKey.EvmDerivedAddresses],
-      [evmAddressInner]: {
-        ...evmDerivedAddresses[evmAddressInner],
-        dydxAddress,
-      },
-    });
-  };
+    if (address && (chain === WalletNetworkType.Evm || chain === WalletNetworkType.Solana)) {
+      abacusStateManager.setTransfersSourceAddress(address);
+    }
 
-  const saveEvmSignature = useCallback(
-    (encryptedSignature: string) => {
-      evmDerivedAddresses[evmAddress!].encryptedSignature = encryptedSignature;
-      saveEvmDerivedAddresses(evmDerivedAddresses);
-    },
-    [evmDerivedAddresses, evmAddress]
-  );
-
-  const forgetEvmSignature = useCallback(
-    (_evmAddress = evmAddress) => {
-      if (_evmAddress) {
-        delete evmDerivedAddresses[_evmAddress]?.encryptedSignature;
-        saveEvmDerivedAddresses(evmDerivedAddresses);
-      }
-    },
-    [evmDerivedAddresses, evmAddress]
-  );
+    setPreviousAddress(address);
+    // We only want to set the source wallet address if the address changes
+    // OR when our connection state changes.
+    // The address can be cached via local storage, so it won't change when we reconnect
+    // But the hasSubAccount value will become true once you reconnect
+    // This allows us to trigger a state update and make sure abacus knows the source address
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceAccount.address, sourceAccount.chain, hasSubAccount]);
 
   const decryptSignature = (encryptedSignature: string | undefined) => {
     const staticEncryptionKey = import.meta.env.VITE_PK_ENCRYPTION_KEY;
@@ -145,7 +103,8 @@ const useAccountsContext = () => {
   };
 
   // dYdXClient Onboarding & Account Helpers
-  const { indexerClient, getWalletFromEvmSignature } = useDydxClient();
+  const nobleChainId = getNobleChainId();
+  const { indexerClient, getWalletFromSignature } = useDydxClient();
   // dYdX subaccounts
   const [dydxSubaccounts, setDydxSubaccounts] = useState<Subaccount[] | undefined>();
 
@@ -176,81 +135,88 @@ const useAccountsContext = () => {
     [localDydxWallet]
   );
 
-  const nobleAddress = useMemo(() => localNobleWallet?.address, [localNobleWallet]);
+  const nobleAddress = useMemo(() => {
+    return localNobleWallet?.address;
+  }, [localNobleWallet]);
 
-  const setWalletFromEvmSignature = async (signature: string) => {
-    const { wallet, mnemonic, privateKey, publicKey } = await getWalletFromEvmSignature({
-      signature,
-    });
-    setLocalDydxWallet(wallet);
-    setHdKey({ mnemonic, privateKey, publicKey });
-  };
+  const setWalletFromSignature = useCallback(
+    async (signature: string) => {
+      const { wallet, mnemonic, privateKey, publicKey } = await getWalletFromSignature({
+        signature,
+      });
+      setLocalDydxWallet(wallet);
+      setHdKey({ mnemonic, privateKey, publicKey });
+    },
+    [getWalletFromSignature]
+  );
 
-  useEffect(() => {
-    if (evmAddress) {
-      saveEvmDerivedAccount({ evmAddressInner: evmAddress, dydxAddress });
-    }
-  }, [evmAddress, dydxAddress]);
-
-  const signTypedDataAsync = useSignForWalletDerivation();
+  const signMessageAsync = useSignForWalletDerivation(sourceAccount.walletInfo);
 
   useEffect(() => {
     (async () => {
-      if (walletType === WalletType.TestWallet) {
-        // Get override values. Use the testFlags value if it exists, otherwise use the previously
-        // saved value where possible. If neither exist, use a default garbage value.
-        const addressOverride: DydxAddress =
-          (testFlags.addressOverride as DydxAddress) ||
-          (evmDerivedAddresses?.[TEST_WALLET_EVM_ADDRESS]?.dydxAddress as DydxAddress) ||
-          'dydx1';
-
+      if (sourceAccount.walletInfo?.connectorType === ConnectorType.Test) {
         dispatch(setOnboardingState(OnboardingState.WalletConnected));
-
-        // Set variables.
-        saveEvmDerivedAccount({
-          evmAddressInner: TEST_WALLET_EVM_ADDRESS,
-          dydxAddress: addressOverride,
-        });
         const wallet = new LocalWallet();
-        wallet.address = addressOverride;
+        wallet.address = sourceAccount.address;
         setLocalDydxWallet(wallet);
 
         dispatch(setOnboardingState(OnboardingState.AccountConnected));
-      } else if (connectedDydxAddress && signerGraz) {
-        dispatch(setOnboardingState(OnboardingState.WalletConnected));
+      } else if (sourceAccount.chain === WalletNetworkType.Cosmos && isConnectedGraz) {
         try {
-          setLocalDydxWallet(await LocalWallet.fromOfflineSigner(signerGraz as OfflineSigner));
-          dispatch(setOnboardingState(OnboardingState.AccountConnected));
+          const dydxOfflineSigner = await getCosmosOfflineSigner(selectedDydxChainId);
+          if (dydxOfflineSigner) {
+            setLocalDydxWallet(await LocalWallet.fromOfflineSigner(dydxOfflineSigner));
+            dispatch(setOnboardingState(OnboardingState.AccountConnected));
+          }
         } catch (error) {
           log('useAccounts/setLocalDydxWallet', error);
         }
-      } else if (evmAddress) {
+      } else if (sourceAccount.chain === WalletNetworkType.Evm) {
         if (!localDydxWallet) {
           dispatch(setOnboardingState(OnboardingState.WalletConnected));
 
-          const evmDerivedAccount = evmDerivedAddresses[evmAddress];
-
-          if (walletConnectionType === WalletConnectionType.Privy && authenticated && ready) {
+          if (
+            sourceAccount.walletInfo?.connectorType === ConnectorType.Privy &&
+            authenticated &&
+            ready
+          ) {
             try {
               // Give Privy a second to finish the auth flow before getting the signature
               await sleep();
-              const signature = await signTypedDataAsync();
+              const signature = await signMessageAsync();
 
-              await setWalletFromEvmSignature(signature);
+              await setWalletFromSignature(signature);
               dispatch(setOnboardingState(OnboardingState.AccountConnected));
             } catch (error) {
               log('useAccounts/decryptSignature', error);
-              forgetEvmSignature();
+              dispatch(clearSavedEncryptedSignature());
             }
-          } else if (evmDerivedAccount?.encryptedSignature) {
+          } else if (sourceAccount.encryptedSignature && geo && !blockedGeo) {
             try {
-              const signature = decryptSignature(evmDerivedAccount.encryptedSignature);
+              const signature = decryptSignature(sourceAccount.encryptedSignature);
 
-              await setWalletFromEvmSignature(signature);
+              await setWalletFromSignature(signature);
               dispatch(setOnboardingState(OnboardingState.AccountConnected));
             } catch (error) {
               log('useAccounts/decryptSignature', error);
-              forgetEvmSignature();
+              dispatch(clearSavedEncryptedSignature());
+            }
+          }
+        } else {
+          dispatch(setOnboardingState(OnboardingState.AccountConnected));
+        }
+      } else if (sourceAccount.chain === WalletNetworkType.Solana) {
+        if (!localDydxWallet) {
+          dispatch(setOnboardingState(OnboardingState.WalletConnected));
+
+          if (sourceAccount?.encryptedSignature && geo && !blockedGeo) {
+            try {
+              const signature = decryptSignature(sourceAccount.encryptedSignature);
+              await setWalletFromSignature(signature);
+              dispatch(setOnboardingState(OnboardingState.AccountConnected));
+            } catch (error) {
+              log('useAccounts/decryptSignature', error);
+              dispatch(clearSavedEncryptedSignature());
             }
           }
         } else {
@@ -261,24 +227,34 @@ const useAccountsContext = () => {
         dispatch(setOnboardingState(OnboardingState.Disconnected));
       }
     })();
-  }, [evmAddress, evmDerivedAddresses, signerWagmi, connectedDydxAddress, signerGraz]);
+  }, [signerWagmi, isConnectedGraz, sourceAccount, localDydxWallet, blockedGeo]);
 
   // abacus
   useEffect(() => {
-    if (dydxAddress) abacusStateManager.setAccount(localDydxWallet, hdKey);
-    else abacusStateManager.attemptDisconnectAccount();
-  }, [localDydxWallet, hdKey]);
+    if (dydxAddress) {
+      abacusStateManager.setAccount(localDydxWallet, hdKey, sourceAccount.walletInfo);
+    } else abacusStateManager.attemptDisconnectAccount();
+  }, [localDydxWallet, hdKey, dydxAddress, sourceAccount.walletInfo]);
 
   useEffect(() => {
     const setNobleWallet = async () => {
+      let nobleWallet: LocalWallet | undefined;
       if (hdKey?.mnemonic) {
-        const nobleWallet = await LocalWallet.fromMnemonic(hdKey.mnemonic, NOBLE_BECH32_PREFIX);
+        nobleWallet = await LocalWallet.fromMnemonic(hdKey.mnemonic, NOBLE_BECH32_PREFIX);
+      }
+
+      const nobleOfflineSigner = await getCosmosOfflineSigner(nobleChainId);
+      if (nobleOfflineSigner !== undefined) {
+        nobleWallet = await LocalWallet.fromOfflineSigner(nobleOfflineSigner);
+      }
+
+      if (nobleWallet !== undefined) {
         abacusStateManager.setNobleWallet(nobleWallet);
         setLocalNobleWallet(nobleWallet);
       }
     };
     setNobleWallet();
-  }, [hdKey?.mnemonic]);
+  }, [hdKey?.mnemonic, getCosmosOfflineSigner, nobleChainId]);
 
   // clear subaccounts when no dydxAddress is set
   useEffect(() => {
@@ -315,6 +291,12 @@ const useAccountsContext = () => {
     );
   }, [dispatch, dydxSubaccounts]);
 
+  useEffect(() => {
+    if (blockedGeo) {
+      disconnect();
+    }
+  }, [blockedGeo]);
+
   // Disconnect wallet / accounts
   const disconnectLocalDydxWallet = () => {
     setLocalDydxWallet(undefined);
@@ -324,40 +306,30 @@ const useAccountsContext = () => {
   const disconnect = async () => {
     // Disconnect local wallet
     disconnectLocalDydxWallet();
-
-    // Disconnect EVM wallet
-    forgetEvmSignature();
-    selectWalletType(undefined);
+    selectWallet(undefined);
   };
 
   return {
     // Wallet connection
-    walletType,
-    walletConnectionType,
+    sourceAccount,
 
     // Wallet selection
-    selectWalletType,
-    selectedWalletType,
+    selectWallet,
+    selectedWallet,
     selectedWalletError,
 
     // Wallet connection (EVM)
-    evmAddress,
     signerWagmi,
     publicClientWagmi,
 
-    // Wallet connection (Cosmos)
-    signerGraz,
-
-    // EVM → dYdX account derivation
-    setWalletFromEvmSignature,
-    saveEvmSignature,
-    forgetEvmSignature,
+    setWalletFromSignature,
 
     // dYdX accounts
     hdKey,
     localDydxWallet,
     dydxAccounts,
     dydxAddress,
+
     nobleAddress,
 
     // Onboarding state
@@ -368,5 +340,8 @@ const useAccountsContext = () => {
 
     // dydxClient Account methods
     getSubaccounts,
+
+    // cosmos account
+    dydxAccountGraz,
   };
 };

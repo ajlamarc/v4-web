@@ -13,7 +13,7 @@ type ElementProps = {
   disabled?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  label: React.ReactNode;
+  label?: React.ReactNode;
   triggerIcon?: IconName;
   slotTrigger?: React.ReactNode;
   children: React.ReactNode;
@@ -45,13 +45,13 @@ export const Collapsible = ({
   withTrigger = true,
 }: CollapsibleProps) => {
   const trigger = slotTrigger ? (
-    <$TriggerSlot>
+    <div tw="flex items-center gap-[0.5em]">
       {triggerIconSide === 'right' && label}
       <Trigger className={className} disabled={disabled} asChild>
         {slotTrigger}
       </Trigger>
       {triggerIconSide === 'left' && label}
-    </$TriggerSlot>
+    </div>
   ) : (
     <$Trigger className={className} disabled={disabled}>
       {triggerIconSide === 'right' && (
@@ -83,7 +83,7 @@ const $Root = styled(Root)`
   display: grid;
 
   &[data-state='open'] {
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 `;
 
@@ -92,14 +92,8 @@ const $Trigger = styled(Trigger)`
   --trigger-textColor: inherit;
   --trigger-icon-width: 0.75em;
   --trigger-icon-color: inherit;
+  --icon-size: var(--trigger-icon-width);
 `;
-
-const $TriggerSlot = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-`;
-
 const $TriggerIcon = styled.span`
   width: var(--trigger-icon-width);
 

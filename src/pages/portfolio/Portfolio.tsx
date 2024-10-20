@@ -26,7 +26,6 @@ import { NavigationMenu } from '@/components/NavigationMenu';
 import { Tag, TagType } from '@/components/Tag';
 import { WithSidebar } from '@/components/WithSidebar';
 import { FillsTable, FillsTableColumnKey } from '@/views/tables/FillsTable';
-import { FundingPaymentsTable } from '@/views/tables/FundingPaymentsTable';
 import { TransferHistoryTable } from '@/views/tables/TransferHistoryTable';
 
 import { getOnboardingState, getSubaccount, getTradeInfoNumbers } from '@/state/accountSelectors';
@@ -35,6 +34,7 @@ import { openDialog } from '@/state/dialogs';
 
 import { shortenNumberForDisplay } from '@/lib/numbers';
 
+import { VaultTransactionsTable } from '../vaults/VaultTransactions';
 import { PortfolioNavMobile } from './PortfolioNavMobile';
 
 const Overview = lazy(() => import('./Overview').then((module) => ({ default: module.Overview })));
@@ -116,6 +116,17 @@ const PortfolioPage = () => {
             }
           />
           <Route
+            path={HistoryRoute.VaultTransfers}
+            element={
+              <VaultTransactionsTable
+                withOuterBorders
+                withTxHashLink
+                emptyString={stringGetter({ key: STRING_KEYS.YOU_HAVE_NO_VAULT_DEPOSITS })}
+              />
+            }
+          />
+          {/* TODO - TRCL-1693
+          <Route
             path={HistoryRoute.Payments}
             element={
               <FundingPaymentsTable
@@ -123,7 +134,7 @@ const PortfolioPage = () => {
                 withOuterBorder={isNotTablet}
               />
             }
-          />
+          /> */}
         </Route>
         <Route path="*" element={<Navigate to={PortfolioRoute.Overview} replace />} />
       </Routes>
@@ -133,14 +144,14 @@ const PortfolioPage = () => {
   return isTablet ? (
     <$PortfolioMobile>
       <PortfolioNavMobile />
-      {routesComponent}
+      <$MobileContent>{routesComponent}</$MobileContent>
     </$PortfolioMobile>
   ) : (
     <WithSidebar
       sidebar={
         isTablet ? null : (
-          <$SideBar>
-            <$NavigationMenu
+          <div tw="flexColumn h-full justify-between">
+            <NavigationMenu
               items={[
                 {
                   group: 'views',
@@ -224,6 +235,7 @@ const PortfolioPage = () => {
                   ],
                 },
               ]}
+              tw="p-0.5 pt-0"
             />
             {onboardingState === OnboardingState.AccountConnected && (
               <$Footer>
@@ -254,7 +266,7 @@ const PortfolioPage = () => {
                   )}
               </$Footer>
             )}
-          </$SideBar>
+          </div>
         )
       }
     >
@@ -269,14 +281,6 @@ const $PortfolioMobile = styled.div`
   min-height: 100%;
   ${layoutMixins.expandingColumnWithHeader}
 `;
-
-const $SideBar = styled.div`
-  ${layoutMixins.flexColumn}
-  justify-content: space-between;
-
-  height: 100%;
-`;
-
 const $Footer = styled.div`
   ${layoutMixins.row}
   flex-wrap: wrap;
@@ -289,12 +293,6 @@ const $Footer = styled.div`
     flex-grow: 1;
   }
 `;
-
-const $NavigationMenu = styled(NavigationMenu)`
-  padding: 0.5rem;
-  padding-top: 0;
-`;
-
 const $IconContainer = styled.div`
   width: 1.5rem;
   height: 1.5rem;
@@ -305,4 +303,8 @@ const $IconContainer = styled.div`
   background-color: var(--color-layer-4);
   border-radius: 50%;
   margin-left: -0.25rem;
+`;
+
+const $MobileContent = styled.article`
+  ${layoutMixins.contentContainerPage}
 `;

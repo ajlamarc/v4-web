@@ -1,11 +1,14 @@
 import { OrderSide } from '@dydxprotocol/v4-client-js';
+import BigNumber from 'bignumber.js';
 
 import {
+  AbacusOrderSide,
   AbacusOrderStatus,
   AbacusOrderType,
   AbacusOrderTypes,
   KotlinIrEnumValues,
   Nullable,
+  SubaccountFills,
   TRADE_TYPES,
   type Asset,
   type OrderStatus,
@@ -68,6 +71,14 @@ export const getOrderStatusInfo = ({ status }: { status: string }) => {
   }
 };
 
+export const isOrderStatusOpen = (status: OrderStatus) =>
+  [
+    AbacusOrderStatus.Open,
+    AbacusOrderStatus.Pending,
+    AbacusOrderStatus.PartiallyFilled,
+    AbacusOrderStatus.Untriggered,
+  ].some((orderStatus) => status === orderStatus);
+
 export const isOrderStatusClearable = (status: OrderStatus) =>
   status === AbacusOrderStatus.Filled || isOrderStatusCanceled(status);
 
@@ -105,6 +116,10 @@ export const isTakeProfitOrder = (order: SubaccountOrder, isSlTpLimitOrdersEnabl
   return validOrderTypes.some(({ ordinal }) => ordinal === order.type.ordinal) && order.reduceOnly;
 };
 
+export const isSellOrder = (order: SubaccountOrder) => {
+  return order.side.ordinal === AbacusOrderSide.Sell.ordinal;
+};
+
 type AddedProps = {
   asset: Asset | undefined;
   stepSizeDecimals: Nullable<number>;
@@ -132,3 +147,13 @@ export const getHydratedTradingData = <
 
 export const getTradeType = (orderType: string) =>
   TRADE_TYPES[orderType as KotlinIrEnumValues<typeof AbacusOrderType>];
+
+export const getAverageFillPrice = (fills: SubaccountFills) => {
+  let total = BigNumber(0);
+  let totalSize = BigNumber(0);
+  fills.forEach((fill) => {
+    total = total.plus(BigNumber(fill.price).times(fill.size));
+    totalSize = totalSize.plus(fill.size);
+  });
+  return totalSize.gt(0) ? total.div(totalSize) : null;
+};

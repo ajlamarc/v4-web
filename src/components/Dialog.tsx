@@ -12,6 +12,7 @@ import {
   Trigger,
 } from '@radix-ui/react-dialog';
 import styled, { css, keyframes } from 'styled-components';
+import tw from 'twin.macro';
 
 import { useDialogArea } from '@/hooks/useDialogArea';
 
@@ -37,6 +38,7 @@ type ElementProps = {
   onBack?: () => void;
   preventClose?: boolean;
   slotTrigger?: React.ReactNode;
+  slotHeaderAbove?: React.ReactNode;
   slotHeaderInner?: React.ReactNode;
   slotFooter?: React.ReactNode;
   withClose?: boolean;
@@ -51,6 +53,7 @@ type StyleProps = {
   className?: string;
   stacked?: boolean;
   withAnimation?: boolean;
+  withOverlay?: boolean;
 };
 
 export type DialogProps = ElementProps & StyleProps;
@@ -78,6 +81,7 @@ export const Dialog = ({
   onBack,
   preventClose,
   slotTrigger,
+  slotHeaderAbove,
   slotHeaderInner,
   slotFooter,
   stacked,
@@ -87,18 +91,17 @@ export const Dialog = ({
   hasHeaderBorder = false,
   hasHeaderBlur = true,
   withAnimation = false,
+  withOverlay = ![DialogPlacement.Inline, DialogPlacement.FullScreen].includes(placement),
   children,
   className,
 }: DialogProps) => {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const showOverlay = ![DialogPlacement.Inline, DialogPlacement.FullScreen].includes(placement);
-
   return (
-    <Root modal={showOverlay} open={isOpen} onOpenChange={setIsOpen}>
+    <Root modal={withOverlay} open={isOpen} onOpenChange={setIsOpen}>
       {slotTrigger && <Trigger asChild>{slotTrigger}</Trigger>}
       <DialogPortal withPortal={placement !== DialogPlacement.Inline} container={portalContainer}>
-        {showOverlay && <$Overlay />}
+        {withOverlay && <$Overlay />}
         <$Container
           placement={placement}
           className={className}
@@ -106,13 +109,14 @@ export const Dialog = ({
             closeButtonRef.current?.focus();
           }}
           onInteractOutside={(e: Event) => {
-            if (!showOverlay || preventClose) {
+            if (!withOverlay || preventClose) {
               e.preventDefault();
             }
           }}
           $stacked={stacked}
           $withAnimation={withAnimation}
         >
+          {slotHeaderAbove}
           {stacked ? (
             <$StackedHeaderTopRow $withBorder={hasHeaderBorder} $withBlur={hasHeaderBlur}>
               {onBack && <$BackButton onClick={onBack} />}
@@ -133,10 +137,14 @@ export const Dialog = ({
             </$StackedHeaderTopRow>
           ) : (
             <$Header $withBorder={hasHeaderBorder} $withBlur={hasHeaderBlur}>
-              <$HeaderTopRow>
+              <div tw="row gap-[--dialog-title-gap]">
                 {onBack && <BackButton onClick={onBack} />}
 
-                {slotIcon && <$Icon>{slotIcon}</$Icon>}
+                {slotIcon && (
+                  <div tw="row h-[1em] w-[1em] text-[length:--dialog-icon-size] leading-none">
+                    {slotIcon}
+                  </div>
+                )}
 
                 {title && <$Title>{title}</$Title>}
 
@@ -145,7 +153,7 @@ export const Dialog = ({
                     <Icon iconName={IconName.Close} />
                   </$Close>
                 )}
-              </$HeaderTopRow>
+              </div>
 
               {description && <$Description>{description}</$Description>}
 
@@ -167,29 +175,10 @@ const $Overlay = styled(Overlay)`
   position: fixed;
   inset: 0;
 
-  pointer-events: none;
+  pointer-events: none !important;
 
-  @media (prefers-reduced-motion: reduce) {
-    backdrop-filter: blur(8px);
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    &[data-state='open'] {
-      animation: ${keyframes`
-        to {
-          backdrop-filter: blur(8px);
-        }
-      `} 0.15s var(--ease-out-expo) forwards;
-    }
-
-    &[data-state='closed'] {
-      animation: ${keyframes`
-        from {
-          backdrop-filter: blur(8px);
-        }
-      `} 0.15s;
-    }
-  }
+  -webkit-backdrop-filter: brightness(var(--overlay-filter));
+  backdrop-filter: brightness(var(--overlay-filter));
 `;
 
 const $Container = styled(Content)<{
@@ -239,6 +228,7 @@ const $Container = styled(Content)<{
   isolation: isolate;
   z-index: 1;
   position: absolute;
+  pointer-events: auto !important;
 
   inset: 0;
   width: 100%;
@@ -409,12 +399,6 @@ const $Header = styled.header<{ $withBorder: boolean; $withBlur: boolean }>`
       --stickyArea-backdropFilter: none;
     `};
 `;
-
-const $HeaderTopRow = styled.div`
-  ${layoutMixins.row}
-  gap: var(--dialog-title-gap);
-`;
-
 const $StackedHeaderTopRow = styled.div<{ $withBorder: boolean; $withBlur: boolean }>`
   ${layoutMixins.flexColumn}
   align-items: center;
@@ -455,17 +439,6 @@ const $Content = styled.div`
 
   isolation: isolate;
 `;
-
-const $Icon = styled.div`
-  ${layoutMixins.row}
-
-  width: 1em;
-  height: 1em;
-
-  font-size: var(--dialog-icon-size); /* 1 line-height */
-  line-height: 1;
-`;
-
 const $Close = styled(Close)<{ $absolute?: boolean }>`
   width: 0.7813rem;
   height: 0.7813rem;
@@ -515,21 +488,9 @@ const $BackButton = styled(BackButton)`
   top: var(--dialog-header-paddingTop);
 `;
 
-const $Title = styled(Title)`
-  flex: 1;
+const $Title = tw(Title)`flex-1 font-large-medium text-color-text-2 overflow-hidden text-ellipsis`;
 
-  font: var(--font-large-medium);
-  color: var(--color-text-2);
-
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const $Description = styled(Description)`
-  margin-top: 0.5rem;
-  color: var(--color-text-0);
-  font: var(--font-base-book);
-`;
+const $Description = tw(Description)`mt-0.5 text-color-text-0 font-base-book`;
 
 const $Footer = styled.footer`
   display: grid;

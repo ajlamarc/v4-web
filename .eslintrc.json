@@ -27,13 +27,15 @@
     "import/no-extraneous-dependencies": [
       "error",
       {
-        "devDependencies": ["./scripts/*.js", "./__tests__/**/*.ts", "./src/lib/__test__/**/*.ts"]
+        "devDependencies": ["./scripts/*.js", "./__tests__/**/*.ts", "./src/**/__test__/**/*.ts"]
       }
     ],
     "import/no-named-as-default": "off",
     "import/prefer-default-export": "off",
     "jsx-a11y/anchor-is-valid": "off",
+    "jsx-a11y/no-static-element-interactions": "warn",
     "jsx-a11y/click-events-have-key-events": "off",
+    "jsx-a11y/alt-text": "warn",
     "no-continue": "off",
     "no-console": ["error"],
     "no-lonely-if": "off",
@@ -61,13 +63,14 @@
     "react/jsx-wrap-multilines": "off",
     "react/jsx-indent": "off",
     "react/no-danger": "off",
+    "react/no-unknown-property": ["error", { "ignore": ["tw", "css"] }],
     "react/react-in-jsx-scope": "off",
     "react/require-default-props": "off",
     "react/sort-comp": "off",
     "react/jsx-pascal-case": "off",
     "@typescript-eslint/no-use-before-define": "off",
     "@typescript-eslint/comma-dangle": "off",
-    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "@typescript-eslint/prefer-nullish-coalescing": "error",
     "@typescript-eslint/member-delimiter-style": [
       "error",

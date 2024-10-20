@@ -1,6 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
-import { NumberFormatValues } from 'react-number-format';
 import { shallowEqual } from 'react-redux';
 import styled from 'styled-components';
 
@@ -20,17 +19,18 @@ import {
 import { STRING_KEYS } from '@/constants/localization';
 import { NumberSign, PERCENT_DECIMALS } from '@/constants/numbers';
 
+import { useParameterizedSelector } from '@/hooks/useParameterizedSelector';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useSubaccount } from '@/hooks/useSubaccount';
 
 import { formMixins } from '@/styles/formMixins';
-import { layoutMixins } from '@/styles/layoutMixins';
 
 import { AlertMessage } from '@/components/AlertMessage';
 import { Button } from '@/components/Button';
 import { DiffOutput } from '@/components/DiffOutput';
 import { FormInput } from '@/components/FormInput';
 import { GradientCard } from '@/components/GradientCard';
+import { Icon, IconName } from '@/components/Icon';
 import { InputType } from '@/components/Input';
 import { OutputType, ShowSign } from '@/components/Output';
 import { ToggleGroup } from '@/components/ToggleGroup';
@@ -51,11 +51,11 @@ type ElementProps = {
 };
 
 const SIZE_PERCENT_OPTIONS = {
-  '5%': '0.05',
   '10%': '0.1',
   '25%': '0.25',
   '50%': '0.5',
   '75%': '0.75',
+  '100%': '1',
 };
 
 export const AdjustIsolatedMarginForm = ({
@@ -79,6 +79,13 @@ export const AdjustIsolatedMarginForm = ({
 
   useEffect(() => {
     abacusStateManager.setAdjustIsolatedMarginValue({
+      value: marketId,
+      field: AdjustIsolatedMarginInputField.Market,
+    });
+  }, [marketId]);
+
+  useEffect(() => {
+    abacusStateManager.setAdjustIsolatedMarginValue({
       value: childSubaccountNumber,
       field: AdjustIsolatedMarginInputField.ChildSubaccountNumber,
     });
@@ -93,7 +100,7 @@ export const AdjustIsolatedMarginForm = ({
     };
   }, [childSubaccountNumber]);
 
-  const setAmount = ({ floatValue }: NumberFormatValues) => {
+  const setAmount = ({ floatValue }: { floatValue?: number }) => {
     abacusStateManager.setAdjustIsolatedMarginValue({
       value: floatValue,
       field: AdjustIsolatedMarginInputField.Amount,
@@ -126,9 +133,12 @@ export const AdjustIsolatedMarginForm = ({
     adjustIsolatedMarginOfPosition({
       onError: (errorParams) => {
         setIsSubmitting(false);
-        if (errorParams?.errorStringKey) {
-          setErrorMessage(stringGetter({ key: errorParams.errorStringKey }));
-        }
+        setErrorMessage(
+          stringGetter({
+            key: errorParams.errorStringKey,
+            fallback: errorParams.errorMessage ?? '',
+          })
+        );
       },
       onSuccess: () => {
         setIsSubmitting(false);
@@ -173,11 +183,11 @@ export const AdjustIsolatedMarginForm = ({
   /**
    * TODO: Handle by adding AdjustIsolatedMarginValidator within Abacus
    */
-  const marketMaxLeverage = useAppSelector((s) => getMarketMaxLeverage(s, marketId));
+  const marketMaxLeverage = useParameterizedSelector(getMarketMaxLeverage, marketId);
 
   const alertMessage = useMemo(() => {
     if (isolatedMarginAdjustmentType === IsolatedMarginAdjustmentType.Add) {
-      if (MustBigNumber(amount).gte(MustBigNumber(crossFreeCollateral))) {
+      if (MustBigNumber(amount).gt(MustBigNumber(crossFreeCollateral))) {
         return {
           message: stringGetter({ key: STRING_KEYS.TRANSFER_MORE_THAN_FREE }),
           type: AlertType.Error,
@@ -225,6 +235,12 @@ export const AdjustIsolatedMarginForm = ({
     positionLeverageUpdated,
     stringGetter,
   ]);
+
+  // currently the only action that trader can take to fix the errors/validations is modify the amount
+  const ctaErrorAction =
+    alertMessage?.type === AlertType.Error
+      ? stringGetter({ key: STRING_KEYS.MODIFY_MARGIN_AMOUNT })
+      : undefined;
 
   const {
     freeCollateralDiffOutput,
@@ -352,11 +368,15 @@ export const AdjustIsolatedMarginForm = ({
   ) : errorMessage ? (
     <AlertMessage type={AlertType.Error}>{errorMessage}</AlertMessage>
   ) : (
-    <$GradientCard fromColor="neutral" toColor={gradientToColor}>
-      <$Column>
-        <$TertiarySpan>{stringGetter({ key: STRING_KEYS.ESTIMATED })}</$TertiarySpan>
+    <GradientCard
+      fromColor="neutral"
+      toColor={gradientToColor}
+      tw="spacedRow h-4 items-center rounded-0.5 px-1 py-0.75"
+    >
+      <div tw="column font-small-medium">
+        <span tw="text-color-text-0">{stringGetter({ key: STRING_KEYS.ESTIMATED })}</span>
         <span>{stringGetter({ key: STRING_KEYS.LIQUIDATION_PRICE })}</span>
-      </$Column>
+      </div>
       <div>
         <DiffOutput
           withDiff={
@@ -372,7 +392,7 @@ export const AdjustIsolatedMarginForm = ({
           fractionDigits={tickSizeDecimals}
         />
       </div>
-    </$GradientCard>
+    </GradientCard>
   );
 
   return (
@@ -398,11 +418,11 @@ export const AdjustIsolatedMarginForm = ({
         ]}
       />
 
-      <$RelatedInputsGroup>
+      <div tw="flexColumn gap-[0.56rem]">
         <$ToggleGroup
           items={objectEntries(SIZE_PERCENT_OPTIONS).map(([key, value]) => ({
             label: key,
-            value: value.toString(),
+            value: MustBigNumber(value).toFixed(PERCENT_DECIMALS),
           }))}
           value={MustBigNumber(amountPercent).toFixed(PERCENT_DECIMALS)}
           onValueChange={setPercent}
@@ -414,10 +434,10 @@ export const AdjustIsolatedMarginForm = ({
             type={InputType.Currency}
             label={formConfig.formLabel}
             value={amount}
-            onChange={setAmount}
+            onInput={setAmount}
           />
         </WithDetailsReceipt>
-      </$RelatedInputsGroup>
+      </div>
 
       {CenterElement}
 
@@ -425,10 +445,21 @@ export const AdjustIsolatedMarginForm = ({
         <Button
           type={ButtonType.Submit}
           action={ButtonAction.Primary}
-          disabled={isSubmitting}
-          state={isSubmitting ? ButtonState.Loading : ButtonState.Default}
+          disabled={isSubmitting || ctaErrorAction !== undefined}
+          state={
+            isSubmitting
+              ? ButtonState.Loading
+              : ctaErrorAction
+                ? ButtonState.Disabled
+                : ButtonState.Default
+          }
+          slotLeft={
+            ctaErrorAction ? (
+              <Icon iconName={IconName.Warning} tw="text-color-warning" />
+            ) : undefined
+          }
         >
-          {formConfig.buttonLabel}
+          {ctaErrorAction ?? formConfig.buttonLabel}
         </Button>
       </WithDetailsReceipt>
     </$Form>
@@ -438,25 +469,6 @@ export const AdjustIsolatedMarginForm = ({
 const $Form = styled.form`
   ${formMixins.transfersForm}
 `;
-
-const $RelatedInputsGroup = styled.div`
-  ${layoutMixins.flexColumn}
-  gap: 0.56rem;
-`;
 const $ToggleGroup = styled(ToggleGroup)`
   ${formMixins.inputToggleGroup}
-`;
-const $GradientCard = styled(GradientCard)`
-  ${layoutMixins.spacedRow}
-  height: 4rem;
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  align-items: center;
-`;
-const $Column = styled.div`
-  ${layoutMixins.column}
-  font: var(--font-small-medium);
-`;
-const $TertiarySpan = styled.span`
-  color: var(--color-text-0);
 `;

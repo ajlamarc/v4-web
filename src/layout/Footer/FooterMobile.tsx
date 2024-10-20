@@ -1,10 +1,13 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import tw from 'twin.macro';
 
 import { DialogTypes } from '@/constants/dialogs';
 import { STRING_KEYS } from '@/constants/localization';
 import { DEFAULT_MARKETID } from '@/constants/markets';
 import { AppRoute } from '@/constants/routes';
 
+import { useComplianceState } from '@/hooks/useComplianceState';
+import { useNotifications } from '@/hooks/useNotifications';
 import { useShouldShowFooter } from '@/hooks/useShouldShowFooter';
 import { useStringGetter } from '@/hooks/useStringGetter';
 
@@ -28,6 +31,9 @@ export const FooterMobile = () => {
 
   const marketId = useAppSelector(getCurrentMarketId);
 
+  const { disableConnectButton } = useComplianceState();
+  const { hasUnreadNotifications } = useNotifications();
+
   if (!useShouldShowFooter()) return null;
 
   return (
@@ -43,7 +49,7 @@ export const FooterMobile = () => {
                     label: stringGetter({ key: STRING_KEYS.TRADE }),
                     slotBefore: (
                       <$StartIcon>
-                        <Icon iconName={IconName.Trade} />
+                        <Icon iconName={IconName.Trade} size="1.5rem" />
                       </$StartIcon>
                     ),
                     href: `${AppRoute.Trade}/${marketId ?? DEFAULT_MARKETID}`,
@@ -52,11 +58,12 @@ export const FooterMobile = () => {
                     value: 'onboarding',
                     label: stringGetter({ key: STRING_KEYS.ONBOARDING }),
                     slotBefore: (
-                      <$StartIcon>
-                        <Icon iconName={IconName.Play} />
+                      <$StartIcon disabled={disableConnectButton}>
+                        <Icon iconName={IconName.Play} size="1.5rem" />
                       </$StartIcon>
                     ),
-                    onClick: () => dispatch(openDialog(DialogTypes.Onboarding())),
+                    onClick: () =>
+                      !disableConnectButton && dispatch(openDialog(DialogTypes.Onboarding())),
                   },
               {
                 value: 'portfolio',
@@ -73,7 +80,14 @@ export const FooterMobile = () => {
               {
                 value: 'alerts',
                 label: stringGetter({ key: STRING_KEYS.ALERTS }),
-                slotBefore: <$Icon iconComponent={BellIcon as any} />,
+                slotBefore: (
+                  <div tw="stack">
+                    <$Icon iconComponent={BellIcon as any} />
+                    {hasUnreadNotifications && (
+                      <$UnreadIndicator tw="relative right-[-0.35rem] top-[-0.55rem] place-self-center" />
+                    )}
+                  </div>
+                ),
                 href: AppRoute.Alerts,
               },
               {
@@ -154,11 +168,9 @@ const $NavigationMenu = styled(NavigationMenu)`
   }
 `;
 
-const $Icon = styled(Icon)`
-  font-size: 1.5rem;
-`;
+const $Icon = tw(Icon)`text-[1.5rem]`;
 
-const $StartIcon = styled.div`
+const $StartIcon = styled.div<{ disabled?: boolean }>`
   display: inline-flex;
   flex-direction: row;
   justify-content: center;
@@ -173,8 +185,18 @@ const $StartIcon = styled.div`
   border: solid var(--border-width) var(--color-border-white);
   border-radius: 50%;
 
-  svg {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
+  ${({ disabled }) =>
+    disabled &&
+    css`
+      background-color: var(--color-layer-2);
+      color: var(--color-text-0);
+    `}
+`;
+
+const $UnreadIndicator = styled.div`
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+  border: 2px solid var(--color-layer-2);
 `;

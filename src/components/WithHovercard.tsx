@@ -3,14 +3,15 @@ import type { ReactNode } from 'react';
 import { Content, Portal, Root, Trigger } from '@radix-ui/react-hover-card';
 import styled from 'styled-components';
 
-import { tooltipStrings } from '@/constants/tooltips';
+import { TooltipStrings } from '@/constants/localization';
+import { TooltipStringKeys, tooltipStrings } from '@/constants/tooltips';
 
 import { useStringGetter } from '@/hooks/useStringGetter';
 
 import { popoverMixins } from '@/styles/popoverMixins';
 
 type ElementProps = {
-  hovercard?: keyof typeof tooltipStrings;
+  hovercard?: TooltipStringKeys;
   stringParams?: Record<string, string | undefined>;
   slotTrigger?: ReactNode;
   slotButton?: ReactNode;
@@ -33,7 +34,8 @@ export const WithHovercard = ({
 }: ElementProps & StyleProps) => {
   const stringGetter = useStringGetter();
 
-  const getHovercardStrings = hovercard && tooltipStrings[hovercard];
+  const getHovercardStrings: TooltipStrings[string] | undefined =
+    hovercard && tooltipStrings[hovercard];
 
   let hovercardTitle;
   let hovercardBody;
@@ -52,7 +54,7 @@ export const WithHovercard = ({
       {slotTrigger && <Trigger asChild>{slotTrigger}</Trigger>}
       <Portal>
         <$Content className={className} align={align} alignOffset={-16} side={side} sideOffset={8}>
-          {hovercardTitle && <$Title>{hovercardTitle}</$Title>}
+          {hovercardTitle && <h3 tw="text-color-text-2 font-small-bold">{hovercardTitle}</h3>}
           {hovercardBody && <p>{hovercardBody}</p>}
           {slotButton}
         </$Content>
@@ -74,9 +76,4 @@ const $Content = styled(Content)`
 
   font-size: 0.8125em;
   border-radius: 0.33rem;
-`;
-
-const $Title = styled.h3`
-  font: var(--font-small-bold);
-  color: var(--color-text-2);
 `;

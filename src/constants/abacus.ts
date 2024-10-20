@@ -83,10 +83,12 @@ export type MarketOrderbookGrouping = Abacus.exchange.dydx.abacus.output.MarketO
 export type MarketTrade = Abacus.exchange.dydx.abacus.output.MarketTrade;
 export type OrderbookLine = Abacus.exchange.dydx.abacus.output.OrderbookLine;
 export type PerpetualMarket = Abacus.exchange.dydx.abacus.output.PerpetualMarket;
+export type MarketConfigs = Abacus.exchange.dydx.abacus.output.MarketConfigs;
 export type MarketHistoricalFunding = Abacus.exchange.dydx.abacus.output.MarketHistoricalFunding;
 export const PerpetualMarketType = Abacus.exchange.dydx.abacus.output.PerpetualMarketType;
 
 // ------ Configs ------ //
+export const StatsigConfig = Abacus.exchange.dydx.abacus.state.manager.StatsigConfig;
 export type Configs = Abacus.exchange.dydx.abacus.output.Configs;
 export type FeeDiscount = Abacus.exchange.dydx.abacus.output.FeeDiscount;
 export type FeeTier = Abacus.exchange.dydx.abacus.output.FeeTier;
@@ -111,39 +113,45 @@ export type InputError = Abacus.exchange.dydx.abacus.output.input.ValidationErro
 export type TransferInputTokenResource =
   Abacus.exchange.dydx.abacus.output.input.TransferInputTokenResource;
 export const ErrorType = Abacus.exchange.dydx.abacus.output.input.ErrorType;
+export const ErrorFormat = Abacus.exchange.dydx.abacus.output.input.ErrorFormat;
+const errorFormats = [...ErrorFormat.values()] as const;
+export type ErrorFormatType = (typeof errorFormats)[number];
 
 // ------ Wallet ------ //
 export type Wallet = Abacus.exchange.dydx.abacus.output.Wallet;
-export type AccountBalance = Abacus.exchange.dydx.abacus.output.AccountBalance;
-export type StakingDelegation = Abacus.exchange.dydx.abacus.output.StakingDelegation;
-export type UnbondingDelegation = Abacus.exchange.dydx.abacus.output.UnbondingDelegation;
-export type StakingRewards = Abacus.exchange.dydx.abacus.output.StakingRewards;
-export type TradingRewards = Abacus.exchange.dydx.abacus.output.TradingRewards;
-export type HistoricalTradingReward = Abacus.exchange.dydx.abacus.output.HistoricalTradingReward;
+export type AccountBalance = Abacus.exchange.dydx.abacus.output.account.AccountBalance;
+export type StakingDelegation = Abacus.exchange.dydx.abacus.output.account.StakingDelegation;
+export type UnbondingDelegation = Abacus.exchange.dydx.abacus.output.account.UnbondingDelegation;
+export type StakingRewards = Abacus.exchange.dydx.abacus.output.account.StakingRewards;
+export type TradingRewards = Abacus.exchange.dydx.abacus.output.account.TradingRewards;
+export type HistoricalTradingReward =
+  Abacus.exchange.dydx.abacus.output.account.HistoricalTradingReward;
 export const HistoricalTradingRewardsPeriod =
   Abacus.exchange.dydx.abacus.state.manager.HistoricalTradingRewardsPeriod;
 const historicalTradingRewardsPeriod = [...HistoricalTradingRewardsPeriod.values()] as const;
 export type HistoricalTradingRewardsPeriods = (typeof historicalTradingRewardsPeriod)[number];
 
-export type Subaccount = Abacus.exchange.dydx.abacus.output.Subaccount;
-export type SubaccountPosition = Abacus.exchange.dydx.abacus.output.SubaccountPosition;
+export type Subaccount = Abacus.exchange.dydx.abacus.output.account.Subaccount;
+export type SubaccountPosition = Abacus.exchange.dydx.abacus.output.account.SubaccountPosition;
 export type SubaccountPendingPosition =
-  Abacus.exchange.dydx.abacus.output.SubaccountPendingPosition;
-export type SubaccountOrder = Abacus.exchange.dydx.abacus.output.SubaccountOrder;
+  Abacus.exchange.dydx.abacus.output.account.SubaccountPendingPosition;
+export type SubaccountOrder = Abacus.exchange.dydx.abacus.output.account.SubaccountOrder;
 export type OrderStatus = Abacus.exchange.dydx.abacus.output.input.OrderStatus;
 export const AbacusOrderStatus = Abacus.exchange.dydx.abacus.output.input.OrderStatus;
 const abacusOrderStatuses = [...AbacusOrderStatus.values()] as const;
 export type AbacusOrderStatuses = (typeof abacusOrderStatuses)[number];
-export type SubaccountFills = Abacus.exchange.dydx.abacus.output.SubaccountFill[];
-export type SubaccountFill = Abacus.exchange.dydx.abacus.output.SubaccountFill;
-export type SubaccountFundingPayment = Abacus.exchange.dydx.abacus.output.SubaccountFundingPayment;
+export type SubaccountFills = Abacus.exchange.dydx.abacus.output.account.SubaccountFill[];
+export type SubaccountFill = Abacus.exchange.dydx.abacus.output.account.SubaccountFill;
+export type SubaccountFundingPayment =
+  Abacus.exchange.dydx.abacus.output.account.SubaccountFundingPayment;
 export type SubaccountFundingPayments =
-  Abacus.exchange.dydx.abacus.output.SubaccountFundingPayment[];
-export type SubaccountTransfer = Abacus.exchange.dydx.abacus.output.SubaccountTransfer;
-export type SubaccountTransfers = Abacus.exchange.dydx.abacus.output.SubaccountTransfer[];
+  Abacus.exchange.dydx.abacus.output.account.SubaccountFundingPayment[];
+export type SubaccountTransfer = Abacus.exchange.dydx.abacus.output.account.SubaccountTransfer;
+export type SubaccountTransfers = Abacus.exchange.dydx.abacus.output.account.SubaccountTransfer[];
 
 // ------ Historical PnL ------ //
-export type SubAccountHistoricalPNLs = Abacus.exchange.dydx.abacus.output.SubaccountHistoricalPNL[];
+export type SubAccountHistoricalPNLs =
+  Abacus.exchange.dydx.abacus.output.account.SubaccountHistoricalPNL[];
 export const HistoricalPnlPeriod = Abacus.exchange.dydx.abacus.state.manager.HistoricalPnlPeriod;
 const historicalPnlPeriod = [...HistoricalPnlPeriod.values()] as const;
 export type HistoricalPnlPeriods = (typeof historicalPnlPeriod)[number];
@@ -194,13 +202,15 @@ export type AbacusOrderSides = Abacus.exchange.dydx.abacus.output.input.OrderSid
 export const AbacusOrderType = Abacus.exchange.dydx.abacus.output.input.OrderType;
 export const AbacusOrderSide = Abacus.exchange.dydx.abacus.output.input.OrderSide;
 
-export const AbacusPositionSide = Abacus.exchange.dydx.abacus.output.PositionSide;
-export type AbacusPositionSides = Abacus.exchange.dydx.abacus.output.PositionSide;
+export const AbacusPositionSide = Abacus.exchange.dydx.abacus.output.account.PositionSide;
+export type AbacusPositionSides = Abacus.exchange.dydx.abacus.output.account.PositionSide;
 
 export const AbacusMarginMode = Abacus.exchange.dydx.abacus.output.input.MarginMode;
 
 export type HumanReadablePlaceOrderPayload =
   Abacus.exchange.dydx.abacus.state.manager.HumanReadablePlaceOrderPayload;
+export type HumanReadableCloseAllPositionsPayload =
+  Abacus.exchange.dydx.abacus.state.manager.HumanReadableCloseAllPositionsPayload;
 export type HumanReadableCancelOrderPayload =
   Abacus.exchange.dydx.abacus.state.manager.HumanReadableCancelOrderPayload;
 export type HumanReadableTriggerOrdersPayload =
@@ -211,6 +221,7 @@ export type HumanReadableTransferPayload =
   Abacus.exchange.dydx.abacus.state.manager.HumanReadableTransferPayload;
 export type HumanReadableSubaccountTransferPayload =
   Abacus.exchange.dydx.abacus.state.manager.HumanReadableSubaccountTransferPayload;
+export const PlaceOrderMarketInfo = Abacus.exchange.dydx.abacus.state.manager.PlaceOrderMarketInfo;
 
 export type OrderbookGroupings = Abacus.exchange.dydx.abacus.state.manager.OrderbookGrouping;
 export const OrderbookGrouping = Abacus.exchange.dydx.abacus.state.manager.OrderbookGrouping;
@@ -233,6 +244,27 @@ export const RestrictionType = Abacus.exchange.dydx.abacus.output.Restriction;
 export const ComplianceStatus = Abacus.exchange.dydx.abacus.output.ComplianceStatus;
 export const ComplianceAction = Abacus.exchange.dydx.abacus.output.ComplianceAction;
 export type Compliance = Abacus.exchange.dydx.abacus.output.Compliance;
+
+// Vaults
+
+export type VaultDetails = Abacus.exchange.dydx.abacus.functional.vault.VaultDetails;
+export type VaultPositions = Abacus.exchange.dydx.abacus.functional.vault.VaultPositions;
+export type VaultAccount = Abacus.exchange.dydx.abacus.functional.vault.VaultAccount;
+export type VaultTransfer = Abacus.exchange.dydx.abacus.functional.vault.VaultTransfer;
+export type VaultPosition = Abacus.exchange.dydx.abacus.functional.vault.VaultPosition;
+export type VaultShareUnlock = Abacus.exchange.dydx.abacus.functional.vault.VaultShareUnlock;
+export const VaultFormData = Abacus.exchange.dydx.abacus.functional.vault.VaultFormData;
+export const VaultFormAction = Abacus.exchange.dydx.abacus.functional.vault.VaultFormAction;
+export const VaultFormAccountData =
+  Abacus.exchange.dydx.abacus.functional.vault.VaultFormAccountData;
+export type VaultDepositWithdrawSlippageResponse =
+  Abacus.indexer.models.chain.OnChainVaultDepositWithdrawSlippageResponse;
+export type VaultFormValidationResult =
+  Abacus.exchange.dydx.abacus.functional.vault.VaultFormValidationResult;
+export const IndexerMegavaultHistoricalPnlResponse =
+  Abacus.indexer.codegen.IndexerMegavaultHistoricalPnlResponse;
+export const { VaultCalculator, VaultAccountCalculator, VaultDepositWithdrawFormValidator } =
+  Abacus.exchange.dydx.abacus.functional.vault;
 
 // ------ Api data ------ //
 export const ApiData = Abacus.exchange.dydx.abacus.state.manager.ApiData;
@@ -369,3 +401,14 @@ export type PerpetualMarketOrderbookLevel = OrderbookLine & {
   mine: number | undefined;
   key: string;
 };
+
+export enum AbacusInputTypes {
+  AdjustIsolatedMargin = 'adjustIsolatedMargin',
+  ClosePosition = 'closePosition',
+  Transfer = 'transfer',
+  Trade = 'trade',
+  TriggerOrders = 'triggerOrders',
+}
+
+export const AbacusWalletConnectionType =
+  Abacus.exchange.dydx.abacus.state.model.WalletConnectionType;

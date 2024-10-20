@@ -1,5 +1,4 @@
 import { shallowEqual } from 'react-redux';
-import styled from 'styled-components';
 
 import {
   AbacusOrderStatus,
@@ -19,8 +18,6 @@ import { useParameterizedSelector } from '@/hooks/useParameterizedSelector';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useURLConfigs } from '@/hooks/useURLConfigs';
 
-import { layoutMixins } from '@/styles/layoutMixins';
-
 import { AssetIcon } from '@/components/AssetIcon';
 import { Icon, IconName } from '@/components/Icon';
 import { Link } from '@/components/Link';
@@ -28,7 +25,11 @@ import { LoadingSpinner } from '@/components/Loading/LoadingSpinner';
 // eslint-disable-next-line import/no-cycle
 import { Notification, NotificationProps } from '@/components/Notification';
 
-import { getFillByClientId, getOrderByClientId } from '@/state/accountSelectors';
+import {
+  getAverageFillPriceForOrder,
+  getFillByClientId,
+  getOrderByClientId,
+} from '@/state/accountSelectors';
 import { useAppSelector } from '@/state/appTypes';
 import { getMarketData } from '@/state/perpetualsSelectors';
 
@@ -51,6 +52,10 @@ export const OrderStatusNotification = ({
   const order = useParameterizedSelector(getOrderByClientId, localOrder.clientId);
   const fill = useParameterizedSelector(getFillByClientId, localOrder.clientId);
   const marketData = useAppSelector((s) => getMarketData(s, localOrder.marketId), shallowEqual);
+  const averageFillPrice = useParameterizedSelector(
+    getAverageFillPriceForOrder,
+    localOrder.orderId
+  );
 
   const { assetId } = marketData ?? {};
   const { equityTiersLearnMore } = useURLConfigs();
@@ -61,7 +66,7 @@ export const OrderStatusNotification = ({
   const submissionStatus = localOrder.submissionStatus;
 
   let orderStatusStringKey = STRING_KEYS.SUBMITTING;
-  let orderStatusIcon = <$LoadingSpinner />;
+  let orderStatusIcon = <LoadingSpinner tw="text-color-accent [--spinner-width:0.9375rem]" />;
   let customContent = null;
 
   switch (submissionStatus) {
@@ -73,7 +78,9 @@ export const OrderStatusNotification = ({
         if (indexedOrderStatus === AbacusOrderStatus.Pending.rawValue) break;
 
         orderStatusStringKey = ORDER_STATUS_STRINGS[indexedOrderStatus];
-        orderStatusIcon = <$OrderStatusIcon status={indexedOrderStatus} />;
+        orderStatusIcon = (
+          <OrderStatusIcon status={indexedOrderStatus} tw="h-[0.9375rem] w-[0.9375rem]" />
+        );
 
         if (order && fill) {
           customContent = (
@@ -82,7 +89,7 @@ export const OrderStatusNotification = ({
               tradeType={getTradeType(order.type.rawValue) ?? undefined}
               filledAmount={order.totalFilled}
               assetId={assetId}
-              averagePrice={order.price}
+              averagePrice={averageFillPrice ?? order.price}
               tickSizeDecimals={marketData?.configs?.displayTickSizeDecimals ?? USD_DECIMALS}
             />
           );
@@ -97,20 +104,21 @@ export const OrderStatusNotification = ({
       }
       break;
     case PlaceOrderStatuses.Submitted:
-      if (localOrder.errorStringKey) {
+      if (localOrder.errorParams) {
         orderStatusStringKey = STRING_KEYS.ERROR;
-        orderStatusIcon = <$WarningIcon iconName={IconName.Warning} />;
+        orderStatusIcon = <Icon iconName={IconName.Warning} tw="text-color-warning" />;
         customContent = (
           <span>
             {stringGetter({
-              key: localOrder.errorStringKey,
+              key: localOrder.errorParams.errorStringKey,
               params: {
                 EQUITY_TIER_LEARN_MORE: (
-                  <$Link href={equityTiersLearnMore} onClick={(e) => e.stopPropagation()}>
+                  <Link href={equityTiersLearnMore} onClick={(e) => e.stopPropagation()} isInline>
                     {stringGetter({ key: STRING_KEYS.LEARN_MORE_ARROW })}
-                  </$Link>
+                  </Link>
                 ),
               },
+              fallback: localOrder.errorParams.errorMessage ?? '',
             })}
           </span>
         );
@@ -127,40 +135,12 @@ export const OrderStatusNotification = ({
       slotIcon={<AssetIcon symbol={assetId} />}
       slotTitle={titleKey && stringGetter({ key: titleKey })}
       slotTitleRight={
-        <$OrderStatus>
+        <span tw="row gap-[0.5ch] text-color-text-0 font-small-book">
           {stringGetter({ key: orderStatusStringKey })}
           {orderStatusIcon}
-        </$OrderStatus>
+        </span>
       }
       slotCustomContent={customContent}
     />
   );
 };
-const $Label = styled.span`
-  ${layoutMixins.row}
-  gap: 0.5ch;
-`;
-
-const $OrderStatus = styled($Label)`
-  color: var(--color-text-0);
-  font: var(--font-small-book);
-`;
-
-const $LoadingSpinner = styled(LoadingSpinner)`
-  --spinner-width: 0.9375rem;
-  color: var(--color-accent);
-`;
-
-const $WarningIcon = styled(Icon)`
-  color: var(--color-warning);
-`;
-
-const $OrderStatusIcon = styled(OrderStatusIcon)`
-  width: 0.9375rem;
-  height: 0.9375rem;
-`;
-
-const $Link = styled(Link)`
-  --link-color: var(--color-text-1);
-  display: inline-grid;
-`;

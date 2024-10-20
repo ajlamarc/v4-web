@@ -1,9 +1,10 @@
 import { Content, Header, Item, Root, Trigger } from '@radix-ui/react-accordion';
 import styled, { keyframes } from 'styled-components';
 
-import { PlusIcon } from '@/icons';
 import breakpoints from '@/styles/breakpoints';
 import { layoutMixins } from '@/styles/layoutMixins';
+
+import { Icon, IconName } from './Icon';
 
 export type AccordionItem = {
   header: React.ReactNode;
@@ -19,17 +20,17 @@ export const Accordion = ({ items, className }: AccordionProps) => (
   <$Root className={className} type="single" collapsible>
     {items.map(({ header, content }, idx) => (
       // eslint-disable-next-line react/no-array-index-key
-      <$Item key={idx} value={idx.toString()}>
+      <Item key={idx} value={idx.toString()}>
         <Header>
           <$Trigger>
             {header}
             <$Icon>
-              <PlusIcon />
+              <Icon iconName={IconName.Plus} size="1.125em" />
             </$Icon>
           </$Trigger>
         </Header>
         <$Content>{content}</$Content>
-      </$Item>
+      </Item>
     ))}
   </$Root>
 );
@@ -46,8 +47,6 @@ const $Root = styled(Root)`
   }
 `;
 
-const $Item = styled(Item)``;
-
 const $Icon = styled.div`
   display: inline-flex;
   justify-content: center;
@@ -62,11 +61,6 @@ const $Icon = styled.div`
   border: solid var(--border-width) var(--color-border);
   border-radius: 50%;
   font: var(--font-small-book);
-
-  svg {
-    height: 1.125em;
-    width: 1.125em;
-  }
 `;
 
 const $Trigger = styled(Trigger)`

@@ -31,7 +31,14 @@ entry_points/
 *.sw?
 
 # Charting Library
-public/tradingview
+public/tradingview/*
 public/datafeed
+# Don't ignore custom styling
+!public/tradingview/custom-styles.css 
+!public/tradingview/colors.css
+!public/tradingview/custom-styles-deprecated.css 
+!public/tradingview/colors-deprecated.css
 
+# Local Library Development
 local-abacus-hash
+local-client-js-hash

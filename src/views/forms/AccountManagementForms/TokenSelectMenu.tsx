@@ -1,14 +1,19 @@
+import { useMemo } from 'react';
+
 import { shallowEqual } from 'react-redux';
-import styled from 'styled-components';
+import tw from 'twin.macro';
 
 import { TransferInputTokenResource, TransferType } from '@/constants/abacus';
+import { cctpTokensByDenom, getMapOfLowestFeeTokensByDenom } from '@/constants/cctp';
+import { NEUTRON_USDC_IBC_DENOM, OSMO_USDC_IBC_DENOM, SOLANA_USDC_DENOM } from '@/constants/denoms';
+import { getNeutronChainId, getNobleChainId, getOsmosisChainId } from '@/constants/graz';
 import { STRING_KEYS } from '@/constants/localization';
 import { EMPTY_ARR } from '@/constants/objects';
+import { ConnectorType, WalletType } from '@/constants/wallets';
 
+import { useAccounts } from '@/hooks/useAccounts';
 import { useEnvFeatures } from '@/hooks/useEnvFeatures';
 import { useStringGetter } from '@/hooks/useStringGetter';
-
-import { layoutMixins } from '@/styles/layoutMixins';
 
 import { DiffArrow } from '@/components/DiffArrow';
 import { SearchSelectMenu } from '@/components/SearchSelectMenu';
@@ -17,8 +22,9 @@ import { Tag } from '@/components/Tag';
 import { useAppSelector } from '@/state/appTypes';
 import { getTransferInputs } from '@/state/inputsSelectors';
 
-import cctpTokens from '../../../../public/configs/cctp.json';
-import { TokenInfo } from './SourceSelectMenu';
+import { orEmptyObj } from '@/lib/typeUtils';
+
+import { LowestFeesDecoratorText } from './LowestFeesText';
 
 type ElementProps = {
   selectedToken?: TransferInputTokenResource;
@@ -26,24 +32,21 @@ type ElementProps = {
   isExchange?: boolean;
 };
 
-const CURVE_DAO_TOKEN_ADDRESS = '0xD533a949740bb3306d119CC777fa900bA034cd52';
-
-const cctpTokensByAddress = cctpTokens.reduce(
-  (acc, token) => {
-    if (!acc[token.tokenAddress]) {
-      acc[token.tokenAddress] = [];
-    }
-    acc[token.tokenAddress].push(token);
-    return acc;
-  },
-  {} as Record<string, TokenInfo[]>
-);
-
 export const TokenSelectMenu = ({ selectedToken, onSelectToken, isExchange }: ElementProps) => {
   const stringGetter = useStringGetter();
-  const { type, depositOptions, withdrawalOptions, resources } =
-    useAppSelector(getTransferInputs, shallowEqual) ?? {};
+  const {
+    type,
+    depositOptions,
+    withdrawalOptions,
+    resources,
+    chain: chainIdStr,
+  } = orEmptyObj(useAppSelector(getTransferInputs, shallowEqual));
+  const { sourceAccount } = useAccounts();
   const { CCTPWithdrawalOnly, CCTPDepositOnly } = useEnvFeatures();
+
+  const lowestFeeTokensByDenom = useMemo(() => getMapOfLowestFeeTokensByDenom(type), [type]);
+  const isKeplrWallet = sourceAccount.walletInfo?.name === WalletType.Keplr;
+  const isPhantomWallet = sourceAccount.walletInfo?.connectorType === ConnectorType.PhantomSolana;
 
   const tokens =
     (type === TransferType.deposit ? depositOptions : withdrawalOptions)?.assets?.toArray() ??
@@ -61,39 +64,39 @@ export const TokenSelectMenu = ({ selectedToken, onSelectToken, isExchange }: El
       },
       slotBefore: (
         // the curve dao token svg causes the web app to lag when rendered
-        <$Img
-          src={token.type !== CURVE_DAO_TOKEN_ADDRESS ? token.iconUrl ?? undefined : undefined}
-          alt=""
-        />
+        <$Img src={token.iconUrl ?? undefined} alt="" />
       ),
-      slotAfter: !!cctpTokensByAddress[token.type] && (
-        <$Text>
-          {stringGetter({
-            key: STRING_KEYS.LOWEST_FEES_WITH_USDC,
-            params: {
-              LOWEST_FEES_HIGHLIGHT_TEXT: (
-                <$GreenHighlight>
-                  {stringGetter({ key: STRING_KEYS.LOWEST_FEES_HIGHLIGHT_TEXT })}
-                </$GreenHighlight>
-              ),
-            },
-          })}
-        </$Text>
-      ),
+      slotAfter: !!lowestFeeTokensByDenom[token.type] && <LowestFeesDecoratorText />,
       tag: resources?.tokenResources?.get(token.type)?.symbol,
     }))
     .filter((token) => {
+      if (isKeplrWallet) {
+        if (chainIdStr === getNobleChainId()) {
+          return true;
+        }
+        if (chainIdStr === getOsmosisChainId()) {
+          return token.value === OSMO_USDC_IBC_DENOM;
+        }
+        if (chainIdStr === getNeutronChainId()) {
+          return token.value === NEUTRON_USDC_IBC_DENOM;
+        }
+      }
+      if (type === TransferType.deposit && isPhantomWallet) {
+        return token.value === SOLANA_USDC_DENOM;
+      }
       // if deposit and CCTPDepositOnly enabled, only return cctp tokens
       if (type === TransferType.deposit && CCTPDepositOnly) {
-        return !!cctpTokensByAddress[token.value];
+        return !!cctpTokensByDenom[token.value];
       }
       // if withdrawal and CCTPWithdrawalOnly enabled, only return cctp tokens
       if (type === TransferType.withdrawal && CCTPWithdrawalOnly) {
-        return !!cctpTokensByAddress[token.value];
+        return !!cctpTokensByDenom[token.value];
       }
       return true;
     })
-    .sort((token) => (cctpTokensByAddress[token.value] ? -1 : 1));
+    // we want lowest fee tokens first followed by non-lowest fee cctp tokens
+    .sort((token) => (cctpTokensByDenom[token.value] ? -1 : 1))
+    .sort((token) => (lowestFeeTokensByDenom[token.value] ? -1 : 1));
 
   return (
     <SearchSelectMenu
@@ -124,7 +127,7 @@ export const TokenSelectMenu = ({ selectedToken, onSelectToken, isExchange }: El
           : undefined
       }
     >
-      <$AssetRow>
+      <div tw="row gap-0.5 text-color-text-2 font-base-book">
         {selectedToken ? (
           <>
             <$Img src={selectedToken?.iconUrl ?? undefined} alt="" /> {selectedToken?.name}{' '}
@@ -133,28 +136,8 @@ export const TokenSelectMenu = ({ selectedToken, onSelectToken, isExchange }: El
         ) : (
           stringGetter({ key: STRING_KEYS.SELECT_ASSET })
         )}
-      </$AssetRow>
+      </div>
     </SearchSelectMenu>
   );
 };
-const $Text = styled.div`
-  font: var(--font-small-regular);
-  color: var(--color-text-0);
-`;
-
-const $GreenHighlight = styled.span`
-  color: var(--color-green);
-`;
-
-const $AssetRow = styled.div`
-  ${layoutMixins.row}
-  gap: 0.5rem;
-  color: var(--color-text-2);
-  font: var(--font-base-book);
-`;
-
-const $Img = styled.img`
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 50%;
-`;
+const $Img = tw.img`h-1.25 w-1.25 rounded-[50%]`;

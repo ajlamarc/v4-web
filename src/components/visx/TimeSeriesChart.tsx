@@ -78,7 +78,7 @@ type ElementProps<Datum extends {}> = {
   onVisibleDataChange?: (data: Datum[]) => void;
   onZoom?: (_: { zoomDomain: number | undefined }) => void;
   slotEmpty: React.ReactNode;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
 };
 
@@ -87,6 +87,7 @@ type StyleProps = {
   padding?: Margin;
   defaultZoomDomain?: number;
   minZoomDomain: number;
+  domainBasePadding?: [number, number];
   numGridLines?: number;
   withGridRows?: boolean;
   withGridColumns?: boolean;
@@ -123,6 +124,7 @@ export const TimeSeriesChart = <Datum extends {}>({
   padding,
   defaultZoomDomain,
   minZoomDomain = 0,
+  domainBasePadding = [0, 0],
   numGridLines,
   withGridRows = true,
   withGridColumns = false,
@@ -153,9 +155,15 @@ export const TimeSeriesChart = <Datum extends {}>({
   );
 
   const [zoomDomain, setZoomDomain] = useState<number | undefined>(
-    defaultZoomDomain
-      ? getClampedZoomDomain(defaultZoomDomain)
-      : xAccessor(latestDatum) - xAccessor(earliestDatum)
+    (() => {
+      if (defaultZoomDomain) {
+        return getClampedZoomDomain(defaultZoomDomain);
+      }
+      if (latestDatum != null && earliestDatum != null) {
+        return xAccessor(latestDatum) - xAccessor(earliestDatum);
+      }
+      return minZoomDomain;
+    })()
   );
 
   const [zoomDomainAnimateTo, setZoomDomainAnimateTo] = useState<number | undefined>();
@@ -203,9 +211,13 @@ export const TimeSeriesChart = <Datum extends {}>({
 
     const zoom = zoomDomain / minZoomDomain;
 
-    const domain = [
+    const domainBase = [
       clamp(xAccessor(latestDatum) - zoomDomain, xAccessor(earliestDatum), xAccessor(latestDatum)),
       xAccessor(latestDatum),
+    ] as [number, number];
+    const domain = [
+      domainBase[0] - (domainBase[1] - domainBase[0]) * domainBasePadding[0],
+      domainBase[1] + (domainBase[1] - domainBase[0]) * domainBasePadding[1],
     ] as const;
 
     const visibleData = data.filter(
@@ -275,7 +287,7 @@ export const TimeSeriesChart = <Datum extends {}>({
           }}
         >
           <EventEmitterProvider>
-            <$ParentSize>
+            <ParentSize tw="grid min-h-0 overflow-auto overscroll-contain">
               {/* eslint-disable-next-line react/no-unused-prop-types */}
               {({ width, height }: { width: number; height: number }) => {
                 const numTicksX =
@@ -436,7 +448,7 @@ export const TimeSeriesChart = <Datum extends {}>({
                   </XYChart>
                 );
               }}
-            </$ParentSize>
+            </ParentSize>
           </EventEmitterProvider>
         </DataProvider>
       ) : (
@@ -486,15 +498,6 @@ const $Container = styled.div`
     }
   }
 `;
-
-const $ParentSize = styled(ParentSize)`
-  min-height: 0;
-  display: grid;
-
-  overflow: auto;
-  overscroll-behavior: contain;
-`;
-
 const $YAxisBackground = styled.foreignObject`
   background: var(--stickyArea-background);
 

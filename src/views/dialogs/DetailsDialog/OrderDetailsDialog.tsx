@@ -1,6 +1,5 @@
 import { OrderFlags, OrderSide } from '@dydxprotocol/v4-client-js';
 import { shallowEqual } from 'react-redux';
-import styled from 'styled-components';
 
 import {
   AbacusMarginMode,
@@ -18,8 +17,6 @@ import { useParameterizedSelector } from '@/hooks/useParameterizedSelector';
 import { useStringGetter } from '@/hooks/useStringGetter';
 import { useSubaccount } from '@/hooks/useSubaccount';
 
-import { layoutMixins } from '@/styles/layoutMixins';
-
 import { AssetIcon } from '@/components/AssetIcon';
 import { Button } from '@/components/Button';
 import { type DetailsItem } from '@/components/Details';
@@ -30,8 +27,9 @@ import { OrderStatusIcon } from '@/views/OrderStatusIcon';
 
 import { clearOrder } from '@/state/account';
 import { calculateIsAccountViewOnly } from '@/state/accountCalculators';
-import { getLocalCancelOrders, getOrderDetails } from '@/state/accountSelectors';
+import { getOrderDetails } from '@/state/accountSelectors';
 import { useAppDispatch, useAppSelector } from '@/state/appTypes';
+import { getLocalCancelOrders } from '@/state/localOrdersSelectors';
 
 import { MustBigNumber } from '@/lib/numbers';
 import { isMarketOrderType, isOrderStatusClearable } from '@/lib/orders';
@@ -56,6 +54,7 @@ export const OrderDetailsDialog = ({
     asset,
     cancelReason,
     createdAtMilliseconds,
+    displayId,
     expiresAtMilliseconds,
     marketId,
     orderFlags,
@@ -105,6 +104,11 @@ export const OrderDetailsDialog = ({
       {
         key: 'market',
         label: stringGetter({ key: STRING_KEYS.MARKET }),
+        value: displayId,
+      },
+      {
+        key: 'market-id',
+        label: stringGetter({ key: STRING_KEYS.TICKER }),
         value: marketId,
       },
       {
@@ -121,12 +125,12 @@ export const OrderDetailsDialog = ({
         key: 'status',
         label: stringGetter({ key: STRING_KEYS.STATUS }),
         value: (
-          <$Row>
+          <div tw="inlineRow">
             <OrderStatusIcon status={status.rawValue} />
-            <$Status>
+            <span tw="font-small-medium">
               {resources.statusStringKey && stringGetter({ key: resources.statusStringKey })}
-            </$Status>
-          </$Row>
+            </span>
+          </div>
         ),
       },
       {
@@ -220,7 +224,7 @@ export const OrderDetailsDialog = ({
 
   return (
     <DetailsDialog
-      slotIcon={<$AssetIcon symbol={asset?.id} />}
+      slotIcon={<AssetIcon symbol={asset?.id} tw="text-[1em]" />}
       title={!resources.typeStringKey ? '' : stringGetter({ key: resources.typeStringKey })}
       slotFooter={
         isAccountViewOnly ? null : isOrderStatusClearable(status) ? (
@@ -243,14 +247,3 @@ export const OrderDetailsDialog = ({
     />
   );
 };
-const $Row = styled.div`
-  ${layoutMixins.inlineRow}
-`;
-
-const $Status = styled.span`
-  font: var(--font-small-medium);
-`;
-
-const $AssetIcon = styled(AssetIcon)`
-  font-size: 1em;
-`;

@@ -4,6 +4,8 @@ import styled from 'styled-components';
 
 import { AppRoute } from '@/constants/routes';
 
+import { useMetadataServiceAssetFromId } from '@/hooks/useLaunchableMarkets';
+
 import { layoutMixins } from '@/styles/layoutMixins';
 
 import { AssetIcon } from '@/components/AssetIcon';
@@ -15,25 +17,45 @@ import { useAppSelector } from '@/state/appTypes';
 import { getCurrentMarketAssetData } from '@/state/assetsSelectors';
 import { getCurrentMarketData } from '@/state/perpetualsSelectors';
 
+import { getDisplayableAssetFromBaseAsset } from '@/lib/assetUtils';
 import { MustBigNumber } from '@/lib/numbers';
 
-export const TradeHeaderMobile = () => {
+export const TradeHeaderMobile = ({ launchableMarketId }: { launchableMarketId?: string }) => {
   const { name, id } = useAppSelector(getCurrentMarketAssetData, shallowEqual) ?? {};
   const navigate = useNavigate();
 
-  const { market, priceChange24H, priceChange24HPercent } =
+  const { displayId, priceChange24H, priceChange24HPercent } =
     useAppSelector(getCurrentMarketData, shallowEqual) ?? {};
+
+  const launchableAsset = useMetadataServiceAssetFromId(launchableMarketId);
+
+  const assetRow = launchableAsset ? (
+    <div tw="inlineRow gap-[1ch]">
+      <img
+        src={launchableAsset.logo}
+        alt={launchableAsset.name}
+        tw="h-[2.5rem] w-[2.5rem] border-r-[50%]"
+      />
+      <$Name>
+        <h3>{launchableAsset.name}</h3>
+        <span>{getDisplayableAssetFromBaseAsset(launchableAsset.id)}</span>
+      </$Name>
+    </div>
+  ) : (
+    <div tw="inlineRow gap-[1ch]">
+      <AssetIcon symbol={id} tw="text-[2.5rem]" />
+      <$Name>
+        <h3>{name}</h3>
+        <span>{displayId}</span>
+      </$Name>
+    </div>
+  );
 
   return (
     <$Header>
       <BackButton onClick={() => navigate(AppRoute.Markets)} />
-      <$MarketName>
-        <$AssetIcon symbol={id} />
-        <$Name>
-          <h3>{name}</h3>
-          <span>{market}</span>
-        </$Name>
-      </$MarketName>
+
+      {assetRow}
 
       <$Right>
         <MidMarketPrice />
@@ -61,16 +83,6 @@ const $Header = styled.header`
   color: var(--color-text-2);
   background-color: var(--color-layer-2);
 `;
-
-const $MarketName = styled.div`
-  ${layoutMixins.inlineRow}
-  gap: 1ch;
-`;
-
-const $AssetIcon = styled(AssetIcon)`
-  font-size: 2.5rem;
-`;
-
 const $Name = styled.div`
   ${layoutMixins.rowColumn}
 

@@ -16,11 +16,13 @@ import { AccountInfo } from '@/views/AccountInfo';
 import { CanvasOrderbook } from '@/views/CanvasOrderbook/CanvasOrderbook';
 import { DepthChart } from '@/views/charts/DepthChart';
 import { FundingChart } from '@/views/charts/FundingChart';
-import { TvChart } from '@/views/charts/TvChart';
+import { TvChart } from '@/views/charts/TradingView/TvChart';
 import { LiveTrades } from '@/views/tables/LiveTrades';
 
 import { useAppSelector } from '@/state/appTypes';
 import { getSelectedLocale } from '@/state/localizationSelectors';
+
+import { isTruthy } from '@/lib/isTruthy';
 
 enum Tab {
   Account = 'Account',
@@ -35,21 +37,25 @@ enum Tab {
 const TabButton = ({ value, label, icon }: { value: Tab; label: string; icon: IconName }) => (
   <Trigger asChild value={value}>
     <$TabButton>
-      <Icon iconName={icon} />
+      <Icon iconName={icon} size="1.375rem" />
       <span>{label}</span>
     </$TabButton>
   </Trigger>
 );
 
-export const MobileTopPanel = () => {
+export const MobileTopPanel = ({
+  isViewingUnlaunchedMarket,
+}: {
+  isViewingUnlaunchedMarket?: boolean;
+}) => {
   const stringGetter = useStringGetter();
   const selectedLocale = useAppSelector(getSelectedLocale);
 
-  const [value, setValue] = useState(Tab.Account);
+  const [value, setValue] = useState(Tab.Price);
 
   const items = [
     {
-      content: <$AccountInfo />,
+      content: <AccountInfo tw="[--account-info-section-height:--tabContent-height]" />,
       label: stringGetter({ key: STRING_KEYS.WALLET }),
       value: Tab.Account,
       icon: IconName.Coins,
@@ -61,19 +67,19 @@ export const MobileTopPanel = () => {
       value: Tab.Price,
       icon: IconName.PriceChart,
     },
-    {
+    !isViewingUnlaunchedMarket && {
       content: <DepthChart stringGetter={stringGetter} selectedLocale={selectedLocale} />,
       label: stringGetter({ key: STRING_KEYS.DEPTH_CHART_SHORT }),
       value: Tab.Depth,
       icon: IconName.DepthChart,
     },
-    {
+    !isViewingUnlaunchedMarket && {
       content: <FundingChart selectedLocale={selectedLocale} />,
       label: stringGetter({ key: STRING_KEYS.FUNDING_RATE_CHART_SHORT }),
       value: Tab.Funding,
       icon: IconName.FundingChart,
     },
-    {
+    !isViewingUnlaunchedMarket && {
       content: (
         <$ScrollableTableContainer>
           <CanvasOrderbook histogramSide="right" layout="horizontal" hideHeader />
@@ -83,7 +89,7 @@ export const MobileTopPanel = () => {
       value: Tab.OrderBook,
       icon: IconName.Orderbook,
     },
-    {
+    !isViewingUnlaunchedMarket && {
       content: (
         <$ScrollableTableContainer>
           <LiveTrades histogramSide="left" />
@@ -93,7 +99,7 @@ export const MobileTopPanel = () => {
       value: Tab.LiveTrades,
       icon: IconName.Clock,
     },
-  ];
+  ].filter(isTruthy);
 
   return (
     <$Tabs
@@ -106,7 +112,6 @@ export const MobileTopPanel = () => {
         ),
       }))}
       side="bottom"
-      withBorders={false}
     />
   );
 };
@@ -147,17 +152,7 @@ const $TabButton = styled(ToggleButton)`
       opacity: 0;
     }
   }
-
-  svg {
-    width: 1.375rem;
-    height: 1.375rem;
-  }
 `;
-
-const $AccountInfo = styled(AccountInfo)`
-  --account-info-section-height: var(--tabContent-height);
-`;
-
 const $ScrollableTableContainer = styled.div`
   ${layoutMixins.scrollArea}
   --scrollArea-height: var(--tabContent-height);

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 
-import { StatusResponse } from '@0xsquid/sdk';
 import styled, { css } from 'styled-components';
 
 import { STRING_KEYS } from '@/constants/localization';
@@ -8,6 +7,7 @@ import { TransferNotificationTypes } from '@/constants/notifications';
 import { SkipStatusResponse } from '@/constants/skip';
 
 import { useStringGetter } from '@/hooks/useStringGetter';
+import { useTokenConfigs } from '@/hooks/useTokenConfigs';
 import { useURLConfigs } from '@/hooks/useURLConfigs';
 
 import { layoutMixins } from '@/styles/layoutMixins';
@@ -21,7 +21,7 @@ import { getSelectedDydxChainId } from '@/state/appSelectors';
 import { useAppSelector } from '@/state/appTypes';
 
 type ElementProps = {
-  status?: StatusResponse | SkipStatusResponse;
+  status?: SkipStatusResponse;
   type: TransferNotificationTypes;
 };
 
@@ -40,6 +40,7 @@ export const TransferStatusSteps = ({ className, status, type }: ElementProps & 
   const stringGetter = useStringGetter();
   const selectedDydxChainId = useAppSelector(getSelectedDydxChainId);
   const { mintscan: mintscanTxUrl } = useURLConfigs();
+  const { chainTokenLabel } = useTokenConfigs();
 
   const { currentStep, steps } = useMemo(() => {
     const routeStatus = status?.routeStatus;
@@ -81,8 +82,8 @@ export const TransferStatusSteps = ({ className, status, type }: ElementProps & 
           params: {
             CHAIN:
               type === TransferNotificationTypes.Deposit
-                ? 'dYdX'
-                : status?.toChain?.chainData?.chainName,
+                ? chainTokenLabel
+                : status?.toChain?.chainData?.chainName ?? '...',
           },
         }),
         step: TransferStatusStep.ToChain,
@@ -99,16 +100,16 @@ export const TransferStatusSteps = ({ className, status, type }: ElementProps & 
 
     if (!routeStatus?.length) {
       newCurrentStep = TransferStatusStep.FromChain;
-    } else if (currentStatus.chainId === toChain) {
+    } else if (currentStatus?.chainId === toChain) {
       newCurrentStep =
-        currentStatus.status !== 'success'
+        currentStatus?.status !== 'success'
           ? TransferStatusStep.ToChain
           : TransferStatusStep.Complete;
-    } else if (currentStatus.chainId === fromChain && currentStatus.status !== 'success') {
+    } else if (currentStatus?.chainId === fromChain && currentStatus?.status !== 'success') {
       newCurrentStep = TransferStatusStep.FromChain;
     }
 
-    if (status?.squidTransactionStatus === 'success') {
+    if (status?.latestRouteStatusSummary === 'success') {
       newCurrentStep = TransferStatusStep.Complete;
     }
 
@@ -122,13 +123,13 @@ export const TransferStatusSteps = ({ className, status, type }: ElementProps & 
   if (!status) return <LoadingDots size={3} />;
 
   return (
-    <$BridgingStatus className={className}>
+    <div className={className} tw="flexColumn gap-1 px-0 py-1">
       {steps.map((step) => (
-        <$Step key={step.step}>
+        <div key={step.step} tw="spacedRow">
           <$row>
             {step.step === currentStep ? (
               <$Icon>
-                <$Spinner />
+                <LoadingSpinner tw="text-color-accent [--spinner-width:1.25rem]" />
               </$Icon>
             ) : step.step < currentStep ? (
               <$Icon state="complete">
@@ -148,24 +149,13 @@ export const TransferStatusSteps = ({ className, status, type }: ElementProps & 
               <$Label highlighted={currentStep >= step.step}>{step.label}</$Label>
             )}
           </$row>
-        </$Step>
+        </div>
       ))}
-    </$BridgingStatus>
+    </div>
   );
 };
-const $BridgingStatus = styled.div`
-  ${layoutMixins.flexColumn};
-
-  gap: 1rem;
-  padding: 1rem 0;
-`;
-
-const $Step = styled.div`
-  ${layoutMixins.spacedRow};
-`;
-
 const $row = styled.div`
-  ${layoutMixins.inlineRow};
+  ${layoutMixins.inlineRow}
   gap: 0.5rem;
 `;
 
@@ -193,13 +183,6 @@ const $Icon = styled.div<{ state?: 'complete' | 'default' }>`
           `,
         }[state]}
 `;
-
-const $Spinner = styled(LoadingSpinner)`
-  --spinner-width: 1.25rem;
-
-  color: var(--color-accent);
-`;
-
 const $Label = styled($row)<{ highlighted?: boolean }>`
   ${({ highlighted }) =>
     highlighted

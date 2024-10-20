@@ -24,6 +24,8 @@ import {
 } from '@/state/configs';
 import { getAppColorMode, getAppThemeSetting } from '@/state/configsSelectors';
 
+import { testFlags } from '@/lib/testFlags';
+
 export const DisplaySettingsDialog = ({ setIsOpen }: DialogProps<DisplaySettingsDialogProps>) => {
   const dispatch = useAppDispatch();
   const stringGetter = useStringGetter();
@@ -33,34 +35,55 @@ export const DisplaySettingsDialog = ({ setIsOpen }: DialogProps<DisplaySettings
 
   const sectionHeader = (heading: string) => {
     return (
-      <$Header>
+      <header tw="inlineRow">
         {heading}
         <HorizontalSeparatorFiller />
-      </$Header>
+      </header>
     );
   };
 
   const themePanels = () => {
+    const { uiRefresh } = testFlags;
     return (
       <$AppThemeRoot value={currentThemeSetting}>
-        {[
-          {
-            themeSetting: AppTheme.Classic,
-            label: STRING_KEYS.CLASSIC_DARK,
-          },
-          {
-            themeSetting: AppThemeSystemSetting.System,
-            label: STRING_KEYS.SYSTEM,
-          },
-          {
-            themeSetting: AppTheme.Dark,
-            label: STRING_KEYS.DARK,
-          },
-          {
-            themeSetting: AppTheme.Light,
-            label: STRING_KEYS.LIGHT,
-          },
-        ].map(({ themeSetting, label }) => {
+        {(uiRefresh
+          ? [
+              {
+                themeSetting: AppTheme.Dark,
+                label: STRING_KEYS.DARK,
+              },
+              {
+                themeSetting: AppTheme.Light,
+                label: STRING_KEYS.LIGHT,
+              },
+              {
+                themeSetting: AppTheme.Classic,
+                label: STRING_KEYS.CLASSIC_DARK,
+              },
+              {
+                themeSetting: AppThemeSystemSetting.System,
+                label: STRING_KEYS.SYSTEM,
+              },
+            ]
+          : [
+              {
+                themeSetting: AppTheme.Classic,
+                label: STRING_KEYS.CLASSIC_DARK,
+              },
+              {
+                themeSetting: AppThemeSystemSetting.System,
+                label: STRING_KEYS.SYSTEM,
+              },
+              {
+                themeSetting: AppTheme.Dark,
+                label: STRING_KEYS.DARK,
+              },
+              {
+                themeSetting: AppTheme.Light,
+                label: STRING_KEYS.LIGHT,
+              },
+            ]
+        ).map(({ themeSetting, label }) => {
           const theme =
             themeSetting === AppThemeSystemSetting.System
               ? globalThis.matchMedia('(prefers-color-scheme: dark)').matches
@@ -85,9 +108,9 @@ export const DisplaySettingsDialog = ({ setIsOpen }: DialogProps<DisplaySettings
               <$AppThemeHeader textcolor={textColor}>
                 {stringGetter({ key: label })}
               </$AppThemeHeader>
-              <$Image src="/apps/dydx-v4/chart-bars.svg" />
+              <img src="/apps/dydx-v4/chart-bars.svg" tw="z-[1] h-auto w-full" />
               <$CheckIndicator>
-                <$CheckIcon iconName={IconName.Check} />
+                <Icon iconName={IconName.Check} size="0.5rem" />
               </$CheckIndicator>
             </$AppThemeItem>
           );
@@ -116,21 +139,23 @@ export const DisplaySettingsDialog = ({ setIsOpen }: DialogProps<DisplaySettings
               dispatch(setAppColorMode(colorMode));
             }}
           >
-            <$ColorPreferenceLabel>
+            <div tw="inlineRow gap-[1ch]">
               <$ArrowIconContainer>
                 <$ArrowIcon
                   iconName={IconName.Arrow}
                   direction="up"
                   color={colorMode === AppColorMode.GreenUp ? 'green' : 'red'}
+                  size="0.875em"
                 />
                 <$ArrowIcon
                   iconName={IconName.Arrow}
                   direction="down"
                   color={colorMode === AppColorMode.GreenUp ? 'red' : 'green'}
+                  size="0.875em"
                 />
               </$ArrowIconContainer>
               {stringGetter({ key: label })}
-            </$ColorPreferenceLabel>
+            </div>
             <$DotIndicator $selected={currentColorMode === colorMode} />
           </$ColorPreferenceItem>
         ))}
@@ -164,11 +189,6 @@ const $Section = styled.div`
   ${gridStyle}
   padding: 1rem 0;
 `;
-
-const $Header = styled.header`
-  ${layoutMixins.inlineRow}
-`;
-
 const $AppThemeRoot = styled(Root)`
   ${gridStyle}
   grid-template-columns: 1fr 1fr;
@@ -242,26 +262,9 @@ const $AppThemeHeader = styled.h3<{ textcolor: string }>`
   `}
   z-index: 1;
 `;
-
-const $Image = styled.img`
-  width: 100%;
-  height: auto;
-  z-index: 1;
-`;
-
-const $ColorPreferenceLabel = styled.div`
-  ${layoutMixins.inlineRow};
-  gap: 1ch;
-`;
-
 const $ArrowIconContainer = styled.div`
   ${layoutMixins.column}
   gap: 0.25rem;
-
-  svg {
-    height: 0.875em;
-    width: 0.875em;
-  }
 `;
 
 const $ArrowIcon = styled(Icon)<{ direction: 'up' | 'down'; color: 'green' | 'red' }>`
@@ -332,9 +335,4 @@ const $CheckIndicator = styled(Indicator)`
 
   background-color: var(--color-accent);
   color: var(--color-text-button);
-`;
-
-const $CheckIcon = styled(Icon)`
-  width: var(--icon-size);
-  height: var(--icon-size);
 `;

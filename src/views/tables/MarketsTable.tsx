@@ -2,6 +2,7 @@ import { Key, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import tw from 'twin.macro';
 
 import { ButtonSize } from '@/constants/buttons';
 import { STRING_KEYS } from '@/constants/localization';
@@ -19,6 +20,7 @@ import { layoutMixins } from '@/styles/layoutMixins';
 import { tradeViewMixins } from '@/styles/tradeViewMixins';
 
 import { Button } from '@/components/Button';
+import { LoadingSpace } from '@/components/Loading/LoadingSpinner';
 import { Output, OutputType } from '@/components/Output';
 import { Table, type ColumnDef } from '@/components/Table';
 import { AssetTableCell } from '@/components/Table/AssetTableCell';
@@ -51,9 +53,20 @@ export const MarketsTable = ({ className }: { className?: string }) => {
         ? ([
             {
               columnKey: 'market',
-              getCellValue: (row) => row.market,
+              getCellValue: (row) => row.id,
               label: stringGetter({ key: STRING_KEYS.MARKET }),
-              renderCell: ({ asset }) => <AssetTableCell asset={asset} />,
+              renderCell: ({
+                assetId,
+                effectiveInitialMarginFraction,
+                initialMarginFraction,
+                name,
+              }) => (
+                <AssetTableCell
+                  configs={{ effectiveInitialMarginFraction, initialMarginFraction }}
+                  name={name}
+                  symbol={assetId}
+                />
+              ),
             },
             {
               columnKey: 'price',
@@ -72,7 +85,7 @@ export const MarketsTable = ({ className }: { className?: string }) => {
                     fractionDigits={tickSizeDecimals}
                     withBaseFont
                   />
-                  <$TabletPriceChange>
+                  <$InlineRow tw="font-small-book">
                     {!priceChange24H ? (
                       <Output type={OutputType.Fiat} value={null} />
                     ) : (
@@ -88,7 +101,7 @@ export const MarketsTable = ({ className }: { className?: string }) => {
                         />
                       </>
                     )}
-                  </$TabletPriceChange>
+                  </$InlineRow>
                 </TableCell>
               ),
             },
@@ -96,9 +109,20 @@ export const MarketsTable = ({ className }: { className?: string }) => {
         : ([
             {
               columnKey: 'market',
-              getCellValue: (row) => row.market,
+              getCellValue: (row) => row.id,
               label: stringGetter({ key: STRING_KEYS.MARKET }),
-              renderCell: ({ asset }) => <AssetTableCell asset={asset} />,
+              renderCell: ({
+                assetId,
+                effectiveInitialMarginFraction,
+                initialMarginFraction,
+                name,
+              }) => (
+                <AssetTableCell
+                  configs={{ effectiveInitialMarginFraction, initialMarginFraction }}
+                  name={name}
+                  symbol={assetId}
+                />
+              ),
             },
             {
               columnKey: 'oraclePrice',
@@ -116,9 +140,9 @@ export const MarketsTable = ({ className }: { className?: string }) => {
               columnKey: 'priceChange24HChart',
               label: stringGetter({ key: STRING_KEYS.LAST_24H }),
               renderCell: ({ line, priceChange24HPercent }) => (
-                <div style={{ width: 50, height: 50 }}>
+                <div tw="h-2 w-3">
                   <SparklineChart
-                    data={(line?.toArray() ?? []).map((datum, index) => ({
+                    data={(line ?? []).map((datum, index) => ({
                       x: index + 1,
                       y: parseFloat(datum.toString()),
                     }))}
@@ -214,7 +238,7 @@ export const MarketsTable = ({ className }: { className?: string }) => {
       <$Table
         withInnerBorders
         data={filteredMarkets}
-        getRowKey={(row: MarketData) => row.market ?? ''}
+        getRowKey={(row: MarketData) => row.id ?? ''}
         label="Markets"
         onRowAction={(market: Key) =>
           navigate(`${AppRoute.Trade}/${market}`, { state: { from: AppRoute.Markets } })
@@ -240,16 +264,18 @@ export const MarketsTable = ({ className }: { className?: string }) => {
                   <p>{stringGetter({ key: STRING_KEYS.ADD_DETAILS_TO_LAUNCH_MARKET })}</p>
                 )}
               </>
-            ) : (
+            ) : searchFilter ? (
               <>
                 <h2>
                   {stringGetter({
                     key: STRING_KEYS.QUERY_NOT_FOUND,
-                    params: { QUERY: searchFilter ?? '' },
+                    params: { QUERY: searchFilter },
                   })}
                 </h2>
                 <p>{stringGetter({ key: STRING_KEYS.MARKET_SEARCH_DOES_NOT_EXIST_YET })}</p>
               </>
+            ) : (
+              <LoadingSpace id="markets-table" />
             )}
 
             {hasPotentialMarketsData && (
@@ -287,6 +313,9 @@ const $Toolbar = styled(Toolbar)`
 
 const $Table = styled(Table)`
   ${tradeViewMixins.horizontalTable}
+  tbody {
+    --tableCell-padding: 1rem 0;
+  }
 
   @media ${breakpoints.tablet} {
     table {
@@ -295,23 +324,10 @@ const $Table = styled(Table)`
   }
 ` as typeof Table;
 
-const $TabletOutput = styled(Output)`
-  font: var(--font-medium-book);
-  color: var(--color-text-2);
-`;
+const $TabletOutput = tw(Output)`font-medium-book text-color-text-2`;
 
-const $InlineRow = styled.div`
-  ${layoutMixins.inlineRow}
-`;
-
-const $TabletPriceChange = styled($InlineRow)`
-  font: var(--font-small-book);
-`;
-
-const $NumberOutput = styled(Output)`
-  font: var(--font-base-medium);
-  color: var(--color-text-2);
-`;
+const $InlineRow = tw.div`inlineRow`;
+const $NumberOutput = tw(Output)`font-base-medium text-color-text-2`;
 
 const $Output = styled(Output)<{ isNegative?: boolean; isPositive?: boolean }>`
   color: ${({ isNegative, isPositive }) =>

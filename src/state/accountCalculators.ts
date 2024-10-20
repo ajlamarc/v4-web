@@ -1,38 +1,29 @@
-import { AbacusMarginMode } from '@/constants/abacus';
 import { OnboardingState, OnboardingSteps } from '@/constants/account';
 
 import {
-  getCurrentMarketHasOpenIsolatedOrders,
-  getCurrentMarketPositionData,
   getOnboardingGuards,
   getOnboardingState,
   getSubaccountId,
+  getSubaccountOpenOrders,
   getUnbondingDelegations,
-  getUncommittedOrderClientIds,
 } from '@/state/accountSelectors';
 import { createAppSelector } from '@/state/appTypes';
 
-import { MustBigNumber } from '@/lib/numbers';
+import { isOrderStatusOpen } from '@/lib/orders';
 
-import {
-  getCurrentInput,
-  getInputClosePositionData,
-  getInputTradeMarginMode,
-} from './inputsSelectors';
+import { getCurrentMarketId } from './perpetualsSelectors';
 
 export const calculateOnboardingStep = createAppSelector(
   [getOnboardingState, getOnboardingGuards],
   (onboardingState: OnboardingState, onboardingGuards: ReturnType<typeof getOnboardingGuards>) => {
-    const { hasAcknowledgedTerms, hasPreviousTransactions } = onboardingGuards;
+    const { hasPreviousTransactions } = onboardingGuards;
 
     return {
       [OnboardingState.Disconnected]: OnboardingSteps.ChooseWallet,
       [OnboardingState.WalletConnected]: OnboardingSteps.KeyDerivation,
-      [OnboardingState.AccountConnected]: !hasAcknowledgedTerms
-        ? OnboardingSteps.AcknowledgeTerms
-        : !hasPreviousTransactions
-          ? OnboardingSteps.DepositFunds
-          : undefined,
+      [OnboardingState.AccountConnected]: !hasPreviousTransactions
+        ? OnboardingSteps.DepositFunds
+        : undefined,
     }[onboardingState];
   }
 );
@@ -66,14 +57,6 @@ export const calculateIsAccountViewOnly = createAppSelector(
   [getOnboardingState, calculateCanViewAccount],
   (onboardingState: OnboardingState, canViewAccountInfo: boolean) =>
     onboardingState !== OnboardingState.AccountConnected && canViewAccountInfo
-);
-
-/**
- * @description calculate whether the subaccount has uncommitted positions
- */
-export const calculateHasUncommittedOrders = createAppSelector(
-  [getUncommittedOrderClientIds],
-  (uncommittedOrderClientIds: number[]) => uncommittedOrderClientIds.length > 0
 );
 
 /**
@@ -133,34 +116,36 @@ export const calculateSortedUnbondingDelegations = createAppSelector(
   }
 );
 
-export const calculateShouldShowIsolatedMarketPostOrderPositionMarginAsZero = createAppSelector(
-  [
-    getCurrentInput,
-    getInputTradeMarginMode,
-    getCurrentMarketHasOpenIsolatedOrders,
-    getInputClosePositionData,
-    getCurrentMarketPositionData,
-  ],
-  (
-    currentInput,
-    marginMode,
-    hasOpenIsolatedOrders,
-    closePositionInputData,
-    currentMarketPosition
-  ) => {
-    const { size: sizeInputData } = closePositionInputData ?? {};
-    const { size } = sizeInputData ?? {};
-    const { size: currentPositionSize } = currentMarketPosition ?? {};
-    const { current: currentSize } = currentPositionSize ?? {};
-    const isFullClose = MustBigNumber(currentSize)
-      .abs()
-      .eq(size ?? 0);
+export const calculateHasCancelableOrders = () =>
+  createAppSelector(
+    [getSubaccountOpenOrders, (s, marketId?: string) => marketId],
+    (openOrders, marketId) => {
+      // the extra isOrderStatusOpen check filter the order to also not be canceling / best effort canceled
+      return (
+        openOrders?.some(
+          (order) => (!marketId || order.marketId === marketId) && isOrderStatusOpen(order.status)
+        ) ?? false
+      );
+    }
+  );
 
-    return (
-      currentInput === 'closePosition' &&
-      marginMode === AbacusMarginMode.Isolated &&
-      !hasOpenIsolatedOrders &&
-      isFullClose
-    );
-  }
+export const calculateHasCancelableOrdersInOtherMarkets = createAppSelector(
+  [getSubaccountOpenOrders, getCurrentMarketId],
+  (openOrders, marketId) =>
+    marketId !== undefined &&
+    (openOrders?.some((order) => order.marketId !== marketId && isOrderStatusOpen(order.status)) ??
+      false)
+);
+
+export const selectSubaccountStateForVaults = createAppSelector(
+  [
+    (state) => state.account.subaccount?.marginUsage?.current,
+    (state) => state.account.subaccount?.freeCollateral?.current,
+    calculateCanViewAccount,
+  ],
+  (marginUsage, freeCollateral, canViewAccount) => ({
+    marginUsage,
+    freeCollateral,
+    canViewAccount,
+  })
 );

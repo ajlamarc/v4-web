@@ -1,8 +1,9 @@
 import { Fragment } from 'react';
 
-import styled, { ThemeProps, css, type FlattenInterpolation } from 'styled-components';
+import styled, { css } from 'styled-components';
 
 import { Nullable } from '@/constants/abacus';
+import { TooltipStringKeys } from '@/constants/tooltips';
 
 import { LoadingContext } from '@/contexts/LoadingContext';
 
@@ -14,7 +15,7 @@ import { WithTooltip } from '@/components/WithTooltip';
 export type DetailsItem = {
   // eslint-disable-next-line react/no-unused-prop-types
   key: string;
-  tooltip?: string;
+  tooltip?: TooltipStringKeys;
   tooltipParams?: Record<string, string>;
   label: string | JSX.Element;
   value?: Nullable<string> | JSX.Element | undefined;
@@ -159,6 +160,7 @@ const itemLayoutVariants = {
     --stickyArea0-background: var(--details-item-backgroundColor);
 
     ${layoutMixins.spacedRow}
+    grid-template-columns: 1fr auto;
     gap: 0.5rem;
     align-items: center;
     padding: var(--details-item-vertical-padding, 0.5rem) 0;
@@ -208,7 +210,7 @@ const itemLayoutVariants = {
     justify-items: start;
     gap: 0.375rem;
   `,
-} satisfies Record<string, FlattenInterpolation<ThemeProps<any>>>;
+} satisfies Record<string, ReturnType<typeof css>>;
 const $Details = styled.dl<{
   layout: 'column' | 'row' | 'rowColumns' | 'grid' | 'stackColumn';
   withSeparators: boolean;

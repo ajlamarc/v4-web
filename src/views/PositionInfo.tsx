@@ -5,6 +5,7 @@ import { type Nullable } from '@/constants/abacus';
 import { DialogTypes, TradeBoxDialogTypes } from '@/constants/dialogs';
 import { STRING_KEYS } from '@/constants/localization';
 import { NumberSign, USD_DECIMALS } from '@/constants/numbers';
+import { TooltipStringKeys } from '@/constants/tooltips';
 
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useStringGetter } from '@/hooks/useStringGetter';
@@ -39,7 +40,7 @@ type PositionInfoItems = {
 
   // Label Properties
   label: string;
-  tooltip?: string;
+  tooltip?: TooltipStringKeys;
   tooltipParams?: Record<string, string>;
 
   // Output/DiffOutput Properties
@@ -380,11 +381,12 @@ export const PositionInfo = ({ showNarrowVariation }: { showNarrowVariation?: bo
       </div>
 
       <div>
-        <$SecondaryDetails
+        <Details
           items={detailFieldsContent.map(createDetailItem)}
           withOverflow={false}
           withSeparators
           isLoading={isLoading}
+          tw="font-mini-book [--details-value-font:--font-small-book]"
         />
 
         {!hasNoPositionInMarket && actions}
@@ -416,12 +418,6 @@ const $PrimaryDetails = styled(Details)`
     align-items: flex-start;
   }
 `;
-
-const $SecondaryDetails = styled(Details)`
-  font: var(--font-mini-book);
-  --details-value-font: var(--font-small-book);
-`;
-
 const $MobileDetails = styled(Details)`
   font: var(--font-small-book);
   --details-value-font: var(--font-medium-medium);

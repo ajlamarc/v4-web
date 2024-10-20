@@ -20,8 +20,11 @@ import { calculateCanAccountTrade } from '@/state/accountCalculators';
 import { useAppSelector } from '@/state/appTypes';
 import { getSelectedTradeLayout } from '@/state/layoutSelectors';
 
+import { testFlags } from '@/lib/testFlags';
+
 import { HorizontalPanel } from './HorizontalPanel';
 import { InnerPanel } from './InnerPanel';
+import LaunchableMarket from './LaunchableMarket';
 import { MarketSelectorAndStats } from './MarketSelectorAndStats';
 import { MobileBottomPanel } from './MobileBottomPanel';
 import { MobileTopPanel } from './MobileTopPanel';
@@ -32,7 +35,7 @@ import { VerticalPanel } from './VerticalPanel';
 const TradePage = () => {
   const tradePageRef = useRef<HTMLDivElement>(null);
 
-  useCurrentMarketId();
+  const { isViewingUnlaunchedMarket } = useCurrentMarketId();
   const { isTablet } = useBreakpoints();
   const tradeLayout = useAppSelector(getSelectedTradeLayout);
   const canAccountTrade = useAppSelector(calculateCanAccountTrade);
@@ -41,6 +44,10 @@ const TradePage = () => {
 
   usePageTitlePriceUpdates();
   useTradeFormInputs();
+
+  if (isViewingUnlaunchedMarket && testFlags.pml) {
+    return <LaunchableMarket />;
+  }
 
   return isTablet ? (
     <$TradeLayoutMobile>
@@ -68,14 +75,14 @@ const TradePage = () => {
       tradeLayout={tradeLayout}
       isHorizontalPanelOpen={isHorizontalPanelOpen}
     >
-      <$Top>
+      <header tw="[grid-area:Top]">
         <MarketSelectorAndStats />
-      </$Top>
+      </header>
 
-      <$SideSection gridArea="Side">
+      <$GridSection gridArea="Side" tw="grid-rows-[auto_minmax(0,1fr)]">
         <AccountInfo />
         <TradeBox />
-      </$SideSection>
+      </$GridSection>
 
       <$GridSection gridArea="Vertical">
         <VerticalPanel tradeLayout={tradeLayout} />
@@ -97,82 +104,36 @@ const $TradeLayout = styled.article<{
   tradeLayout: TradeLayouts;
   isHorizontalPanelOpen: boolean;
 }>`
-  --horizontalPanel-height: 20.625rem;
+  --horizontalPanel-height: 18rem;
 
   // Constants
   /* prettier-ignore */
   --layout-default:
     'Top Top Top' auto
-    'Side Vertical Inner' minmax(0, 1fr)
-    'Side Horizontal Horizontal' minmax(var(--tabs-height), var(--horizontalPanel-height))
-    / var(--sidebar-width) minmax(0, var(--orderbook-trades-width)) 1fr;
+    'Inner Vertical Side' minmax(0, 1fr)
+    'Horizontal Horizontal Side' minmax(var(--tabs-height), var(--horizontalPanel-height))
+    / 1fr minmax(0, var(--orderbook-trades-width)) var(--sidebar-width);
 
   /* prettier-ignore */
   --layout-default-desktopMedium:
-    'Top Top Top' auto
-    'Side Vertical Inner' minmax(0, 1fr)
-    'Side Horizontal Horizontal' minmax(var(--tabs-height), var(--horizontalPanel-height))
-    / var(--sidebar-width) minmax(0, var(--orderbook-trades-width)) 1fr;
-
-  /* prettier-ignore */
-  --layout-default-desktopLarge:
-    'Top Top Top' auto
-    'Side Vertical Inner' minmax(0, 1fr)
-    'Side Vertical Horizontal' minmax(var(--tabs-height), var(--horizontalPanel-height))
-    / var(--sidebar-width) minmax(0, var(--orderbook-trades-width)) 1fr;
-
-  /* prettier-ignore */
-  --layout-alternative:
-    'Top Top Top' auto
-    'Vertical Inner Side' minmax(0, 1fr)
+    'Top Vertical Side' auto
+    'Inner Vertical Side' minmax(0, 1fr)
     'Horizontal Horizontal Side' minmax(var(--tabs-height), var(--horizontalPanel-height))
-    / minmax(0, var(--orderbook-trades-width)) 1fr var(--sidebar-width);
-
-  /* prettier-ignore */
-  --layout-alternative-desktopMedium:
-    'Top Top Top' auto
-    'Vertical Inner Side' minmax(0, 1fr)
-    'Horizontal Horizontal Side' minmax(var(--tabs-height), var(--horizontalPanel-height))
-    / minmax(0, var(--orderbook-trades-width)) 1fr var(--sidebar-width);
-
-  /* prettier-ignore */
-  --layout-alternative-desktopLarge:
-    'Top Top Top' auto
-    'Vertical Inner Side' minmax(0, 1fr)
-    'Vertical Horizontal Side' minmax(var(--tabs-height), var(--horizontalPanel-height))
-    / minmax(0, var(--orderbook-trades-width)) 1fr var(--sidebar-width);
+    / 1fr minmax(0, var(--orderbook-trades-width)) var(--sidebar-width);
 
   // Props/defaults
-
   --layout: var(--layout-default);
 
   // Variants
-
   @media ${breakpoints.desktopMedium} {
     --layout: var(--layout-default-desktopMedium);
-  }
-
-  @media ${breakpoints.desktopLarge} {
-    --horizontalPanel-height: 23.75rem;
-    --layout: var(--layout-default-desktopLarge);
   }
 
   ${({ tradeLayout }) =>
     ({
       [TradeLayouts.Default]: null,
-      [TradeLayouts.Alternative]: css`
-        --layout: var(--layout-alternative);
-
-        @media ${breakpoints.desktopMedium} {
-          --layout: var(--layout-alternative-desktopMedium);
-        }
-        @media ${breakpoints.desktopLarge} {
-          --layout: var(--layout-alternative-desktopLarge);
-        }
-      `,
       [TradeLayouts.Reverse]: css`
         direction: rtl;
-
         > * {
           direction: initial;
         }
@@ -201,7 +162,8 @@ const $TradeLayout = styled.article<{
   }
 
   > * {
-    display: grid;
+    display: flex;
+    flex-direction: column;
   }
 
   > section {
@@ -226,15 +188,6 @@ const $TradeLayoutMobile = styled.article`
     justify-content: start;
   }
 `;
-
-const $Top = styled.header`
-  grid-area: Top;
-`;
-
 const $GridSection = styled.section<{ gridArea: string }>`
   grid-area: ${({ gridArea }) => gridArea};
-`;
-
-const $SideSection = styled($GridSection)`
-  grid-template-rows: auto minmax(0, 1fr);
 `;

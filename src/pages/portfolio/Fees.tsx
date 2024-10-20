@@ -3,6 +3,7 @@ import { useCallback, useMemo } from 'react';
 import { Nullable } from '@dydxprotocol/v4-abacus';
 import { shallowEqual } from 'react-redux';
 import styled from 'styled-components';
+import tw from 'twin.macro';
 
 import { FeeTier } from '@/constants/abacus';
 import { STRING_KEYS } from '@/constants/localization';
@@ -26,6 +27,8 @@ import { useAppSelector } from '@/state/appTypes';
 import { getFeeTiers } from '@/state/configsSelectors';
 
 import { isTruthy } from '@/lib/isTruthy';
+
+const MARKET_SHARE_PERCENTAGE_FRACTION_DIGITS = 1;
 
 const EQUALITY_SYMBOL_MAP = {
   '>=': '≥',
@@ -61,7 +64,11 @@ export const Fees = () => {
               {isAdditional && stringGetter({ key: STRING_KEYS.AND })}{' '}
               {stringGetter({ key: STRING_KEYS.EXCHANGE_MARKET_SHARE })}{' '}
               <$Highlighted>{'>'}</$Highlighted>{' '}
-              <$HighlightOutput type={OutputType.Percent} value={totalShare} fractionDigits={0} />
+              <$HighlightOutput
+                type={OutputType.Percent}
+                value={totalShare}
+                fractionDigits={MARKET_SHARE_PERCENTAGE_FRACTION_DIGITS}
+              />
             </$AdditionalConditionsText>
           )}
           {!!makerShare && (
@@ -69,7 +76,11 @@ export const Fees = () => {
               {isAdditional && stringGetter({ key: STRING_KEYS.AND })}{' '}
               {stringGetter({ key: STRING_KEYS.MAKER_MARKET_SHARE })}{' '}
               <$Highlighted>{'>'}</$Highlighted>{' '}
-              <$HighlightOutput type={OutputType.Percent} value={makerShare} fractionDigits={0} />
+              <$HighlightOutput
+                type={OutputType.Percent}
+                value={makerShare}
+                fractionDigits={MARKET_SHARE_PERCENTAGE_FRACTION_DIGITS}
+              />
             </$AdditionalConditionsText>
           )}
         </$AdditionalConditions>
@@ -81,7 +92,7 @@ export const Fees = () => {
   return (
     <AttachedExpandingSection>
       {isNotTablet && <ContentSectionHeader title={stringGetter({ key: STRING_KEYS.FEES })} />}
-      <$ContentWrapper>
+      <div tw="flexColumn max-w-[100vw] gap-1.5">
         <$FeesDetails
           layout="grid"
           items={[
@@ -112,14 +123,14 @@ export const Fees = () => {
                 label: stringGetter({ key: STRING_KEYS.TIER }),
                 allowsSorting: false,
                 renderCell: ({ tier }) => (
-                  <$Tier>
-                    <$Output type={OutputType.Text} value={tier} />
+                  <$TextRow tw="gap-0.5">
+                    <Output type={OutputType.Text} value={tier} tw="text-color-text-0" />
                     {tier === userFeeTier && (
-                      <$YouTag size={TagSize.Medium}>
+                      <Tag size={TagSize.Medium} tw="text-color-text-1">
                         {stringGetter({ key: STRING_KEYS.YOU })}
-                      </$YouTag>
+                      </Tag>
                     )}
-                  </$Tier>
+                  </$TextRow>
                 ),
               },
               {
@@ -177,16 +188,10 @@ export const Fees = () => {
           withOuterBorder={isNotTablet}
           withInnerBorders
         />
-      </$ContentWrapper>
+      </div>
     </AttachedExpandingSection>
   );
 };
-const $ContentWrapper = styled.div`
-  ${layoutMixins.flexColumn}
-  gap: 1.5rem;
-  max-width: 100vw;
-`;
-
 const $AdditionalConditions = styled.div`
   color: var(--color-text-0);
   font: var(--font-small-book);
@@ -292,23 +297,6 @@ const $FeeTable = styled(Table)`
     --tableStickyRow-backgroundColor: var(--color-layer-1);
   }
 ` as typeof Table;
+const $Highlighted = tw.strong`text-color-text-1`;
 
-const $Output = styled(Output)`
-  color: var(--color-text-0);
-`;
-
-const $Highlighted = styled.strong`
-  color: var(--color-text-1);
-`;
-
-const $HighlightOutput = styled(Output)`
-  color: var(--color-text-1);
-`;
-
-const $Tier = styled($TextRow)`
-  gap: 0.5rem;
-`;
-
-const $YouTag = styled(Tag)`
-  color: var(--color-text-1);
-`;
+const $HighlightOutput = tw(Output)`text-color-text-1`;

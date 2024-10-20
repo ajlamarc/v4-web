@@ -15,6 +15,7 @@ import {
   tradingRewardsPeriods,
   type TradingRewardsDatum,
 } from '@/constants/charts';
+import { NORMAL_DEBOUNCE_MS } from '@/constants/debounce';
 import { STRING_KEYS } from '@/constants/localization';
 import { TOKEN_DECIMALS } from '@/constants/numbers';
 import { timeUnits } from '@/constants/time';
@@ -171,7 +172,7 @@ export const TradingRewardsChart = ({
             setSelectedPeriod(periodOptions[predefinedPeriodIx]);
           }
         }
-      }, 200),
+      }, NORMAL_DEBOUNCE_MS),
     [periodOptions, msForPeriod]
   );
 
@@ -204,8 +205,12 @@ export const TradingRewardsChart = ({
   const { decimal: decimalSeparator, group: groupSeparator } = useLocaleSeparators();
   const tickFormatY = useCallback(
     (value: number) =>
-      formatNumberOutput(value, OutputType.CompactNumber, { decimalSeparator, groupSeparator }),
-    [decimalSeparator, groupSeparator]
+      formatNumberOutput(value, OutputType.CompactNumber, {
+        decimalSeparator,
+        groupSeparator,
+        selectedLocale,
+      }),
+    [decimalSeparator, groupSeparator, selectedLocale]
   );
 
   const renderTooltip = useCallback(() => <div />, []);
@@ -231,12 +236,12 @@ export const TradingRewardsChart = ({
   return (
     <>
       {rewardsData.length === 0 ? undefined : (
-        <$TitleContainer>
-          <$Title>
+        <div tw="spacedRow w-full font-medium-book">
+          <span tw="h-min text-color-text-1">
             {stringGetter({
               key: STRING_KEYS.TRADING_REWARDS,
             })}
-          </$Title>
+          </span>
 
           <ToggleGroup
             items={toggleGroupItems}
@@ -244,7 +249,7 @@ export const TradingRewardsChart = ({
             onValueChange={setTradingRewardsPeriod}
             onInteraction={onToggleInteract}
           />
-        </$TitleContainer>
+        </div>
       )}
       <TimeSeriesChart
         className={className}
@@ -278,19 +283,6 @@ export const TradingRewardsChart = ({
     </>
   );
 };
-
-const $TitleContainer = styled.div`
-  ${layoutMixins.spacedRow}
-  width: 100%;
-
-  font: var(--font-medium-book);
-`;
-
-const $Title = styled.span`
-  color: var(--color-text-1);
-  height: min-content;
-`;
-
 const $Value = styled.div`
   place-self: start;
   isolation: isolate;

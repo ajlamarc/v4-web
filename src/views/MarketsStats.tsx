@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import styled from 'styled-components';
+import tw from 'twin.macro';
 
 import { STRING_KEYS } from '@/constants/localization';
 import { MarketSorting } from '@/constants/markets';
@@ -10,7 +11,7 @@ import { useStringGetter } from '@/hooks/useStringGetter';
 import breakpoints from '@/styles/breakpoints';
 import { layoutMixins } from '@/styles/layoutMixins';
 
-import { Tag } from '@/components/Tag';
+import { NewTag } from '@/components/Tag';
 import { ToggleGroup } from '@/components/ToggleGroup';
 
 import { ExchangeBillboards } from './ExchangeBillboards';
@@ -26,21 +27,24 @@ export const MarketsStats = (props: MarketsStatsProps) => {
   const [sorting, setSorting] = useState(MarketSorting.GAINERS);
 
   return (
-    <$MarketsStats className={className}>
+    <section
+      className={className}
+      tw="grid grid-cols-3 gap-1 tablet:column desktopSmall:pl-1 desktopSmall:pr-1"
+    >
       <ExchangeBillboards />
       <$Section>
         <$SectionHeader>
-          <$RecentlyListed>
+          <h4 tw="flex items-center gap-0.375">
             {stringGetter({ key: STRING_KEYS.RECENTLY_LISTED })}
-            <$NewTag>{stringGetter({ key: STRING_KEYS.NEW })}</$NewTag>
-          </$RecentlyListed>
+            <NewTag>{stringGetter({ key: STRING_KEYS.NEW })}</NewTag>
+          </h4>
         </$SectionHeader>
         <MarketsCompactTable sorting={MarketSorting.HIGHEST_CLOB_PAIR_ID} />
       </$Section>
       <$Section>
         <$SectionHeader>
           <h4>{stringGetter({ key: STRING_KEYS.BIGGEST_MOVERS })}</h4>
-          <Tag>{stringGetter({ key: STRING_KEYS._24H })}</Tag>
+          <NewTag>{stringGetter({ key: STRING_KEYS._24H })}</NewTag>
 
           <$ToggleGroupContainer>
             <ToggleGroup
@@ -61,43 +65,14 @@ export const MarketsStats = (props: MarketsStatsProps) => {
         </$SectionHeader>
         <MarketsCompactTable sorting={sorting} />
       </$Section>
-    </$MarketsStats>
+    </section>
   );
 };
-
-const $MarketsStats = styled.section`
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-
-  @media ${breakpoints.desktopSmall} {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  @media ${breakpoints.tablet} {
-    ${layoutMixins.column}
-  }
-`;
-const $Section = styled.div`
-  background: var(--color-layer-3);
-  border-radius: 0.625rem;
-  align-content: center;
-`;
-const $RecentlyListed = styled.h4`
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-`;
-const $NewTag = styled(Tag)`
-  background-color: var(--color-accent-faded);
-  color: var(--color-accent);
-  text-transform: uppercase;
-`;
+const $Section = tw.div`grid grid-rows-[auto_1fr] rounded-0.625 bg-color-layer-3`;
 const $ToggleGroupContainer = styled.div`
   ${layoutMixins.row}
   position: absolute;
-  top: -0.25rem;
+  top: 1rem;
   right: 1rem;
   z-index: 2;
 
@@ -114,11 +89,12 @@ const $ToggleGroupContainer = styled.div`
     --button-font: var(--font-mini-book);
   }
 `;
+
 const $SectionHeader = styled.div`
   ${layoutMixins.row}
   position: relative;
 
-  padding: 0 1.25rem 1.25rem;
+  padding: 1.25rem;
   gap: 0.25rem;
 
   & h4 {

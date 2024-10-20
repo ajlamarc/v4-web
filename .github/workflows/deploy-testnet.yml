@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up pnpm
-        uses: dydxprotocol/setup-pnpm@v1
+        uses: dydxprotocol/setup-pnpm@v2.0.0
 
       - name: Set up Node
         uses: actions/setup-node@v3
@@ -37,6 +37,8 @@ jobs:
         run: |
           pnpm run build
           pnpm run build:inject-amplitude
+          pnpm run build:inject-google-tag-manager
+          pnpm run build:inject-hotjar
           pnpm run build:inject-bugsnag
           pnpm run build:inject-statuspage
           pnpm run build:inject-smartbanner

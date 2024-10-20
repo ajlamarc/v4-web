@@ -85,6 +85,8 @@ Set environment variables via `.env`.
 - `VITE_TOKEN_MIGRATION_URI` (optional): The URL of the token migration website.
 - `AMPLITUDE_API_KEY` (optional): Amplitude API key for enabling Amplitude; used with `pnpm run build:inject-amplitude`.
 - `AMPLITUDE_SERVER_URL` (optional): Custom Amplitude server URL
+- `GOOGLE_TAG_MANAGER_CONTAINER_ID` (optional): Id for a google tag manager container; used with `pnpm run build:inject-google-tag-manager`.
+- `HOTJAR_SITE_ID`, `HOTJAR_VERSION` (optional): used for enabling Hotjar tracking; used with `pnpm run build:inject-hotjar`
 - `BUGSNAG_API_KEY` (optional): API key for enabling Bugsnag; used with `pnpm run build:inject-bugsnag`.
 - `IOS_APP_ID` (optional): iOS app ID used for enabling deep linking to the iOS app; used with `pnpm run build:inject-app-deeplinks`.
 - `INTERCOM_APP_ID` (optional): Used for enabling Intercom; utilized with `pnpm run build:inject-intercom`.
@@ -124,6 +126,15 @@ Edit `vercel.json` and configure the `rewrites` configuration option. It is an a
 ```
 
 Note: The first matching rule takes precedence over anything defined afterwards in the array.
+
+## Part 6: Configure sitemap generation (optional)
+
+1. Edit `public/configs/sitemap.json`. Provide the base site URL and the list of static URLs that you wish to appear in the sitemap.
+2. Edit the deploy command and ensure that `node scripts/generate-sitemap.js` is run before `pnpm run build`.
+
+The sitemap will be generated at build time.
+It will contain the static URLs as well as up-to-date URLs for market pairs.
+The market pairs are evaluated by inspecting an appropriate REST API of a full node.
 
 # Testing
 
@@ -175,6 +186,41 @@ git restore main pnpm-lock.yaml
 Then run `pnpm install`
 
 **Remember to revert to remote abacus before making a PR.**
+
+# Local Client-js Development
+
+## Directory structure
+
+Our tooling assumes that the [v4-clients repo](https://github.com/dydxprotocol/v4-clients) is checked out alongside v4-web:
+
+```
+--- parent folder
+ |___ v4-web
+ |___ v4-clients
+```
+
+## Using your local v4-clients repo
+
+Whenever you have changes in v4-clients that you'd like to test in your local v4-web branch, use the following command:
+
+```
+pnpm run install-local-client-js --clean
+```
+
+The `--clean` option will uninstall the package first, **it is not needed on subsequent runs.**
+
+## Reverting to remote clients
+
+Revert any changes to @dydxprotocol/v4-clients in package.json and pnpm-lock.yaml. If you haven't made any other package changes, you can use:
+
+```
+git restore main package.json
+git restore main pnpm-lock.yaml
+```
+
+Then run `pnpm install`
+
+**Remember to revert to remote v4-clients before making a PR.**
 
 # Local Localization (l10n) Development
 
@@ -228,8 +274,9 @@ By default, the dev server runs in development mode and the build command runs i
 pnpm run build --mode testnet
 ```
 
-If you wish to incorporate analytics via Amplitude and Bugsnag, you can use our scripts:
-`pnpm run build:inject-amplitude` and `pnpm run build:inject-bugsnag`. You will need to provide your own API keys for these services. In the Environment Variables section, name the variables as `AMPLITUDE_API_KEY` and `BUGSNAG_API_KEY` and provide the respective keys as their values.
+If you wish to incorporate analytics via Amplitude, Hotjar and Bugsnag, you can use our scripts:
+`pnpm run build:inject-amplitude`, `pnpm run build:inject-hotjar` and `pnpm run build:inject-bugsnag`. You will need to provide your own API keys for these services. In the Environment Variables section, name the variables as `AMPLITUDE_API_KEY`, `HOTJAR_SITE_ID`, `HOTJAR_VERSION` and `BUGSNAG_API_KEY` and provide the respective keys as their values.
+To incorporate all three services with a single command use `pnpm run build:inject-analytics`.
 
 If you wish to incorporate smart banner for iOS and/or Android apps, you can use our scripts:
 `pnpm run build:inject-smartbanner`. You will need to provide your own app configurations for these services. In the Environment Variables section, name the variables as `SMARTBANNER_APP_NAME`, `SMARTBANNER_ORG_NAME`, `SMARTBANNER_ICON_URL` and `SMARTBANNER_APPSTORE_URL` or `SMARTBANNER_GOOGLEPLAY_URL` and provide the respective values.

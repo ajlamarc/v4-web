@@ -1,9 +1,4 @@
-import {
-  css,
-  type FlattenInterpolation,
-  type FlattenSimpleInterpolation,
-  type ThemeProps,
-} from 'styled-components';
+import { css } from 'styled-components';
 
 import breakpoints from './breakpoints';
 import { layoutMixins } from './layoutMixins';
@@ -37,6 +32,7 @@ export const formMixins = {
 
     height: var(--input-height);
     min-height: var(--input-height);
+    max-height: var(--input-height);
 
     background-color: var(--input-backgroundColor);
     border: var(--border-width) solid var(--input-borderColor);
@@ -158,11 +154,11 @@ export const formMixins = {
 
   transfersForm: css`
     ${() => inputsColumn}
-    --form-input-gap: 1.25rem;
+    --form-input-gap: 1rem;
     --form-input-height: 3.5rem;
     --form-input-height-mobile: 4rem;
     --form-input-paddingY: 0.5rem;
-    --form-input-paddingX: 1rem;
+    --form-input-paddingX: 0.75rem;
 
     height: 100%;
 
@@ -174,4 +170,25 @@ export const formMixins = {
       --form-input-gap: 1rem;
     }
   `,
-} satisfies Record<string, FlattenSimpleInterpolation | FlattenInterpolation<ThemeProps<any>>>;
+
+  stakingForm: css`
+    ${() => inputsColumn}
+    --form-input-gap: 1rem;
+    --form-input-height: 3.5rem;
+    --form-input-height-mobile: 4rem;
+    --form-input-paddingY: 0.5rem;
+    --form-input-paddingX: 0.75rem;
+
+    --withReceipt-backgroundColor: var(--color-layer-2);
+
+    height: 100%;
+
+    label {
+      --label-textColor: var(--color-text-1);
+    }
+
+    @media ${breakpoints.tablet} {
+      --form-input-gap: 1rem;
+    }
+  `,
+} satisfies Record<string, ReturnType<typeof css>>;

@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-cycle
 import type { LocalWallet, SelectedGasDenom } from '@dydxprotocol/v4-client-js';
 
 import type {
@@ -7,6 +8,7 @@ import type {
   HistoricalTradingRewardsPeriod,
   HistoricalTradingRewardsPeriods,
   HumanReadableCancelOrderPayload,
+  HumanReadableCloseAllPositionsPayload,
   HumanReadablePlaceOrderPayload,
   HumanReadableSubaccountTransferPayload,
   HumanReadableTriggerOrdersPayload,
@@ -20,6 +22,7 @@ import type {
 import {
   AbacusAppConfig,
   AbacusHelper,
+  AbacusWalletConnectionType,
   AdjustIsolatedMarginInputField,
   ApiData,
   AsyncAbacusStateManager,
@@ -28,7 +31,7 @@ import {
   CoroutineTimer,
   HistoricalPnlPeriod,
   IOImplementations,
-  OnboardingConfig,
+  StatsigConfig,
   TradeInputField,
   TransferInputField,
   TransferType,
@@ -38,15 +41,30 @@ import {
 import { Hdkey } from '@/constants/account';
 import { DEFAULT_MARKETID } from '@/constants/markets';
 import { CURRENT_ABACUS_DEPLOYMENT, type DydxNetwork } from '@/constants/networks';
-import { CLEARED_SIZE_INPUTS, CLEARED_TRADE_INPUTS } from '@/constants/trade';
+import { StatsigFlags } from '@/constants/statsig';
+import {
+  CLEARED_CLOSE_POSITION_INPUTS,
+  CLEARED_SIZE_INPUTS,
+  CLEARED_TRADE_INPUTS,
+} from '@/constants/trade';
+import {
+  CLEARED_TRIGGER_LIMIT_INPUTS,
+  CLEARED_TRIGGER_ORDER_INPUTS,
+  TriggerFields,
+} from '@/constants/triggers';
+import { ConnectorType, WalletInfo } from '@/constants/wallets';
 
 import { type RootStore } from '@/state/_store';
-import { setTradeFormInputs } from '@/state/inputs';
+import {
+  setClosePositionFormInputs,
+  setTradeFormInputs,
+  setTriggerFormInputs,
+} from '@/state/inputs';
 import { getInputTradeOptions, getTransferInputs } from '@/state/inputsSelectors';
 
 import { LocaleSeparators } from '../numbers';
+import { testFlags } from '../testFlags';
 import AbacusAnalytics from './analytics';
-// eslint-disable-next-line import/no-cycle
 import AbacusChainTransaction from './dydxChainTransactions';
 import AbacusFileSystem from './filesystem';
 import AbacusFormatter from './formatter';
@@ -102,7 +120,7 @@ class AbacusStateManager {
     );
 
     const appConfigs = AbacusAppConfig.Companion.forWebAppWithIsolatedMargins;
-    appConfigs.onboardingConfigs.squidVersion = OnboardingConfig.SquidVersion.V2;
+    appConfigs.staticTyping = testFlags.enableStaticTyping;
 
     this.stateManager = new AsyncAbacusStateManager(
       '',
@@ -124,6 +142,11 @@ class AbacusStateManager {
     this.stateManager.trade(null, null);
   };
 
+  restart = ({ network }: { network?: DydxNetwork } = {}) => {
+    this.stateManager.readyToConnect = false;
+    this.start({ network });
+  };
+
   // ------ Breakdown ------ //
   disconnectAccount = () => {
     this.stateManager.accountAddress = null;
@@ -143,7 +166,7 @@ class AbacusStateManager {
   clearTradeInputValues = ({ shouldResetSize }: { shouldResetSize?: boolean } = {}) => {
     const state = this.store?.getState();
 
-    const { needsTriggerPrice, needsTrailingPercent, needsLeverage, needsLimitPrice } =
+    const { needsTriggerPrice, needsTrailingPercent, needsLimitPrice } =
       (state && getInputTradeOptions(state)) ?? {};
 
     if (needsTrailingPercent) {
@@ -160,15 +183,22 @@ class AbacusStateManager {
     this.store?.dispatch(setTradeFormInputs(CLEARED_TRADE_INPUTS));
 
     if (shouldResetSize) {
-      this.setTradeValue({ value: null, field: TradeInputField.size });
-      this.setTradeValue({ value: null, field: TradeInputField.usdcSize });
-
-      if (needsLeverage) {
-        this.setTradeValue({ value: null, field: TradeInputField.leverage });
-      }
-
-      this.store?.dispatch(setTradeFormInputs(CLEARED_SIZE_INPUTS));
+      this.clearTradeInputSizeValues();
     }
+  };
+
+  clearTradeInputSizeValues = () => {
+    const state = this.store?.getState();
+    const { needsLeverage } = (state && getInputTradeOptions(state)) ?? {};
+    this.setTradeValue({ value: null, field: TradeInputField.size });
+    this.setTradeValue({ value: null, field: TradeInputField.usdcSize });
+    this.setTradeValue({ value: null, field: TradeInputField.balancePercent });
+
+    if (needsLeverage) {
+      this.setTradeValue({ value: null, field: TradeInputField.leverage });
+    }
+
+    this.store?.dispatch(setTradeFormInputs(CLEARED_SIZE_INPUTS));
   };
 
   clearClosePositionInputValues = ({
@@ -176,8 +206,11 @@ class AbacusStateManager {
   }: {
     shouldFocusOnTradeInput?: boolean;
   } = {}) => {
+    this.store?.dispatch(setClosePositionFormInputs(CLEARED_CLOSE_POSITION_INPUTS));
     this.setClosePositionValue({ value: null, field: ClosePositionInputField.percent });
     this.setClosePositionValue({ value: null, field: ClosePositionInputField.size });
+    this.setClosePositionValue({ value: null, field: ClosePositionInputField.limitPrice });
+    this.setClosePositionValue({ value: false, field: ClosePositionInputField.useLimit });
 
     if (shouldFocusOnTradeInput) {
       this.clearTradeInputValues({ shouldResetSize: true });
@@ -191,28 +224,46 @@ class AbacusStateManager {
     this.setTransferValue({ value: null, field: TransferInputField.MEMO });
   };
 
-  clearTriggerOrdersInputValues = () => {
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.size });
+  clearTriggerOrdersInputValues = ({ field }: { field: TriggerFields }) => {
+    if (field === TriggerFields.Limit || field === TriggerFields.All) {
+      this.setTriggerOrdersValue({
+        value: null,
+        field: TriggerOrdersInputField.stopLossLimitPrice,
+      });
+      this.setTriggerOrdersValue({
+        value: null,
+        field: TriggerOrdersInputField.takeProfitLimitPrice,
+      });
+      this.store?.dispatch(setTriggerFormInputs(CLEARED_TRIGGER_LIMIT_INPUTS));
+    }
 
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossOrderId });
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossPrice });
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossLimitPrice });
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossPercentDiff });
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossUsdcDiff });
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossOrderType });
+    if (field === TriggerFields.All) {
+      this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.size });
+      this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossPrice });
+      this.setTriggerOrdersValue({
+        value: null,
+        field: TriggerOrdersInputField.stopLossPercentDiff,
+      });
+      this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossUsdcDiff });
+      this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.takeProfitPrice });
+      this.setTriggerOrdersValue({
+        value: null,
+        field: TriggerOrdersInputField.takeProfitPercentDiff,
+      });
+      this.setTriggerOrdersValue({
+        value: null,
+        field: TriggerOrdersInputField.takeProfitUsdcDiff,
+      });
+      this.store?.dispatch(setTriggerFormInputs(CLEARED_TRIGGER_ORDER_INPUTS));
 
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.takeProfitOrderId });
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.takeProfitPrice });
-    this.setTriggerOrdersValue({
-      value: null,
-      field: TriggerOrdersInputField.takeProfitLimitPrice,
-    });
-    this.setTriggerOrdersValue({
-      value: null,
-      field: TriggerOrdersInputField.takeProfitPercentDiff,
-    });
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.takeProfitUsdcDiff });
-    this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.takeProfitOrderType });
+      this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossOrderId });
+      this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.stopLossOrderType });
+      this.setTriggerOrdersValue({ value: null, field: TriggerOrdersInputField.takeProfitOrderId });
+      this.setTriggerOrdersValue({
+        value: null,
+        field: TriggerOrdersInputField.takeProfitOrderType,
+      });
+    }
   };
 
   clearAdjustIsolatedMarginInputValues = () => {
@@ -232,7 +283,7 @@ class AbacusStateManager {
       field: TransferInputField.type,
       value: null,
     });
-    this.clearTriggerOrdersInputValues();
+    this.clearTriggerOrdersInputValues({ field: TriggerFields.All });
     this.clearAdjustIsolatedMarginInputValues();
     this.clearTradeInputValues({ shouldResetSize: true });
   };
@@ -244,11 +295,18 @@ class AbacusStateManager {
     this.chainTransactions.setStore(store);
   };
 
-  setAccount = (localWallet?: LocalWallet, hdkey?: Hdkey) => {
+  setAccount = (localWallet?: LocalWallet, hdkey?: Hdkey, connectedWallet?: WalletInfo) => {
     if (localWallet) {
       this.stateManager.accountAddress = localWallet.address;
       this.chainTransactions.setLocalWallet(localWallet);
       if (hdkey) this.chainTransactions.setHdkey(hdkey);
+      if (connectedWallet?.connectorType === ConnectorType.Cosmos) {
+        this.stateManager.walletConnectionType = AbacusWalletConnectionType.Cosmos;
+      } else if (connectedWallet?.connectorType === ConnectorType.PhantomSolana) {
+        this.stateManager.walletConnectionType = AbacusWalletConnectionType.Solana;
+      } else {
+        this.stateManager.walletConnectionType = AbacusWalletConnectionType.Ethereum;
+      }
     }
   };
 
@@ -346,6 +404,15 @@ class AbacusStateManager {
     ) => void
   ): Nullable<HumanReadablePlaceOrderPayload> => this.stateManager.commitClosePosition(callback);
 
+  closeAllPositions = (
+    callback: (
+      success: boolean,
+      parsingError: Nullable<ParsingError>,
+      data: Nullable<HumanReadablePlaceOrderPayload>
+    ) => void
+  ): Nullable<HumanReadableCloseAllPositionsPayload> =>
+    this.stateManager.closeAllPositions(callback);
+
   cancelOrder = (
     orderId: string,
     callback: (
@@ -354,6 +421,21 @@ class AbacusStateManager {
       data: Nullable<HumanReadableCancelOrderPayload>
     ) => void
   ) => this.stateManager.cancelOrder(orderId, callback);
+
+  cancelAllOrders = (
+    marketId: Nullable<string>,
+    callback: (
+      success: boolean,
+      parsingError: Nullable<ParsingError>,
+      data: Nullable<HumanReadableCancelOrderPayload>
+    ) => void
+  ) => this.stateManager.cancelAllOrders(marketId, callback);
+
+  getCancelableOrderIds = (marketId: Nullable<string>): string[] =>
+    this.stateManager
+      .cancelAllOrdersPayload(marketId)
+      ?.payloads?.toArray()
+      ?.map((p) => p.orderId) ?? [];
 
   adjustIsolatedMarginOfPosition = (
     callback: (
@@ -406,8 +488,29 @@ class AbacusStateManager {
     this.websocket.send(requestText);
   };
 
+  toggleOrderbookCandles = (useOrderbookCandles: boolean) => {
+    this.websocket.orderbookCandlesToggleOn = useOrderbookCandles;
+  };
+
   getChainById = (chainId: string) => {
     return this.stateManager.getChainById(chainId);
+  };
+
+  /**
+   *
+   * Updates Abacus' global StatsigConfig object.
+   * You must define the property in abacus first, and then add to the enum.
+   *
+   */
+  setStatsigConfigs = (statsigConfig: { [key in StatsigFlags]?: boolean }) => {
+    Object.entries(statsigConfig).forEach(([k, v]) => {
+      // This filters out any feature flags in the enum that are not part of the
+      // kotlin statsig config object
+      if (k in StatsigConfig) {
+        // @ts-ignore
+        StatsigConfig[k] = v;
+      }
+    });
   };
 }
 

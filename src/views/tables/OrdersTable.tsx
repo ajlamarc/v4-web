@@ -5,6 +5,7 @@ import { ColumnSize } from '@react-types/table';
 import type { Dispatch } from '@reduxjs/toolkit';
 import { shallowEqual } from 'react-redux';
 import styled, { css } from 'styled-components';
+import tw from 'twin.macro';
 
 import { AbacusMarginMode, Asset, Nullable, SubaccountOrder } from '@/constants/abacus';
 import { DialogTypes } from '@/constants/dialogs';
@@ -52,9 +53,10 @@ import {
   isOrderStatusClearable,
 } from '@/lib/orders';
 import { getMarginModeFromSubaccountNumber } from '@/lib/tradeData';
-import { orEmptyObj } from '@/lib/typeUtils';
+import { orEmptyRecord } from '@/lib/typeUtils';
 
 import { OrderStatusIcon } from '../OrderStatusIcon';
+import { CancelOrClearAllOrdersButton } from './OrdersTable/CancelOrClearAllOrdersButton';
 import { OrderActionsCell } from './OrdersTable/OrderActionsCell';
 
 export enum OrdersTableColumnKey {
@@ -82,12 +84,14 @@ export type OrderTableRow = {
 
 const getOrdersTableColumnDef = ({
   key,
+  currentMarket,
   stringGetter,
   symbol = '',
   isAccountViewOnly,
   width,
 }: {
   key: OrdersTableColumnKey;
+  currentMarket?: string;
   dispatch: Dispatch;
   isTablet?: boolean;
   stringGetter: StringGetterFunction;
@@ -103,8 +107,8 @@ const getOrdersTableColumnDef = ({
         columnKey: 'marketId',
         getCellValue: (row) => row.marketId,
         label: stringGetter({ key: STRING_KEYS.MARKET }),
-        renderCell: ({ asset, marketId }) => (
-          <MarketTableCell asset={asset ?? undefined} marketId={marketId} />
+        renderCell: ({ asset, displayId }) => (
+          <MarketTableCell asset={asset ?? undefined} marketId={displayId} />
         ),
       },
       [OrdersTableColumnKey.Status]: {
@@ -114,16 +118,17 @@ const getOrdersTableColumnDef = ({
         renderCell: ({ status, resources }) => {
           return (
             <TableCell>
-              <$WithTooltip
+              <WithTooltip
                 tooltipString={
                   resources.statusStringKey
                     ? stringGetter({ key: resources.statusStringKey })
                     : undefined
                 }
                 side="right"
+                tw="[--tooltip-backgroundColor:--color-layer-5]"
               >
                 <OrderStatusIcon status={status.rawValue} />
-              </$WithTooltip>
+              </WithTooltip>
               {resources.typeStringKey && stringGetter({ key: resources.typeStringKey })}
             </TableCell>
           );
@@ -203,14 +208,14 @@ const getOrdersTableColumnDef = ({
             <Output
               type={OutputType.RelativeTime}
               value={expiresAtMilliseconds}
-              relativeTimeFormatOptions={{ format: 'singleCharacter' }}
+              relativeTimeOptions={{ format: 'singleCharacter' }}
             />
           );
         },
       },
       [OrdersTableColumnKey.Actions]: {
         columnKey: 'cancelOrClear',
-        label: stringGetter({ key: STRING_KEYS.ACTION }),
+        label: <CancelOrClearAllOrdersButton marketId={currentMarket} />,
         isActionable: true,
         allowsSorting: false,
         renderCell: ({ id, status, orderFlags }) => (
@@ -243,10 +248,11 @@ const getOrdersTableColumnDef = ({
               stacked
               slotLeft={
                 <>
-                  <$TimeOutput
+                  <Output
                     type={OutputType.RelativeTime}
-                    relativeTimeFormatOptions={{ format: 'singleCharacter' }}
+                    relativeTimeOptions={{ format: 'singleCharacter' }}
                     value={createdAtMilliseconds}
+                    tw="text-color-text-0"
                   />
                   <$AssetIconWithStatus>
                     <$AssetIcon symbol={asset?.id} />
@@ -291,7 +297,7 @@ const getOrdersTableColumnDef = ({
               <$Side side={orderSide}>
                 {resources.sideStringKey ? stringGetter({ key: resources.sideStringKey }) : null}
               </$Side>
-              <$SecondaryColor>@</$SecondaryColor>
+              <span tw="text-color-text-0">@</span>
               <Output type={OutputType.Fiat} value={price} fractionDigits={tickSizeDecimals} />
             </$InlineRow>
             <span>
@@ -355,8 +361,8 @@ export const OrdersTable = ({
     [allOrders, currentMarket, marketOrders, marketTypeFilter]
   );
 
-  const allPerpetualMarkets = orEmptyObj(useAppSelector(getPerpetualMarkets, shallowEqual));
-  const allAssets = orEmptyObj(useAppSelector(getAssets, shallowEqual));
+  const allPerpetualMarkets = orEmptyRecord(useAppSelector(getPerpetualMarkets, shallowEqual));
+  const allAssets = orEmptyRecord(useAppSelector(getAssets, shallowEqual));
 
   const hasUnseenOrderUpdates = useAppSelector(getHasUnseenOrderUpdates);
 
@@ -394,6 +400,7 @@ export const OrdersTable = ({
       columns={columnKeys.map((key: OrdersTableColumnKey) =>
         getOrdersTableColumnDef({
           key,
+          currentMarket,
           dispatch,
           isTablet,
           stringGetter,
@@ -404,7 +411,7 @@ export const OrdersTable = ({
       )}
       slotEmpty={
         <>
-          <$EmptyIcon iconName={IconName.OrderPending} />
+          <Icon iconName={IconName.OrderPending} tw="text-[3em]" />
           <h4>{stringGetter({ key: STRING_KEYS.ORDERS_EMPTY_STATE })}</h4>
         </>
       }
@@ -427,9 +434,7 @@ const $Table = styled(Table)`
   }
 ` as typeof Table;
 
-const $InlineRow = styled.div`
-  ${layoutMixins.inlineRow}
-`;
+const $InlineRow = tw.div`inlineRow`;
 
 const $AssetIcon = styled(AssetIcon)`
   font-size: 2rem;
@@ -438,15 +443,6 @@ const $AssetIcon = styled(AssetIcon)`
     font-size: 2.25rem;
   }
 `;
-
-const $TimeOutput = styled(Output)`
-  color: var(--color-text-0);
-`;
-
-const $SecondaryColor = styled.span`
-  color: var(--color-text-0);
-`;
-
 const $Side = styled.span<{ side?: OrderSide | null }>`
   ${({ side }) =>
     side &&
@@ -459,11 +455,6 @@ const $Side = styled.span<{ side?: OrderSide | null }>`
       `,
     }[side]};
 `;
-
-const $EmptyIcon = styled(Icon)`
-  font-size: 3em;
-`;
-
 const $AssetIconWithStatus = styled.div`
   ${layoutMixins.stack}
 
@@ -480,8 +471,4 @@ const $StatusDot = styled.div<{ color: string }>`
   border: 2px solid var(--tableRow-currentBackgroundColor);
 
   background-color: ${({ color }) => color};
-`;
-
-const $WithTooltip = styled(WithTooltip)`
-  --tooltip-backgroundColor: var(--color-layer-5);
 `;

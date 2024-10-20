@@ -1,12 +1,16 @@
+import { Nullable } from '@dydxprotocol/v4-abacus';
 import {
   APP_STRING_KEYS,
   ERRORS_STRING_KEYS,
   LOCALE_DATA,
   NOTIFICATIONS,
   NOTIFICATIONS_STRING_KEYS,
+  SupportedLocale,
   TOOLTIPS,
   WARNINGS_STRING_KEYS,
 } from '@dydxprotocol/v4-localization';
+
+import { StatsigConfigType } from '@/constants/statsig';
 
 import { type LinksConfigs } from '@/hooks/useURLConfigs';
 
@@ -50,13 +54,21 @@ export type LocaleData = typeof EN_LOCALE_DATA;
 
 export type StringGetterParams = Record<string, any>;
 
-export type StringGetterFunction = <T extends StringGetterParams>({
-  key,
-  params,
-}: {
-  key: string;
-  params?: T;
-}) => T extends {
+export type StringGetterProps<T extends StringGetterParams> =
+  | {
+      key: string;
+      params?: T;
+      fallback?: string;
+    }
+  | {
+      key?: Nullable<string>;
+      params?: T;
+      fallback: string;
+    };
+
+export type StringGetterFunction = <T extends StringGetterParams>(
+  props: StringGetterProps<T>
+) => T extends {
   [K in keyof T]: T[K] extends string | number ? any : T[K] extends JSX.Element ? any : never;
 }
   ? string
@@ -88,6 +100,13 @@ export const SUPPORTED_LOCALE_BASE_TAGS = {
   [SupportedLocales.DE]: 'de',
 };
 
+export const EU_LOCALES: SupportedLocale[] = [
+  SupportedLocales.DE,
+  SupportedLocales.PT,
+  SupportedLocales.ES,
+  SupportedLocales.FR,
+];
+
 export const SUPPORTED_BASE_TAGS_LOCALE_MAPPING = Object.fromEntries(
   Object.entries(SUPPORTED_LOCALE_BASE_TAGS).map(([locale, baseTag]) => [baseTag, locale])
 );
@@ -97,10 +116,12 @@ export type TooltipStrings = {
     stringGetter,
     stringParams,
     urlConfigs,
+    featureFlags,
   }: {
     stringGetter: StringGetterFunction;
     stringParams?: any;
     urlConfigs?: LinksConfigs;
+    featureFlags?: StatsigConfigType;
   }) => {
     title?: React.ReactNode;
     body: React.ReactNode;

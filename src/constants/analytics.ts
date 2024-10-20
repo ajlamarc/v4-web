@@ -1,4 +1,8 @@
+import { SupportedLocale } from '@dydxprotocol/v4-localization';
 import { RecordOf, TagsOf, UnionOf, ofType, unionize } from 'unionize';
+
+import { StatsigFlags } from '@/constants/statsig';
+import { ConnectorType, WalletType } from '@/constants/wallets';
 
 import type { AbacusApiStatus, HumanReadablePlaceOrderPayload } from './abacus';
 import type { OnboardingState, OnboardingSteps } from './account';
@@ -7,15 +11,13 @@ import type { SupportedLocales } from './localization';
 import type { DydxNetwork } from './networks';
 import { TransferNotificationTypes } from './notifications';
 import type { TradeTypes } from './trade';
-import type { DydxAddress, EvmAddress, WalletConnectionType, WalletType } from './wallets';
+import { DisplayUnit } from './trade';
+import type { DydxAddress } from './wallets';
 
-type AnalyticsEventDataWithReferrer<T extends AnalyticsEventTypes> = AnalyticsEventPayloads[T] & {
-  referrer: string;
-};
 export type AnalyticsEventTrackMeta<T extends AnalyticsEventTypes> = {
   detail: {
     eventType: T;
-    eventData: AnalyticsEventDataWithReferrer<T>;
+    eventData: AnalyticsEventPayloads[T];
   };
 };
 export type AnalyticsEventIdentifyMeta<T extends AnalyticsUserPropertyTypes> = {
@@ -44,6 +46,9 @@ export const customTrackEvent = <T extends AnalyticsEventTypes>(
 // User properties
 export const AnalyticsUserProperties = unionize(
   {
+    // Referrer
+    CustomDomainReferrer: ofType<string | null>(),
+
     // Environment
     Locale: ofType<SupportedLocales>(),
     Breakpoint: ofType<
@@ -51,31 +56,44 @@ export const AnalyticsUserProperties = unionize(
     >(),
     Version: ofType<string | null>(),
 
+    // Location
+    Geo: ofType<string | null>(),
+
+    // StatSigFlags
+    StatsigFlags: ofType<{ [key in StatsigFlags]?: boolean }>(),
+
     // Network
     Network: ofType<DydxNetwork>(),
 
     // Wallet
-    WalletType: ofType<WalletType | null>(),
-    WalletConnectionType: ofType<WalletConnectionType | null>(),
-    WalletAddress: ofType<EvmAddress | DydxAddress | null>(),
+    WalletType: ofType<WalletType | string | null>(),
+    WalletConnectorType: ofType<ConnectorType | null>(),
+    WalletAddress: ofType<string | null>(),
 
     // Account
     DydxAddress: ofType<DydxAddress | null>(),
     SubaccountNumber: ofType<number | null>(),
+
+    // Affiliate
+    AffiliateAddress: ofType<string | null>(),
   },
   { tag: 'type' as const, value: 'payload' as const }
 );
 
 export const AnalyticsUserPropertyLoggableTypes = {
   Locale: 'selectedLocale',
+  Geo: 'geo',
   Breakpoint: 'breakpoint',
   Version: 'version',
+  StatsigFlags: 'statsigFlags',
+  CustomDomainReferrer: 'customDomainReferrer',
   Network: 'network',
   WalletType: 'walletType',
-  WalletConnectionType: 'walletConnectionType',
+  WalletConnectorType: 'walletConnectorType',
   WalletAddress: 'walletAddress',
   DydxAddress: 'dydxAddress',
   SubaccountNumber: 'subaccountNumber',
+  AffiliateAddress: 'affiliateAddress',
 } as const satisfies Record<AnalyticsUserPropertyTypes, string>;
 
 export type AnalyticsUserProperty = UnionOf<typeof AnalyticsUserProperties>;
@@ -96,6 +114,27 @@ export const AnalyticsEvents = unionize(
       indexerBlockHeight?: number;
       trailingBlocks?: number;
     }>(),
+    SwitchedLanguageToEULanguage: ofType<{
+      previousLocale: SupportedLocale;
+      newLocale: SupportedLocale;
+      browserLanguage?: string;
+    }>(),
+
+    // Export CSV
+    ExportCsvClick: ofType<{}>(),
+    ExportDownloadClick: ofType<{
+      trades: boolean;
+      transfers: boolean;
+    }>(),
+    ExportTradesCheckboxClick: ofType<{
+      value: boolean;
+    }>(),
+    ExportTransfersCheckboxClick: ofType<{
+      value: boolean;
+    }>(),
+    ExportVaultTransfersCheckboxClick: ofType<{
+      value: boolean;
+    }>(),
 
     // Navigation
     NavigatePage: ofType<{
@@ -103,6 +142,7 @@ export const AnalyticsEvents = unionize(
     }>(),
     NavigateDialog: ofType<{
       type: DialogTypesTypes;
+      fromDialogType?: DialogTypesTypes;
     }>(),
     NavigateDialogClose: ofType<{
       type: DialogTypesTypes;
@@ -113,12 +153,27 @@ export const AnalyticsEvents = unionize(
 
     // Wallet
     ConnectWallet: ofType<{
-      walletType: WalletType;
-      walletConnectionType: WalletConnectionType;
+      walletType: WalletType | string;
+      walletConnectorType: ConnectorType;
     }>(),
     DisconnectWallet: ofType<{}>(),
 
     // Onboarding
+    OnboardingDeriveKeysSignatureReceived: ofType<{
+      signatureNumber: number;
+    }>(),
+    OnboardingAcknowledgeTermsButtonClick: ofType<{
+      agreed: boolean;
+    }>(),
+    OnboardingSwitchNetworkClick: ofType<{}>(),
+    OnboardingSendRequestClick: ofType<{
+      firstAttempt: boolean;
+    }>(),
+    OnboardingTriggerClick: ofType<{
+      // if onboarding state is Disconnected, then user clicked "Connect Wallet"
+      // if onboarding state is WalletConnected, then user clicked "Recover Keys"
+      state: OnboardingState;
+    }>(),
     OnboardingStepChanged: ofType<{
       state: OnboardingState;
       step?: OnboardingSteps;
@@ -135,6 +190,19 @@ export const AnalyticsEvents = unionize(
       roundtripMs: number;
       /** URL/IP of node the order was sent to */
       validatorUrl: string;
+    }>(),
+    TransferDepositFundsClick: ofType<{
+      chainId: string | undefined;
+      tokenAddress: string | undefined;
+      tokenSymbol: string | undefined;
+      slippage: number | undefined;
+      gasFee: number | undefined;
+      bridgeFee: number | undefined;
+      exchangeRate: number | undefined;
+      estimatedRouteDuration: number | undefined;
+      toAmount: number | undefined;
+      toAmountMin: number | undefined;
+      depositCTAString: string;
     }>(),
     TransferDeposit: ofType<{
       chainId?: string;
@@ -173,6 +241,11 @@ export const AnalyticsEvents = unionize(
     TradeOrderTypeSelected: ofType<{
       type: TradeTypes;
     }>(),
+    DisplayUnitToggled: ofType<{
+      newDisplayUnit: DisplayUnit;
+      entryPoint?: string;
+      assetId: string;
+    }>(),
     TradePlaceOrder: ofType<
       HumanReadablePlaceOrderPayload & {
         isClosePosition: boolean;
@@ -192,6 +265,20 @@ export const AnalyticsEvents = unionize(
       validatorUrl: string;
     }>(),
 
+    // TradingView actions
+    TradingViewOrderModificationSubmitted: ofType<
+      HumanReadablePlaceOrderPayload & {
+        previousOrderClientId: string;
+        previousOrderPrice: string;
+      }
+    >,
+    TradingViewOrderModificationSuccess: ofType<{
+      clientId: string;
+    }>,
+    TradingViewLimitOrderDrafted: ofType<{
+      marketId: string;
+      price: string;
+    }>,
     // Notification
     NotificationAction: ofType<{
       type: string;
@@ -222,6 +309,15 @@ export const AnalyticsEvents = unionize(
       amount?: number;
       validatorAddress?: string;
     }>(),
+
+    // Sharing
+    SharePnlShared: ofType<{
+      asset: string;
+    }>(),
+    SharePnlCopied: ofType<{
+      asset: string;
+    }>(),
+
     Error: ofType<{
       location: string;
       error: Error;
@@ -232,8 +328,34 @@ export const AnalyticsEvents = unionize(
       errorMessage?: string;
       amount: string;
       chainId?: string;
-      assetId?: string;
+      assetaddress?: string;
+      assetSymbol?: string;
+      assetName?: string;
     }>(),
+
+    // vaults
+    ClickViewVaultFromPositionCard: ofType<{}>(),
+    ClickViewVaultFromOverview: ofType<{}>(),
+
+    EnterValidVaultAmountForm: ofType<{}>(),
+    VaultFormPreviewStep: ofType<{ operation: 'DEPOSIT' | 'WITHDRAW'; amount: number }>(),
+    AttemptVaultOperation: ofType<{
+      operation: 'DEPOSIT' | 'WITHDRAW';
+      amount: number;
+      slippage: number | null | undefined;
+    }>(),
+    VaultOperationPreAborted: ofType<{ operation: 'DEPOSIT' | 'WITHDRAW'; amount: number }>(),
+    SuccessfulVaultOperation: ofType<{
+      operation: 'DEPOSIT' | 'WITHDRAW';
+      amount: number;
+      amountDiff: number | null | undefined;
+      submissionTimeBase: number;
+      submissionTimeTotal: number;
+    }>(),
+    VaultOperationProtocolError: ofType<{ operation: 'DEPOSIT' | 'WITHDRAW' }>(),
+
+    // Affiliate
+    AffiliateRegistration: ofType<{ affiliateAddress: string }>(),
   },
   { tag: 'type' as const, value: 'payload' as const }
 );
@@ -242,5 +364,14 @@ export type AnalyticsEventTypes = TagsOf<typeof AnalyticsEvents>;
 export type AnalyticsEventPayloads = RecordOf<typeof AnalyticsEvents>;
 
 export const DEFAULT_TRANSACTION_MEMO = 'dYdX Frontend (web)';
+export enum TransactionMemo {
+  depositToSubaccount = `${DEFAULT_TRANSACTION_MEMO} | deposit from wallet to subaccount`,
+  withdrawFromSubaccount = `${DEFAULT_TRANSACTION_MEMO} | withdraw from subaccount to wallet`,
+  withdrawFromAccount = `${DEFAULT_TRANSACTION_MEMO} | withdraw from account`,
+
+  placeOrder = `${DEFAULT_TRANSACTION_MEMO} | Place Order`,
+  cancelOrderTransfer = `${DEFAULT_TRANSACTION_MEMO} | Cancel Order`,
+}
+
 export const lastSuccessfulRestRequestByOrigin: Record<URL['origin'], number> = {};
 export const lastSuccessfulWebsocketRequestByOrigin: Record<URL['origin'], number> = {};

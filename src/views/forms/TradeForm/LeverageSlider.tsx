@@ -5,6 +5,7 @@ import { debounce } from 'lodash';
 import styled, { css } from 'styled-components';
 
 import { TradeInputField } from '@/constants/abacus';
+import { QUICK_DEBOUNCE_MS } from '@/constants/debounce';
 import { PositionSide } from '@/constants/trade';
 
 import { Slider } from '@/components/Slider';
@@ -81,7 +82,7 @@ export const LeverageSlider = ({
             value: newLeverage,
             field: TradeInputField.leverage,
           }),
-        50
+        QUICK_DEBOUNCE_MS
       ),
     []
   );
@@ -104,7 +105,7 @@ export const LeverageSlider = ({
   };
 
   return (
-    <$SliderContainer className={className}>
+    <div className={className} tw="h-[1.375rem]">
       <$Slider
         label="MarketLeverage"
         min={min}
@@ -116,7 +117,7 @@ export const LeverageSlider = ({
         midpoint={midpoint}
         orderSide={orderSide}
       />
-    </$SliderContainer>
+    </div>
   );
 };
 const $Slider = styled(Slider)<{ midpoint?: number; orderSide: OrderSide }>`
@@ -131,8 +132,4 @@ const $Slider = styled(Slider)<{ midpoint?: number; orderSide: OrderSide }>`
       var(--color-positive) 100%
     );
   `}
-`;
-
-const $SliderContainer = styled.div`
-  height: 1.375rem;
 `;

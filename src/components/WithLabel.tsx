@@ -13,20 +13,20 @@ type StyleProps = {
 };
 
 export const WithLabel = ({ label, inputID, children, className }: ElementProps & StyleProps) => (
-  <$WithLabel className={className}>
-    <$Label htmlFor={inputID}>{label}</$Label>
+  <$Container className={className} tw="grid gap-0.5 [--label-textColor:--color-text-1]">
+    <label htmlFor={inputID} tw="inlineRow text-[color:--label-textColor] font-mini-book">
+      {label}
+    </label>
     {children}
-  </$WithLabel>
+  </$Container>
 );
-const $WithLabel = styled.div`
-  --label-textColor: var(--color-text-1);
 
-  display: grid;
-  gap: 0.5rem;
-`;
-
-const $Label = styled.label`
-  ${layoutMixins.inlineRow}
-  font: var(--font-mini-book);
-  color: var(--label-textColor);
+const $Container = styled.div`
+  label {
+    ${layoutMixins.textTruncate}
+    text-align: start;
+    > *:not(:last-child) {
+      margin-right: 0.5ch;
+    }
+  }
 `;

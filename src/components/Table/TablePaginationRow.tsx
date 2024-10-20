@@ -1,6 +1,7 @@
 import { Dispatch, SetStateAction } from 'react';
 
 import styled from 'styled-components';
+import tw from 'twin.macro';
 
 import { ButtonAction, ButtonShape, ButtonSize } from '@/constants/buttons';
 import { STRING_KEYS } from '@/constants/localization';
@@ -15,7 +16,7 @@ import { IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { ToggleGroup } from '@/components/ToggleGroup';
 
-export const PAGE_SIZES = [5, 10, 15, 20] as const;
+export const PAGE_SIZES = [5, 10, 15, 20, 50] as const;
 export type PageSize = (typeof PAGE_SIZES)[number];
 
 type ElementProps = {
@@ -58,6 +59,7 @@ export const TablePaginationRow = ({
           value={pageNumberToDisplay(currentPage)}
           items={pages}
           onValueChange={(pageNumber: string) => setCurrentPage(Number(pageNumber) - 1)}
+          truncateLabel={false}
         />
         <IconButton
           {...buttonProps}
@@ -77,13 +79,14 @@ export const TablePaginationRow = ({
         key: STRING_KEYS.SHOW,
         params: {
           NUMBER: (
-            <$DropdownSelectMenu
+            <DropdownSelectMenu
               value={String(pageSize)}
               items={PAGE_SIZES.map((size) => ({
                 label: String(size),
                 value: String(size),
               }))}
               onValueChange={(value: String) => setPageSize(Number(value) as PageSize)}
+              tw="[--dropdownSelectMenu-item-font-size:--fontSize-mini]"
             />
           ),
         },
@@ -107,13 +110,11 @@ export const TablePaginationRow = ({
   );
 };
 
-const $InlineRow = styled.div`
-  ${layoutMixins.inlineRow}
-`;
+const $InlineRow = tw.div`inlineRow`;
 
 const $PaginationRow = styled.div`
   ${layoutMixins.spacedRow}
-  padding: var(--tableCell-padding)
+  padding: var(--tableCell-padding);
 `;
 
 const $ToggleGroup = styled(ToggleGroup)`
@@ -121,8 +122,4 @@ const $ToggleGroup = styled(ToggleGroup)`
     border: none;
     background-color: transparent;
   }
-`;
-
-const $DropdownSelectMenu = styled(DropdownSelectMenu)`
-  --dropdownSelectMenu-item-font-size: var(--fontSize-mini);
 `;

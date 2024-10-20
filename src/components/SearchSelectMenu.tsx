@@ -23,6 +23,7 @@ import { DropdownIcon } from './DropdownIcon';
 type ElementProps = {
   asChild?: boolean;
   children: ReactNode;
+  disabled?: boolean;
   label?: string;
   items: MenuConfig<string, string>;
   withSearch?: boolean;
@@ -39,6 +40,7 @@ export const SearchSelectMenu = ({
   asChild,
   children,
   className,
+  disabled,
   label,
   items,
   withSearch = true,
@@ -59,15 +61,16 @@ export const SearchSelectMenu = ({
   ) : (
     <$MenuTrigger>
       {label ? <$WithLabel label={label}>{children}</$WithLabel> : children}
-      <DropdownIcon isOpen={open} />
+      {!disabled && <DropdownIcon isOpen={open} />}
     </$MenuTrigger>
   );
 
   return (
-    <$SearchSelectMenu className={className} ref={searchSelectMenuRef}>
+    <div className={className} ref={searchSelectMenuRef} tw="column">
       <$WithDetailsReceipt detailItems={withReceiptItems} side="bottom">
         <$Popover
           open={open}
+          disabled={disabled}
           onOpenChange={setOpen}
           slotTrigger={Trigger}
           triggerType={TriggerType.SearchSelect}
@@ -83,13 +86,9 @@ export const SearchSelectMenu = ({
           />
         </$Popover>
       </$WithDetailsReceipt>
-    </$SearchSelectMenu>
+    </div>
   );
 };
-const $SearchSelectMenu = styled.div`
-  ${layoutMixins.column}
-`;
-
 const $MenuTrigger = styled.div`
   height: var(--form-input-height);
 

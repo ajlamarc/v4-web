@@ -1,12 +1,11 @@
 import { shallowEqual } from 'react-redux';
-import styled from 'styled-components';
 
-import { AbacusMarginMode, type TradeInputSummary } from '@/constants/abacus';
+import { AbacusInputTypes, AbacusMarginMode, type TradeInputSummary } from '@/constants/abacus';
 import { ButtonAction, ButtonSize, ButtonType } from '@/constants/buttons';
 import { ComplianceStates } from '@/constants/compliance';
 import { DialogTypes } from '@/constants/dialogs';
 import { STRING_KEYS } from '@/constants/localization';
-import { MobilePlaceOrderSteps } from '@/constants/trade';
+import { MobilePlaceOrderSteps, TradeTypes } from '@/constants/trade';
 
 import { ConnectionErrorType, useApiState } from '@/hooks/useApiState';
 import { useComplianceState } from '@/hooks/useComplianceState';
@@ -15,6 +14,7 @@ import { useTokenConfigs } from '@/hooks/useTokenConfigs';
 
 import { AssetIcon } from '@/components/AssetIcon';
 import { Button } from '@/components/Button';
+import { DetailsItem } from '@/components/Details';
 import { DiffOutput } from '@/components/DiffOutput';
 import { Icon, IconName } from '@/components/Icon';
 import { Output, OutputType, ShowSign } from '@/components/Output';
@@ -22,10 +22,7 @@ import { WithDetailsReceipt } from '@/components/WithDetailsReceipt';
 import { WithTooltip } from '@/components/WithTooltip';
 import { OnboardingTriggerButton } from '@/views/dialogs/OnboardingTriggerButton';
 
-import {
-  calculateCanAccountTrade,
-  calculateShouldShowIsolatedMarketPostOrderPositionMarginAsZero,
-} from '@/state/accountCalculators';
+import { calculateCanAccountTrade } from '@/state/accountCalculators';
 import { getCurrentMarketPositionData, getSubaccountId } from '@/state/accountSelectors';
 import { useAppDispatch, useAppSelector } from '@/state/appTypes';
 import { openDialog } from '@/state/dialogs';
@@ -39,6 +36,8 @@ import {
   getTradeStateWithDoubleValuesHasDiff,
 } from '@/lib/tradeData';
 import { orEmptyObj } from '@/lib/typeUtils';
+
+import { useTradeTypeOptions } from './useTradeTypeOptions';
 
 type ConfirmButtonConfig = {
   stringKey: string;
@@ -70,12 +69,13 @@ export const PlaceOrderButtonAndReceipt = ({
   const { chainTokenLabel } = useTokenConfigs();
   const { connectionError } = useApiState();
   const { complianceState } = useComplianceState();
+  const { selectedTradeType } = useTradeTypeOptions();
 
   const canAccountTrade = useAppSelector(calculateCanAccountTrade);
   const subaccountNumber = useAppSelector(getSubaccountId);
   const currentInput = useAppSelector(getCurrentInput);
   const { tickSizeDecimals } = orEmptyObj(useAppSelector(getCurrentMarketConfig, shallowEqual));
-  const { liquidationPrice, equity, leverage, notionalTotal, adjustedMmf } = orEmptyObj(
+  const { liquidationPrice, equity, leverage, notionalTotal, adjustedImf } = orEmptyObj(
     useAppSelector(getCurrentMarketPositionData, shallowEqual)
   );
 
@@ -83,7 +83,13 @@ export const PlaceOrderButtonAndReceipt = ({
 
   const hasMissingData = subaccountNumber === undefined;
 
+  const closeOnlyTradingUnavailable =
+    complianceState === ComplianceStates.CLOSE_ONLY &&
+    selectedTradeType !== TradeTypes.MARKET &&
+    currentInput !== AbacusInputTypes.ClosePosition;
+
   const tradingUnavailable =
+    closeOnlyTradingUnavailable ||
     complianceState === ComplianceStates.READ_ONLY ||
     connectionError === ConnectionErrorType.CHAIN_DISRUPTION;
 
@@ -91,31 +97,27 @@ export const PlaceOrderButtonAndReceipt = ({
     canAccountTrade &&
     !hasMissingData &&
     !hasValidationErrors &&
-    currentInput !== 'transfer' &&
+    currentInput !== AbacusInputTypes.Transfer &&
     !tradingUnavailable;
 
   const { fee, price: expectedPrice, reward } = summary ?? {};
 
-  // check if required fields are filled and summary has been calculated
+  // approximation for whether inputs are filled by whether summary has been calculated
   const areInputsFilled = fee != null || reward != null;
-
-  const isIsolatedMarketPostOrderPositionMarginZero = useAppSelector(
-    calculateShouldShowIsolatedMarketPostOrderPositionMarginAsZero
-  );
 
   const renderMarginValue = () => {
     if (marginMode === AbacusMarginMode.Cross) {
       const currentCrossMargin = nullIfZero(
         calculateCrossPositionMargin({
           notionalTotal: notionalTotal?.current,
-          adjustedMmf: adjustedMmf?.current,
+          adjustedImf: adjustedImf?.current,
         })
       );
 
       const postOrderCrossMargin = nullIfZero(
         calculateCrossPositionMargin({
           notionalTotal: notionalTotal?.postOrder,
-          adjustedMmf: adjustedMmf?.postOrder,
+          adjustedImf: adjustedImf?.postOrder,
         })
       );
 
@@ -135,94 +137,92 @@ export const PlaceOrderButtonAndReceipt = ({
         useGrouping
         type={OutputType.Fiat}
         value={equity?.current}
-        newValue={isIsolatedMarketPostOrderPositionMarginZero ? null : equity?.postOrder}
-        withDiff={
-          isIsolatedMarketPostOrderPositionMarginZero
-            ? nullIfZero(equity?.current) != null
-            : areInputsFilled && getTradeStateWithDoubleValuesHasDiff(equity)
-        }
+        newValue={equity?.postOrder}
+        withDiff={areInputsFilled && getTradeStateWithDoubleValuesHasDiff(equity)}
       />
     );
   };
 
-  const items = [
-    {
-      key: 'expected-price',
-      label: (
-        <WithTooltip tooltip="expected-price" side="right">
-          {stringGetter({ key: STRING_KEYS.EXPECTED_PRICE })}
-        </WithTooltip>
-      ),
-      value: (
-        <Output
-          useGrouping
-          fractionDigits={tickSizeDecimals}
-          type={OutputType.Fiat}
-          value={expectedPrice}
-        />
-      ),
-    },
-    {
-      key: 'liquidation-price',
-      label: stringGetter({ key: STRING_KEYS.LIQUIDATION_PRICE }),
-      value: (
-        <DiffOutput
-          useGrouping
-          type={OutputType.Fiat}
-          fractionDigits={tickSizeDecimals}
-          value={liquidationPrice?.current}
-          newValue={liquidationPrice?.postOrder}
-          withDiff={areInputsFilled && getTradeStateWithDoubleValuesHasDiff(liquidationPrice)}
-        />
-      ),
-    },
-    {
-      key: 'position-margin',
-      label: stringGetter({ key: STRING_KEYS.POSITION_MARGIN }),
-      value: renderMarginValue(),
-    },
-    {
-      key: 'position-leverage',
-      label: stringGetter({ key: STRING_KEYS.POSITION_LEVERAGE }),
-      value: (
-        <DiffOutput
-          useGrouping
-          type={OutputType.Multiple}
-          value={nullIfZero(leverage?.current)}
-          newValue={leverage?.postOrder}
-          withDiff={areInputsFilled && getTradeStateWithDoubleValuesHasDiff(leverage)}
-          showSign={ShowSign.None}
-        />
-      ),
-    },
-    {
-      key: 'fee',
-      label: (
-        <WithTooltip tooltip="fee" side="right">
-          {stringGetter({ key: STRING_KEYS.FEE })}
-        </WithTooltip>
-      ),
-      value: <Output type={OutputType.Fiat} value={fee} useGrouping />,
-    },
-    {
-      key: 'max-reward',
-      label: (
-        <>
-          {stringGetter({ key: STRING_KEYS.MAXIMUM_REWARDS })}
-          <AssetIcon symbol={chainTokenLabel} />
-        </>
-      ),
-      value: (
-        <Output
-          type={OutputType.Asset}
-          value={reward}
-          useGrouping
-          tag={reward ? chainTokenLabel : ''}
-        />
-      ),
-      tooltip: 'max-reward',
-    },
-  ].filter(isTruthy);
+  const items = (
+    [
+      {
+        key: 'expected-price',
+        label: (
+          <WithTooltip tooltip="expected-price" side="right">
+            {stringGetter({ key: STRING_KEYS.EXPECTED_PRICE })}
+          </WithTooltip>
+        ),
+        value: (
+          <Output
+            useGrouping
+            fractionDigits={tickSizeDecimals}
+            type={OutputType.Fiat}
+            value={expectedPrice}
+          />
+        ),
+      },
+      {
+        key: 'liquidation-price',
+        label: stringGetter({ key: STRING_KEYS.LIQUIDATION_PRICE }),
+        value: (
+          <DiffOutput
+            useGrouping
+            type={OutputType.Fiat}
+            fractionDigits={tickSizeDecimals}
+            value={liquidationPrice?.current}
+            newValue={liquidationPrice?.postOrder}
+            withDiff={areInputsFilled && getTradeStateWithDoubleValuesHasDiff(liquidationPrice)}
+          />
+        ),
+      },
+      {
+        key: 'position-margin',
+        label: stringGetter({ key: STRING_KEYS.POSITION_MARGIN }),
+        value: renderMarginValue(),
+      },
+      {
+        key: 'position-leverage',
+        label: stringGetter({ key: STRING_KEYS.POSITION_LEVERAGE }),
+        value: (
+          <DiffOutput
+            useGrouping
+            type={OutputType.Multiple}
+            value={nullIfZero(leverage?.current)}
+            newValue={leverage?.postOrder}
+            withDiff={areInputsFilled && getTradeStateWithDoubleValuesHasDiff(leverage)}
+            showSign={ShowSign.None}
+          />
+        ),
+      },
+      {
+        key: 'fee',
+        label: (
+          <WithTooltip tooltip="fee" side="right">
+            {stringGetter({ key: STRING_KEYS.FEE })}
+          </WithTooltip>
+        ),
+        value: <Output type={OutputType.Fiat} value={fee} useGrouping />,
+      },
+      {
+        key: 'max-reward',
+        label: (
+          <>
+            {stringGetter({ key: STRING_KEYS.MAXIMUM_REWARDS })}
+            <AssetIcon symbol={chainTokenLabel} />
+          </>
+        ),
+        value: (
+          <Output
+            type={OutputType.Asset}
+            value={reward}
+            useGrouping
+            tag={reward ? chainTokenLabel : ''}
+          />
+        ),
+        tooltip: 'max-reward',
+      },
+    ] satisfies Array<DetailsItem | false | undefined>
+  ).filter(isTruthy);
 
   const returnToMarketState = () => ({
     buttonTextStringKey: STRING_KEYS.RETURN_TO_MARKET,
@@ -287,11 +287,16 @@ export const PlaceOrderButtonAndReceipt = ({
     hasValidationErrors && (!currentStep || buttonStatesPerStep[currentStep].showValidatorError);
 
   const submitButton = (
-    <$Button
+    <Button
       state={buttonState}
       type={ButtonType.Submit}
       action={buttonAction}
-      slotLeft={showValidatorErrors ? <$WarningIcon iconName={IconName.Warning} /> : undefined}
+      slotLeft={
+        showValidatorErrors && areInputsFilled ? (
+          <Icon iconName={IconName.Warning} tw="text-color-warning" />
+        ) : undefined
+      }
+      tw="w-full"
     >
       {stringGetter({
         key: buttonTextStringKey,
@@ -301,7 +306,7 @@ export const PlaceOrderButtonAndReceipt = ({
           }),
         },
       })}
-    </$Button>
+    </Button>
   );
 
   return (
@@ -318,10 +323,3 @@ export const PlaceOrderButtonAndReceipt = ({
     </WithDetailsReceipt>
   );
 };
-const $Button = styled(Button)`
-  width: 100%;
-`;
-
-const $WarningIcon = styled(Icon)`
-  color: var(--color-warning);
-`;

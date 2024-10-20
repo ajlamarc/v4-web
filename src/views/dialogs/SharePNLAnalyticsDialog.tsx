@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 
 import { useToBlob } from '@hugocxl/react-to-image';
 import styled from 'styled-components';
+import tw from 'twin.macro';
 
+import { AnalyticsEvents } from '@/constants/analytics';
 import { ButtonAction } from '@/constants/buttons';
 import { DialogProps, SharePNLAnalyticsDialogProps } from '@/constants/dialogs';
 import { STRING_KEYS } from '@/constants/localization';
@@ -24,6 +26,7 @@ import { Tag, TagSign } from '@/components/Tag';
 import { useAppDispatch } from '@/state/appTypes';
 import { closeDialog } from '@/state/dialogs';
 
+import { track } from '@/lib/analytics/analytics';
 import { MustBigNumber } from '@/lib/numbers';
 import { triggerTwitterIntent } from '@/lib/twitter';
 
@@ -44,7 +47,7 @@ export const SharePNLAnalyticsDialog = ({
   leverage,
   oraclePrice,
   entryPrice,
-  unrealizedPnlPercent,
+  unrealizedPnl,
   setIsOpen,
 }: DialogProps<SharePNLAnalyticsDialogProps>) => {
   const stringGetter = useStringGetter();
@@ -61,7 +64,12 @@ export const SharePNLAnalyticsDialog = ({
       await copyBlobToClipboard(blob);
 
       triggerTwitterIntent({
-        text: `Check out my ${assetId} position on @dYdX\n\n#dYdX #${assetId}\n[paste image and delete this!]`,
+        text: `${stringGetter({
+          key: STRING_KEYS.TWEET_MARKET_POSITION,
+          params: {
+            MARKET: assetId,
+          },
+        })}\n\n#dYdX #${assetId}\n[${stringGetter({ key: STRING_KEYS.TWEET_PASTE_IMAGE_AND_DELETE_THIS })}]`,
         related: 'dYdX',
       });
 
@@ -80,7 +88,7 @@ export const SharePNLAnalyticsDialog = ({
     }
   }, [side]);
 
-  const unrealizedPnlIsNegative = MustBigNumber(unrealizedPnlPercent).isNegative();
+  const unrealizedPnlIsNegative = MustBigNumber(unrealizedPnl).isNegative();
 
   const [assetLeft, assetRight] = marketId.split('-');
 
@@ -94,36 +102,29 @@ export const SharePNLAnalyticsDialog = ({
           }
         }}
       >
-        <$ShareableCardSide>
-          <$ShareableCardTitle>
-            <$AssetIcon symbol={assetId} />
+        <div tw="flexColumn h-full">
+          <div tw="row mb-0.75 gap-0.5">
+            <AssetIcon symbol={assetId} tw="h-[1.625rem]" />
 
             <span>
-              <$ShareableCardTitleAsset>{assetLeft}</$ShareableCardTitleAsset>/{assetRight}
+              <span tw="text-color-text-2 font-base-bold">{assetLeft}</span>/{assetRight}
             </span>
 
             <Tag sign={sideSign}>{sideLabel}</Tag>
-          </$ShareableCardTitle>
+          </div>
 
           <$HighlightOutput
             isNegative={unrealizedPnlIsNegative}
-            type={OutputType.Percent}
-            value={unrealizedPnlPercent}
-            showSign={ShowSign.None}
-            slotLeft={
-              !unrealizedPnlIsNegative ? (
-                <$ArrowUpIcon iconName={IconName.Arrow} />
-              ) : (
-                <$ArrowDownIcon iconName={IconName.Arrow} />
-              )
-            }
+            type={OutputType.CompactFiat}
+            value={unrealizedPnl}
+            showSign={ShowSign.Both}
           />
 
-          <$Logo />
-        </$ShareableCardSide>
+          <LogoIcon tw="mt-auto h-auto w-[5.125rem]" />
+        </div>
 
         <div>
-          <$ShareableCardStats>
+          <div tw="grid grid-cols-[repeat(2,1fr)] gap-[1.125rem] gap-y-0.5">
             <$ShareableCardStatLabel>
               {stringGetter({ key: STRING_KEYS.ENTRY })}
             </$ShareableCardStatLabel>
@@ -143,7 +144,7 @@ export const SharePNLAnalyticsDialog = ({
               value={leverage}
               showSign={ShowSign.None}
             />
-          </$ShareableCardStats>
+          </div>
 
           <$QrCode
             size={68}
@@ -161,11 +162,12 @@ export const SharePNLAnalyticsDialog = ({
         </div>
       </$ShareableCard>
 
-      <$Actions>
+      <div tw="flex gap-1">
         <$Action
           action={ButtonAction.Secondary}
           slotLeft={<Icon iconName={IconName.Copy} />}
           onClick={() => {
+            track(AnalyticsEvents.SharePnlCopied({ asset: assetId }));
             convert();
           }}
           state={{
@@ -178,6 +180,7 @@ export const SharePNLAnalyticsDialog = ({
           action={ButtonAction.Primary}
           slotLeft={<Icon iconName={IconName.SocialX} />}
           onClick={() => {
+            track(AnalyticsEvents.SharePnlShared({ asset: assetId }));
             convertShare();
           }}
           state={{
@@ -186,19 +189,11 @@ export const SharePNLAnalyticsDialog = ({
         >
           {stringGetter({ key: STRING_KEYS.SHARE })}
         </$Action>
-      </$Actions>
+      </div>
     </Dialog>
   );
 };
-
-const $Actions = styled.div`
-  display: flex;
-  gap: 1rem;
-`;
-
-const $Action = styled(Button)`
-  flex: 1;
-`;
+const $Action = tw(Button)`flex-1`;
 
 const $ShareableCard = styled.div`
   ${layoutMixins.row}
@@ -210,48 +205,9 @@ const $ShareableCard = styled.div`
   padding: 1.75rem 1.25rem 1.25rem 1.25rem;
   border-radius: 0.5rem;
 `;
+const $ShareableCardStatLabel = tw.div`text-right text-color-text-0 font-base-bold`;
 
-const $ShareableCardSide = styled.div`
-  ${layoutMixins.flexColumn}
-  height: 100%;
-`;
-
-const $ShareableCardTitle = styled.div`
-  ${layoutMixins.row};
-  gap: 0.5rem;
-  font-weight: var(--fontWeight-medium);
-  margin-bottom: 0.75rem;
-`;
-
-const $ShareableCardTitleAsset = styled.span`
-  color: var(--color-white);
-`;
-
-const $ShareableCardStats = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.125rem;
-  row-gap: 0.5rem;
-`;
-
-const $ShareableCardStatLabel = styled.div`
-  font: var(--font-base-medium);
-  text-align: right;
-`;
-
-const $ShareableCardStatOutput = styled(Output)`
-  font: var(--font-base-medium);
-  color: var(--color-text-2);
-
-  * {
-    color: var(--color-text-2);
-  }
-`;
-
-const $AssetIcon = styled(AssetIcon)`
-  height: 1.625rem;
-`;
-
+const $ShareableCardStatOutput = tw(Output)`font-base-bold text-color-text-2`;
 const $QrCode = styled(QrCode)`
   width: 5.25rem;
   height: 5.25rem;
@@ -265,6 +221,8 @@ const $QrCode = styled(QrCode)`
 
 const $HighlightOutput = styled(Output)<{ isNegative?: boolean }>`
   font-size: 2.25rem;
+  font-weight: var(--fontWeight-bold);
+
   color: var(--output-sign-color);
   --secondary-item-color: currentColor;
   --output-sign-color: ${({ isNegative }) =>
@@ -273,22 +231,4 @@ const $HighlightOutput = styled(Output)<{ isNegative?: boolean }>`
         ? `var(--color-negative)`
         : `var(--color-positive)`
       : `var(--color-text-1)`};
-`;
-
-const $ArrowUpIcon = styled(Icon)<{ negative?: boolean }>`
-  font-size: 1.5rem;
-  margin-right: 0.5rem;
-  transform: rotateZ(-90deg);
-`;
-
-const $ArrowDownIcon = styled(Icon)<{ negative?: boolean }>`
-  font-size: 1.5rem;
-  margin-right: 0.5rem;
-  transform: rotateZ(90deg);
-`;
-
-const $Logo = styled(LogoIcon)`
-  width: 5.125rem;
-  margin-top: auto;
-  height: auto;
 `;

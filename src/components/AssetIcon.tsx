@@ -7,6 +7,7 @@ export type AssetSymbol = keyof typeof assetIcons;
 const assetIcons = {
   '1CAT': '/apps/dydx-v4/currencies/1cat.png',
   '1INCH': '/apps/dydx-v4/currencies/1inch.png',
+  A8: '/apps/dydx-v4/currencies/a8.png',
   AAVE: '/apps/dydx-v4/currencies/aave.png',
   ABBC: '/apps/dydx-v4/currencies/abbc.png',
   ACA: '/apps/dydx-v4/currencies/aca.png',
@@ -17,7 +18,9 @@ const assetIcons = {
   ADA: '/apps/dydx-v4/currencies/ada.png',
   ADX: '/apps/dydx-v4/currencies/adx.png',
   AERGO: '/apps/dydx-v4/currencies/aergo.png',
+  AERO: '/apps/dydx-v4/currencies/aero.png',
   AEVO: '/apps/dydx-v4/currencies/aevo.png',
+  AFG: '/apps/dydx-v4/currencies/afg.png',
   AGI: '/apps/dydx-v4/currencies/agi.png',
   AGIX: '/apps/dydx-v4/currencies/agix.png',
   AGLD: '/apps/dydx-v4/currencies/agld.png',
@@ -35,10 +38,13 @@ const assetIcons = {
   ALT: '/apps/dydx-v4/currencies/alt.png',
   AMB: '/apps/dydx-v4/currencies/amb.png',
   AMP: '/apps/dydx-v4/currencies/amp.png',
+  AMU: '/apps/dydx-v4/currencies/amu.png',
+  ANALOS: '/apps/dydx-v4/currencies/analos.png',
   ANKR: '/apps/dydx-v4/currencies/ankr.png',
   ANT: '/apps/dydx-v4/currencies/ant.png',
   APE: '/apps/dydx-v4/currencies/ape.png',
   API3: '/apps/dydx-v4/currencies/api3.png',
+  APP: '/apps/dydx-v4/currencies/app.png',
   APT: '/apps/dydx-v4/currencies/apt.png',
   AR: '/apps/dydx-v4/currencies/ar.png',
   ARB: '/apps/dydx-v4/currencies/arb.png',
@@ -47,16 +53,20 @@ const assetIcons = {
   ARK: '/apps/dydx-v4/currencies/ark.png',
   ARKM: '/apps/dydx-v4/currencies/arkm.png',
   ARPA: '/apps/dydx-v4/currencies/arpa.png',
+  ARTY: '/apps/dydx-v4/currencies/arty.png',
   AST: '/apps/dydx-v4/currencies/ast.png',
   ASTR: '/apps/dydx-v4/currencies/astr.png',
   ATA: '/apps/dydx-v4/currencies/ata.png',
+  ATH: '/apps/dydx-v4/currencies/ath.png',
   ATM: '/apps/dydx-v4/currencies/atm.png',
   ATOM: '/apps/dydx-v4/currencies/atom.png',
   AUCTION: '/apps/dydx-v4/currencies/auction.png',
   AUDIO: '/apps/dydx-v4/currencies/audio.png',
+  AURA: '/apps/dydx-v4/currencies/aura.png',
   AURORA: '/apps/dydx-v4/currencies/aurora.png',
   AURY: '/apps/dydx-v4/currencies/aury.png',
   AVA: '/apps/dydx-v4/currencies/ava.png',
+  AVAIL: '/apps/dydx-v4/currencies/avail.png',
   AVAX: '/apps/dydx-v4/currencies/avax.png',
   AXL: '/apps/dydx-v4/currencies/axl.png',
   AXS: '/apps/dydx-v4/currencies/axs.png',
@@ -68,15 +78,20 @@ const assetIcons = {
   BAND: '/apps/dydx-v4/currencies/band.png',
   BAR: '/apps/dydx-v4/currencies/bar.png',
   BAT: '/apps/dydx-v4/currencies/bat.png',
+  BBL: '/apps/dydx-v4/currencies/bbl.png',
   BCH: '/apps/dydx-v4/currencies/bch.png',
   BCUT: '/apps/dydx-v4/currencies/bcut.png',
   BEAM: '/apps/dydx-v4/currencies/beam.png',
+  BEER: '/apps/dydx-v4/currencies/beer.png',
   BEL: '/apps/dydx-v4/currencies/bel.png',
+  BENDOG: '/apps/dydx-v4/currencies/bendog.png',
   BETH: '/apps/dydx-v4/currencies/beth.png',
   BFC: '/apps/dydx-v4/currencies/bfc.png',
   BICO: '/apps/dydx-v4/currencies/bico.png',
   BIGTIME: '/apps/dydx-v4/currencies/bigtime.png',
+  BIT: '/apps/dydx-v4/currencies/bit.png',
   BLAST: '/apps/dydx-v4/currencies/blast.png',
+  BLOCK: '/apps/dydx-v4/currencies/block.png',
   BLOK: '/apps/dydx-v4/currencies/blok.png',
   BLUR: '/apps/dydx-v4/currencies/blur.png',
   BLZ: '/apps/dydx-v4/currencies/blz.png',
@@ -93,17 +108,26 @@ const assetIcons = {
   BORING: '/apps/dydx-v4/currencies/boring.png',
   BORK: '/apps/dydx-v4/currencies/bork.png',
   BOSON: '/apps/dydx-v4/currencies/boson.png',
+  BRAINLET: '/apps/dydx-v4/currencies/brainlet.png',
+  BRAWL: '/apps/dydx-v4/currencies/brawl.png',
   BRETT: '/apps/dydx-v4/currencies/brett.png',
+  BRL: '/apps/dydx-v4/currencies/brl.png',
   BRISE: '/apps/dydx-v4/currencies/brise.png',
   BRWL: '/apps/dydx-v4/currencies/brwl.png',
   BSV: '/apps/dydx-v4/currencies/bsv.png',
   BSW: '/apps/dydx-v4/currencies/bsw.png',
   BTC: '/apps/dydx-v4/currencies/btc.png',
   BTT: '/apps/dydx-v4/currencies/btt.png',
+  BUBBLE: '/apps/dydx-v4/currencies/bubble.png',
+  BUFFI: '/apps/dydx-v4/currencies/buffi.png',
+  BURGER: '/apps/dydx-v4/currencies/burger.png',
   C98: '/apps/dydx-v4/currencies/c98.png',
   CAKE: '/apps/dydx-v4/currencies/cake.png',
+  CANDY: '/apps/dydx-v4/currencies/candy.png',
+  CAT: '/apps/dydx-v4/currencies/cat.png',
   CBK: '/apps/dydx-v4/currencies/cbk.png',
   CEEK: '/apps/dydx-v4/currencies/ceek.png',
+  CEL: '/apps/dydx-v4/currencies/cel.png',
   CELO: '/apps/dydx-v4/currencies/celo.png',
   CELR: '/apps/dydx-v4/currencies/celr.png',
   CERE: '/apps/dydx-v4/currencies/cere.png',
@@ -111,14 +135,18 @@ const assetIcons = {
   CFG: '/apps/dydx-v4/currencies/cfg.png',
   CFX: '/apps/dydx-v4/currencies/cfx.png',
   CGPT: '/apps/dydx-v4/currencies/cgpt.png',
+  CHAT: '/apps/dydx-v4/currencies/chat.png',
   CHR: '/apps/dydx-v4/currencies/chr.png',
   CHZ: '/apps/dydx-v4/currencies/chz.png',
   CITY: '/apps/dydx-v4/currencies/city.png',
   CKB: '/apps/dydx-v4/currencies/ckb.png',
+  CLOUD: '/apps/dydx-v4/currencies/cloud.png',
   COMBO: '/apps/dydx-v4/currencies/combo.png',
   COMP: '/apps/dydx-v4/currencies/comp.png',
+  COOKIE: '/apps/dydx-v4/currencies/cookie.png',
   COQ: '/apps/dydx-v4/currencies/coq.png',
   CORE: '/apps/dydx-v4/currencies/core.png',
+  COST: '/apps/dydx-v4/currencies/cost.png',
   COTI: '/apps/dydx-v4/currencies/coti.png',
   CPOOL: '/apps/dydx-v4/currencies/cpool.png',
   CQT: '/apps/dydx-v4/currencies/cqt.png',
@@ -127,6 +155,7 @@ const assetIcons = {
   CRPT: '/apps/dydx-v4/currencies/crpt.png',
   CRV: '/apps/dydx-v4/currencies/crv.png',
   CSPR: '/apps/dydx-v4/currencies/cspr.png',
+  CTA: '/apps/dydx-v4/currencies/cta.png',
   CTC: '/apps/dydx-v4/currencies/ctc.png',
   CTK: '/apps/dydx-v4/currencies/ctk.png',
   CTSI: '/apps/dydx-v4/currencies/ctsi.png',
@@ -139,7 +168,9 @@ const assetIcons = {
   CVP: '/apps/dydx-v4/currencies/cvp.png',
   CVX: '/apps/dydx-v4/currencies/cvx.png',
   CWAR: '/apps/dydx-v4/currencies/cwar.png',
+  CXT: '/apps/dydx-v4/currencies/cxt.png',
   CYBER: '/apps/dydx-v4/currencies/cyber.png',
+  DADDY: '/apps/dydx-v4/currencies/daddy.png',
   DAG: '/apps/dydx-v4/currencies/dag.png',
   DAI: '/apps/dydx-v4/currencies/dai.png',
   DAO: '/apps/dydx-v4/currencies/dao.png',
@@ -149,6 +180,8 @@ const assetIcons = {
   DC: '/apps/dydx-v4/currencies/dc.png',
   DCK: '/apps/dydx-v4/currencies/dck.png',
   DCR: '/apps/dydx-v4/currencies/dcr.png',
+  DECHAT: '/apps/dydx-v4/currencies/dechat.png',
+  DEFI: '/apps/dydx-v4/currencies/defi.png',
   DEGEN: '/apps/dydx-v4/currencies/degen.png',
   DEGO: '/apps/dydx-v4/currencies/dego.png',
   DENT: '/apps/dydx-v4/currencies/dent.png',
@@ -163,6 +196,8 @@ const assetIcons = {
   DMAIL: '/apps/dydx-v4/currencies/dmail.png',
   DODO: '/apps/dydx-v4/currencies/dodo.png',
   DOGE: '/apps/dydx-v4/currencies/doge.png',
+  DOGS: '/apps/dydx-v4/currencies/dogs.png',
+  DOP: '/apps/dydx-v4/currencies/dop.png',
   DORA: '/apps/dydx-v4/currencies/dora.png',
   DOSE: '/apps/dydx-v4/currencies/dose.png',
   DOT: '/apps/dydx-v4/currencies/dot.png',
@@ -193,11 +228,14 @@ const assetIcons = {
   ETHFI: '/apps/dydx-v4/currencies/ethfi.png',
   ETHW: '/apps/dydx-v4/currencies/ethw.png',
   EUL: '/apps/dydx-v4/currencies/eul.png',
+  EUR: '/apps/dydx-v4/currencies/eur.png',
   EURC: '/apps/dydx-v4/currencies/eurc.png',
   EVER: '/apps/dydx-v4/currencies/ever.png',
   EWT: '/apps/dydx-v4/currencies/ewt.png',
+  FALX: '/apps/dydx-v4/currencies/falx.png',
   FARM: '/apps/dydx-v4/currencies/farm.png',
   FET: '/apps/dydx-v4/currencies/fet.png',
+  FIDA: '/apps/dydx-v4/currencies/fida.png',
   FIL: '/apps/dydx-v4/currencies/fil.png',
   FIO: '/apps/dydx-v4/currencies/fio.png',
   FIRE: '/apps/dydx-v4/currencies/fire.png',
@@ -220,6 +258,8 @@ const assetIcons = {
   FURY: '/apps/dydx-v4/currencies/fury.png',
   FX: '/apps/dydx-v4/currencies/fx.png',
   FXS: '/apps/dydx-v4/currencies/fxs.png',
+  G: '/apps/dydx-v4/currencies/g.png',
+  G3: '/apps/dydx-v4/currencies/g3.png',
   GAL: '/apps/dydx-v4/currencies/gal.png',
   GALA: '/apps/dydx-v4/currencies/gala.png',
   GARI: '/apps/dydx-v4/currencies/gari.png',
@@ -228,21 +268,27 @@ const assetIcons = {
   GHST: '/apps/dydx-v4/currencies/ghst.png',
   GHX: '/apps/dydx-v4/currencies/ghx.png',
   GIGA: '/apps/dydx-v4/currencies/giga.png',
+  GINNAN: '/apps/dydx-v4/currencies/ginnan.png',
   GLM: '/apps/dydx-v4/currencies/glm.png',
   GLMR: '/apps/dydx-v4/currencies/glmr.png',
   GME: '/apps/dydx-v4/currencies/gme.png',
+  GMEE: '/apps/dydx-v4/currencies/gmee.png',
+  GMRX: '/apps/dydx-v4/currencies/gmrx.png',
   GMT: '/apps/dydx-v4/currencies/gmt.png',
   GMX: '/apps/dydx-v4/currencies/gmx.png',
   GNO: '/apps/dydx-v4/currencies/gno.png',
   GNS: '/apps/dydx-v4/currencies/gns.png',
   GOAL: '/apps/dydx-v4/currencies/goal.png',
   GODS: '/apps/dydx-v4/currencies/gods.png',
+  GOL: '/apps/dydx-v4/currencies/gol.png',
   GRAIL: '/apps/dydx-v4/currencies/grail.png',
+  GRAPE: '/apps/dydx-v4/currencies/grape.png',
   GRT: '/apps/dydx-v4/currencies/grt.png',
   GST: '/apps/dydx-v4/currencies/gst.png',
   GTAI: '/apps/dydx-v4/currencies/gtai.png',
   GTC: '/apps/dydx-v4/currencies/gtc.png',
   GUAC: '/apps/dydx-v4/currencies/guac.png',
+  GUMMY: '/apps/dydx-v4/currencies/gummy.png',
   GUSD: '/apps/dydx-v4/currencies/gusd.png',
   H2O: '/apps/dydx-v4/currencies/h2o.png',
   HAMMY: '/apps/dydx-v4/currencies/hammy.png',
@@ -250,27 +296,33 @@ const assetIcons = {
   HARD: '/apps/dydx-v4/currencies/hard.png',
   HBAR: '/apps/dydx-v4/currencies/hbar.png',
   HBB: '/apps/dydx-v4/currencies/hbb.png',
+  HEGE: '/apps/dydx-v4/currencies/hege.png',
   HFT: '/apps/dydx-v4/currencies/hft.png',
   HIFI: '/apps/dydx-v4/currencies/hifi.png',
   HIGH: '/apps/dydx-v4/currencies/high.png',
   HIVE: '/apps/dydx-v4/currencies/hive.png',
+  HLG: '/apps/dydx-v4/currencies/hlg.png',
+  HNT: '/apps/dydx-v4/currencies/hnt.png',
   HOOK: '/apps/dydx-v4/currencies/hook.png',
   HOT: '/apps/dydx-v4/currencies/hot.png',
   HOTCROSS: '/apps/dydx-v4/currencies/hotcross.png',
+  HTX: '/apps/dydx-v4/currencies/htx.png',
   ICE: '/apps/dydx-v4/currencies/ice.png',
   ICP: '/apps/dydx-v4/currencies/icp.png',
   ICX: '/apps/dydx-v4/currencies/icx.png',
   ID: '/apps/dydx-v4/currencies/id.png',
-  IO: '/apps/dydx-v4/currencies/io.png',
   IDEX: '/apps/dydx-v4/currencies/idex.png',
   IGU: '/apps/dydx-v4/currencies/igu.png',
   ILV: '/apps/dydx-v4/currencies/ilv.png',
   IMX: '/apps/dydx-v4/currencies/imx.png',
   INJ: '/apps/dydx-v4/currencies/inj.png',
+  INSP: '/apps/dydx-v4/currencies/insp.png',
+  IO: '/apps/dydx-v4/currencies/io.png',
   IOST: '/apps/dydx-v4/currencies/iost.png',
   IOTA: '/apps/dydx-v4/currencies/iota.png',
   IOTX: '/apps/dydx-v4/currencies/iotx.png',
   IQ: '/apps/dydx-v4/currencies/iq.png',
+  IRL: '/apps/dydx-v4/currencies/irl.png',
   IZI: '/apps/dydx-v4/currencies/izi.png',
   JASMY: '/apps/dydx-v4/currencies/jasmy.png',
   JITOSOL: '/apps/dydx-v4/currencies/jitosol.png',
@@ -298,6 +350,7 @@ const assetIcons = {
   KP3R: '/apps/dydx-v4/currencies/kp3r.png',
   KRL: '/apps/dydx-v4/currencies/krl.png',
   KSM: '/apps/dydx-v4/currencies/ksm.png',
+  L3: '/apps/dydx-v4/currencies/l3.png',
   LADYS: '/apps/dydx-v4/currencies/ladys.png',
   LAI: '/apps/dydx-v4/currencies/lai.png',
   LAMB: '/apps/dydx-v4/currencies/lamb.png',
@@ -306,6 +359,7 @@ const assetIcons = {
   LBR: '/apps/dydx-v4/currencies/lbr.png',
   LCX: '/apps/dydx-v4/currencies/lcx.png',
   LDO: '/apps/dydx-v4/currencies/ldo.png',
+  LENDS: '/apps/dydx-v4/currencies/lends.png',
   LEVER: '/apps/dydx-v4/currencies/lever.png',
   LFT: '/apps/dydx-v4/currencies/lft.png',
   LHINU: '/apps/dydx-v4/currencies/lhinu.png',
@@ -313,8 +367,10 @@ const assetIcons = {
   LINA: '/apps/dydx-v4/currencies/lina.png',
   LING: '/apps/dydx-v4/currencies/ling.png',
   LINK: '/apps/dydx-v4/currencies/link.png',
+  LISTA: '/apps/dydx-v4/currencies/lista.png',
   LIT: '/apps/dydx-v4/currencies/lit.png',
   LITH: '/apps/dydx-v4/currencies/lith.png',
+  LL: '/apps/dydx-v4/currencies/ll.png',
   LMWR: '/apps/dydx-v4/currencies/lmwr.png',
   LOKA: '/apps/dydx-v4/currencies/loka.png',
   LOOKS: '/apps/dydx-v4/currencies/looks.png',
@@ -322,12 +378,14 @@ const assetIcons = {
   LPT: '/apps/dydx-v4/currencies/lpt.png',
   LQTY: '/apps/dydx-v4/currencies/lqty.png',
   LRC: '/apps/dydx-v4/currencies/lrc.png',
+  LRDS: '/apps/dydx-v4/currencies/lrds.png',
   LSK: '/apps/dydx-v4/currencies/lsk.png',
   LTC: '/apps/dydx-v4/currencies/ltc.png',
   LTO: '/apps/dydx-v4/currencies/lto.png',
   LYX: '/apps/dydx-v4/currencies/lyx.png',
   MAGIC: '/apps/dydx-v4/currencies/magic.png',
   MANA: '/apps/dydx-v4/currencies/mana.png',
+  MANEKI: '/apps/dydx-v4/currencies/maneki.png',
   MANTA: '/apps/dydx-v4/currencies/manta.png',
   MAPO: '/apps/dydx-v4/currencies/mapo.png',
   MASA: '/apps/dydx-v4/currencies/masa.png',
@@ -335,6 +393,7 @@ const assetIcons = {
   MATIC: '/apps/dydx-v4/currencies/matic.png',
   MAV: '/apps/dydx-v4/currencies/mav.png',
   MAVIA: '/apps/dydx-v4/currencies/mavia.png',
+  MAX: '/apps/dydx-v4/currencies/max.png',
   MBL: '/apps/dydx-v4/currencies/mbl.png',
   MBOX: '/apps/dydx-v4/currencies/mbox.png',
   MBX: '/apps/dydx-v4/currencies/mbx.png',
@@ -363,28 +422,36 @@ const assetIcons = {
   MSN: '/apps/dydx-v4/currencies/msn.png',
   MSOL: '/apps/dydx-v4/currencies/msol.png',
   MTL: '/apps/dydx-v4/currencies/mtl.png',
+  MUBI: '/apps/dydx-v4/currencies/mubi.png',
+  MUMU: '/apps/dydx-v4/currencies/mumu.png',
   MV: '/apps/dydx-v4/currencies/mv.png',
   MVL: '/apps/dydx-v4/currencies/mvl.png',
   MX: '/apps/dydx-v4/currencies/mx.png',
   MXC: '/apps/dydx-v4/currencies/mxc.png',
+  MXM: '/apps/dydx-v4/currencies/mxm.png',
   MYRIA: '/apps/dydx-v4/currencies/myria.png',
   MYRO: '/apps/dydx-v4/currencies/myro.png',
   NAKA: '/apps/dydx-v4/currencies/naka.png',
   NAVX: '/apps/dydx-v4/currencies/navx.png',
   NEAR: '/apps/dydx-v4/currencies/near.png',
+  NEIRO: '/apps/dydx-v4/currencies/neiro.png',
   NEO: '/apps/dydx-v4/currencies/neo.png',
   NEON: '/apps/dydx-v4/currencies/neon.png',
   NEXO: '/apps/dydx-v4/currencies/nexo.png',
   NFP: '/apps/dydx-v4/currencies/nfp.png',
   NFT: '/apps/dydx-v4/currencies/nft.png',
   NGL: '/apps/dydx-v4/currencies/ngl.png',
+  NIBI: '/apps/dydx-v4/currencies/nibi.png',
   NKN: '/apps/dydx-v4/currencies/nkn.png',
+  NLK: '/apps/dydx-v4/currencies/nlk.png',
   NMR: '/apps/dydx-v4/currencies/nmr.png',
   NODL: '/apps/dydx-v4/currencies/nodl.png',
   NOIA: '/apps/dydx-v4/currencies/noia.png',
   NOS: '/apps/dydx-v4/currencies/nos.png',
   NOT: '/apps/dydx-v4/currencies/not.png',
+  NRN: '/apps/dydx-v4/currencies/nrn.png',
   NTRN: '/apps/dydx-v4/currencies/ntrn.png',
+  NUB: '/apps/dydx-v4/currencies/nub.png',
   NULS: '/apps/dydx-v4/currencies/nuls.png',
   NUM: '/apps/dydx-v4/currencies/num.png',
   NYAN: '/apps/dydx-v4/currencies/nyan.png',
@@ -403,6 +470,7 @@ const assetIcons = {
   ONG: '/apps/dydx-v4/currencies/ong.png',
   ONT: '/apps/dydx-v4/currencies/ont.png',
   OP: '/apps/dydx-v4/currencies/op.png',
+  OPEN: '/apps/dydx-v4/currencies/open.png',
   OPUL: '/apps/dydx-v4/currencies/opul.png',
   ORAI: '/apps/dydx-v4/currencies/orai.png',
   ORB: '/apps/dydx-v4/currencies/orb.png',
@@ -415,19 +483,25 @@ const assetIcons = {
   PAJAMAS: '/apps/dydx-v4/currencies/pajamas.png',
   PAXG: '/apps/dydx-v4/currencies/paxg.png',
   PBR: '/apps/dydx-v4/currencies/pbr.png',
+  PBUX: '/apps/dydx-v4/currencies/pbux.png',
   PCI: '/apps/dydx-v4/currencies/pci.png',
   PDA: '/apps/dydx-v4/currencies/pda.png',
   PENDLE: '/apps/dydx-v4/currencies/pendle.png',
+  PENG: '/apps/dydx-v4/currencies/peng.png',
   PEOPLE: '/apps/dydx-v4/currencies/people.png',
   PEPE: '/apps/dydx-v4/currencies/pepe.png',
   PERP: '/apps/dydx-v4/currencies/perp.png',
+  PGN: '/apps/dydx-v4/currencies/pgn.png',
   PHA: '/apps/dydx-v4/currencies/pha.png',
   PHB: '/apps/dydx-v4/currencies/phb.png',
   PIP: '/apps/dydx-v4/currencies/pip.png',
+  PIRATE: '/apps/dydx-v4/currencies/pirate.png',
   PIXEL: '/apps/dydx-v4/currencies/pixel.png',
+  PIXFI: '/apps/dydx-v4/currencies/pixfi.png',
   PLU: '/apps/dydx-v4/currencies/plu.png',
   PNG: '/apps/dydx-v4/currencies/png.png',
   POKT: '/apps/dydx-v4/currencies/pokt.png',
+  POL: '/apps/dydx-v4/currencies/pol.png',
   POLC: '/apps/dydx-v4/currencies/polc.png',
   POLS: '/apps/dydx-v4/currencies/pols.png',
   POLYX: '/apps/dydx-v4/currencies/polyx.png',
@@ -441,6 +515,7 @@ const assetIcons = {
   PROM: '/apps/dydx-v4/currencies/prom.png',
   PRQ: '/apps/dydx-v4/currencies/prq.png',
   PSG: '/apps/dydx-v4/currencies/psg.png',
+  PSTAKE: '/apps/dydx-v4/currencies/pstake.png',
   PUMLX: '/apps/dydx-v4/currencies/pumlx.png',
   PUNDIX: '/apps/dydx-v4/currencies/pundix.png',
   PUNDU: '/apps/dydx-v4/currencies/pundu.png',
@@ -451,6 +526,7 @@ const assetIcons = {
   QI: '/apps/dydx-v4/currencies/qi.png',
   QKC: '/apps/dydx-v4/currencies/qkc.png',
   QNT: '/apps/dydx-v4/currencies/qnt.png',
+  QORPO: '/apps/dydx-v4/currencies/qorpo.png',
   QTUM: '/apps/dydx-v4/currencies/qtum.png',
   RACA: '/apps/dydx-v4/currencies/raca.png',
   RAD: '/apps/dydx-v4/currencies/rad.png',
@@ -463,13 +539,16 @@ const assetIcons = {
   REEF: '/apps/dydx-v4/currencies/reef.png',
   REI: '/apps/dydx-v4/currencies/rei.png',
   REN: '/apps/dydx-v4/currencies/ren.png',
+  RENDER: '/apps/dydx-v4/currencies/render.png',
   REQ: '/apps/dydx-v4/currencies/req.png',
+  RETARDIO: '/apps/dydx-v4/currencies/retardio.png',
   REVV: '/apps/dydx-v4/currencies/revv.png',
   REZ: '/apps/dydx-v4/currencies/rez.png',
   RIF: '/apps/dydx-v4/currencies/rif.png',
   RIO: '/apps/dydx-v4/currencies/rio.png',
   RLC: '/apps/dydx-v4/currencies/rlc.png',
   RNDR: '/apps/dydx-v4/currencies/rndr.png',
+  RNT: '/apps/dydx-v4/currencies/rnt.png',
   ROOT: '/apps/dydx-v4/currencies/root.png',
   ROSE: '/apps/dydx-v4/currencies/rose.png',
   ROUTE: '/apps/dydx-v4/currencies/route.png',
@@ -482,6 +561,7 @@ const assetIcons = {
   SAGA: '/apps/dydx-v4/currencies/saga.png',
   SAMO: '/apps/dydx-v4/currencies/samo.png',
   SAND: '/apps/dydx-v4/currencies/sand.png',
+  SAROS: '/apps/dydx-v4/currencies/saros.png',
   SATS: '/apps/dydx-v4/currencies/sats.png',
   SC: '/apps/dydx-v4/currencies/sc.png',
   SCA: '/apps/dydx-v4/currencies/sca.png',
@@ -490,6 +570,7 @@ const assetIcons = {
   SDAO: '/apps/dydx-v4/currencies/sdao.png',
   SEAM: '/apps/dydx-v4/currencies/seam.png',
   SEI: '/apps/dydx-v4/currencies/sei.png',
+  SELFIE: '/apps/dydx-v4/currencies/selfie.png',
   SFP: '/apps/dydx-v4/currencies/sfp.png',
   SFUND: '/apps/dydx-v4/currencies/sfund.png',
   SGB: '/apps/dydx-v4/currencies/sgb.png',
@@ -500,7 +581,9 @@ const assetIcons = {
   SIS: '/apps/dydx-v4/currencies/sis.png',
   SKL: '/apps/dydx-v4/currencies/skl.png',
   SLERF: '/apps/dydx-v4/currencies/slerf.png',
+  SLOTH: '/apps/dydx-v4/currencies/sloth.png',
   SLP: '/apps/dydx-v4/currencies/slp.png',
+  SMOLE: '/apps/dydx-v4/currencies/smole.png',
   SNT: '/apps/dydx-v4/currencies/snt.png',
   SNX: '/apps/dydx-v4/currencies/snx.png',
   SOL: '/apps/dydx-v4/currencies/sol.png',
@@ -513,6 +596,7 @@ const assetIcons = {
   SQR: '/apps/dydx-v4/currencies/sqr.png',
   SRM: '/apps/dydx-v4/currencies/srm.png',
   SSV: '/apps/dydx-v4/currencies/ssv.png',
+  STC: '/apps/dydx-v4/currencies/stc.png',
   STEEM: '/apps/dydx-v4/currencies/steem.png',
   STG: '/apps/dydx-v4/currencies/stg.png',
   STORJ: '/apps/dydx-v4/currencies/storj.png',
@@ -525,6 +609,7 @@ const assetIcons = {
   SUIA: '/apps/dydx-v4/currencies/suia.png',
   SUKU: '/apps/dydx-v4/currencies/suku.png',
   SUN: '/apps/dydx-v4/currencies/sun.png',
+  SUNDOG: '/apps/dydx-v4/currencies/sundog.png',
   SUPER: '/apps/dydx-v4/currencies/super.png',
   SUSHI: '/apps/dydx-v4/currencies/sushi.png',
   SWEAT: '/apps/dydx-v4/currencies/sweat.png',
@@ -532,11 +617,12 @@ const assetIcons = {
   SXP: '/apps/dydx-v4/currencies/sxp.png',
   SYLO: '/apps/dydx-v4/currencies/sylo.png',
   SYN: '/apps/dydx-v4/currencies/syn.png',
+  SYNT: '/apps/dydx-v4/currencies/synt.png',
   SYS: '/apps/dydx-v4/currencies/sys.png',
   T: '/apps/dydx-v4/currencies/t.png',
+  TAIKO: '/apps/dydx-v4/currencies/taiko.png',
   TAMA: '/apps/dydx-v4/currencies/tama.png',
   TAO: '/apps/dydx-v4/currencies/tao.png',
-  TAIKO: '/apps/dydx-v4/currencies/taiko.png',
   TAVA: '/apps/dydx-v4/currencies/tava.png',
   TEL: '/apps/dydx-v4/currencies/tel.png',
   TENET: '/apps/dydx-v4/currencies/tenet.png',
@@ -549,20 +635,25 @@ const assetIcons = {
   TNSR: '/apps/dydx-v4/currencies/tnsr.png',
   TOMI: '/apps/dydx-v4/currencies/tomi.png',
   TON: '/apps/dydx-v4/currencies/ton.png',
+  TOOKER: '/apps/dydx-v4/currencies/tooker.png',
   TRAC: '/apps/dydx-v4/currencies/trac.png',
   TRB: '/apps/dydx-v4/currencies/trb.png',
   TREMP: '/apps/dydx-v4/currencies/tremp.png',
   TRIBE: '/apps/dydx-v4/currencies/tribe.png',
   TRU: '/apps/dydx-v4/currencies/tru.png',
   TRUMP: '/apps/dydx-v4/currencies/trump.png',
+  TRUMPWIN: '/apps/dydx-v4/currencies/trumpwin.png',
   TRVL: '/apps/dydx-v4/currencies/trvl.png',
   TRX: '/apps/dydx-v4/currencies/trx.png',
+  TRY: '/apps/dydx-v4/currencies/try.png',
+  TST: '/apps/dydx-v4/currencies/tst.png',
   TT: '/apps/dydx-v4/currencies/tt.png',
   TURBO: '/apps/dydx-v4/currencies/turbo.png',
   TURBOS: '/apps/dydx-v4/currencies/turbos.png',
   TUSD: '/apps/dydx-v4/currencies/tusd.png',
   TWT: '/apps/dydx-v4/currencies/twt.png',
   UFT: '/apps/dydx-v4/currencies/uft.png',
+  ULTI: '/apps/dydx-v4/currencies/ulti.png',
   UMA: '/apps/dydx-v4/currencies/uma.png',
   UNB: '/apps/dydx-v4/currencies/unb.png',
   UNFI: '/apps/dydx-v4/currencies/unfi.png',
@@ -576,6 +667,7 @@ const assetIcons = {
   USDT: '/apps/dydx-v4/currencies/usdt.png',
   USTC: '/apps/dydx-v4/currencies/ustc.png',
   UTK: '/apps/dydx-v4/currencies/utk.png',
+  UXLINK: '/apps/dydx-v4/currencies/uxlink.png',
   VANRY: '/apps/dydx-v4/currencies/vanry.png',
   VEGA: '/apps/dydx-v4/currencies/vega.png',
   VELA: '/apps/dydx-v4/currencies/vela.png',
@@ -597,6 +689,7 @@ const assetIcons = {
   VSYS: '/apps/dydx-v4/currencies/vsys.png',
   VTHO: '/apps/dydx-v4/currencies/vtho.png',
   W: '/apps/dydx-v4/currencies/w.png',
+  WAFFLES: '/apps/dydx-v4/currencies/waffles.png',
   WAN: '/apps/dydx-v4/currencies/wan.png',
   WAVES: '/apps/dydx-v4/currencies/waves.png',
   WAXP: '/apps/dydx-v4/currencies/waxp.png',
@@ -613,9 +706,13 @@ const assetIcons = {
   WLD: '/apps/dydx-v4/currencies/wld.png',
   WLKN: '/apps/dydx-v4/currencies/wlkn.png',
   WMT: '/apps/dydx-v4/currencies/wmt.png',
+  WOLF: '/apps/dydx-v4/currencies/wolf.png',
   WOO: '/apps/dydx-v4/currencies/woo.png',
   WRX: '/apps/dydx-v4/currencies/wrx.png',
+  WSDM: '/apps/dydx-v4/currencies/wsdm.png',
   WSM: '/apps/dydx-v4/currencies/wsm.png',
+  WSTETH: '/apps/dydx-v4/currencies/wsteth.png',
+  WUF: '/apps/dydx-v4/currencies/wuf.png',
   WWY: '/apps/dydx-v4/currencies/wwy.png',
   WXT: '/apps/dydx-v4/currencies/wxt.png',
   WYNN: '/apps/dydx-v4/currencies/wynn.png',
@@ -636,6 +733,7 @@ const assetIcons = {
   XPLA: '/apps/dydx-v4/currencies/xpla.png',
   XPR: '/apps/dydx-v4/currencies/xpr.png',
   XPRT: '/apps/dydx-v4/currencies/xprt.png',
+  XR: '/apps/dydx-v4/currencies/xr.png',
   XRD: '/apps/dydx-v4/currencies/xrd.png',
   XRP: '/apps/dydx-v4/currencies/xrp.png',
   XTM: '/apps/dydx-v4/currencies/xtm.png',
@@ -644,20 +742,862 @@ const assetIcons = {
   XWG: '/apps/dydx-v4/currencies/xwg.png',
   XYM: '/apps/dydx-v4/currencies/xym.png',
   XYO: '/apps/dydx-v4/currencies/xyo.png',
+  XZK: '/apps/dydx-v4/currencies/xzk.png',
   YFI: '/apps/dydx-v4/currencies/yfi.png',
   YGG: '/apps/dydx-v4/currencies/ygg.png',
+  ZACK: '/apps/dydx-v4/currencies/zack.png',
+  ZBCN: '/apps/dydx-v4/currencies/zbcn.png',
   ZCX: '/apps/dydx-v4/currencies/zcx.png',
   ZEC: '/apps/dydx-v4/currencies/zec.png',
+  ZELIX: '/apps/dydx-v4/currencies/zelix.png',
   ZEN: '/apps/dydx-v4/currencies/zen.png',
   ZEND: '/apps/dydx-v4/currencies/zend.png',
+  ZENT: '/apps/dydx-v4/currencies/zent.png',
   ZERO: '/apps/dydx-v4/currencies/zero.png',
   ZETA: '/apps/dydx-v4/currencies/zeta.png',
   ZEUS: '/apps/dydx-v4/currencies/zeus.png',
+  ZEX: '/apps/dydx-v4/currencies/zex.png',
+  ZIG: '/apps/dydx-v4/currencies/zig.png',
   ZIL: '/apps/dydx-v4/currencies/zil.png',
   ZK: '/apps/dydx-v4/currencies/zk.png',
   ZKF: '/apps/dydx-v4/currencies/zkf.png',
+  ZKJ: '/apps/dydx-v4/currencies/zkj.png',
+  ZKL: '/apps/dydx-v4/currencies/zkl.png',
   ZRO: '/apps/dydx-v4/currencies/zro.png',
   ZRX: '/apps/dydx-v4/currencies/zrx.png',
+  '00': '/apps/dydx-v4/currencies/00.png',
+  '0DOG': '/apps/dydx-v4/currencies/0dog.png',
+  '1000SATS': '/apps/dydx-v4/currencies/1000sats.png',
+  '10SET': '/apps/dydx-v4/currencies/10set.png',
+  '1CAT,UNISWAP_V3,0X508E00D5CEF397B02D260D035E5EE80775E4C821':
+    '/apps/dydx-v4/currencies/1cat,uniswap_v3,0x508e00d5cef397b02d260d035e5ee80775e4c821.png',
+  '1SOL': '/apps/dydx-v4/currencies/1sol.png',
+  '5IRE': '/apps/dydx-v4/currencies/5ire.png',
+  AARK: '/apps/dydx-v4/currencies/aark.png',
+  'AART,RAYDIUM,F3NEFJBCEJYBTDREJUI1T9DPH5DBGPKKQ7U2GAAMXS5B':
+    '/apps/dydx-v4/currencies/aart,raydium,f3nefjbcejybtdrejui1t9dph5dbgpkkq7u2gaamxs5b.png',
+  ABT: '/apps/dydx-v4/currencies/abt.png',
+  ACX: '/apps/dydx-v4/currencies/acx.png',
+  ADS: '/apps/dydx-v4/currencies/ads.png',
+  AEUR: '/apps/dydx-v4/currencies/aeur.png',
+  AGG: '/apps/dydx-v4/currencies/agg.png',
+  AGLA: '/apps/dydx-v4/currencies/agla.png',
+  'AGRS,UNISWAP_V3,0X738865301A9B7DD80DC3666DD48CF034EC42BDDA':
+    '/apps/dydx-v4/currencies/agrs,uniswap_v3,0x738865301a9b7dd80dc3666dd48cf034ec42bdda.png',
+  AI: '/apps/dydx-v4/currencies/ai.png',
+  AIPAD: '/apps/dydx-v4/currencies/aipad.png',
+  AIT: '/apps/dydx-v4/currencies/ait.png',
+  AKI: '/apps/dydx-v4/currencies/aki.png',
+  AKITA: '/apps/dydx-v4/currencies/akita.png',
+  AL: '/apps/dydx-v4/currencies/al.png',
+  ALEO: '/apps/dydx-v4/currencies/aleo.png',
+  'ALEPH,UNISWAP_V3,0X27702A26126E0B3702AF63EE09AC4D1A084EF628':
+    '/apps/dydx-v4/currencies/aleph,uniswap_v3,0x27702a26126e0b3702af63ee09ac4d1a084ef628.png',
+  ALEX: '/apps/dydx-v4/currencies/alex.png',
+  ALI: '/apps/dydx-v4/currencies/ali.png',
+  ALPACA: '/apps/dydx-v4/currencies/alpaca.png',
+  ALPH: '/apps/dydx-v4/currencies/alph.png',
+  ALU: '/apps/dydx-v4/currencies/alu.png',
+  AMPL: '/apps/dydx-v4/currencies/ampl.png',
+  'ANALOS,RAYDIUM,7IT1GRYYHEOP2NV1DYCWK2MGYLMPHQ47WHPGSWIQCUG5':
+    '/apps/dydx-v4/currencies/analos,raydium,7it1gryyheop2nv1dycwk2mgylmphq47whpgswiqcug5.png',
+  'ANDY,UNISWAP_V3,0X68BBED6A47194EFF1CF514B50EA91895597FC91E':
+    '/apps/dydx-v4/currencies/andy,uniswap_v3,0x68bbed6a47194eff1cf514b50ea91895597fc91e.png',
+  'ANUS,RAYDIUM,9HJZ8UTNRNWT3YUTHVPVZDQJNBP64NBKSDSBLQKR6BZC':
+    '/apps/dydx-v4/currencies/anus,raydium,9hjz8utnrnwt3yuthvpvzdqjnbp64nbksdsblqkr6bzc.png',
+  ANYONE: '/apps/dydx-v4/currencies/anyone.png',
+  'APES,RAYDIUM,984GBL7PHCECHTN64NWLDBB49RSQXX7OZPDKEBR1PUMP':
+    '/apps/dydx-v4/currencies/apes,raydium,984gbl7phcechtn64nwldbb49rsqxx7ozpdkebr1pump.png',
+  APEX: '/apps/dydx-v4/currencies/apex.png',
+  APRS: '/apps/dydx-v4/currencies/aprs.png',
+  APTR: '/apps/dydx-v4/currencies/aptr.png',
+  APU: '/apps/dydx-v4/currencies/apu.png',
+  ARS: '/apps/dydx-v4/currencies/ars.png',
+  ARTFI: '/apps/dydx-v4/currencies/artfi.png',
+  ASM: '/apps/dydx-v4/currencies/asm.png',
+  ASR: '/apps/dydx-v4/currencies/asr.png',
+  ASTO: '/apps/dydx-v4/currencies/asto.png',
+  ATLAS: '/apps/dydx-v4/currencies/atlas.png',
+  'ATLAS,RAYDIUM,ATLASXMBPQXBUYBXPSV97USA3FPQYEQZQBUHGIFCUSXX':
+    '/apps/dydx-v4/currencies/atlas,raydium,atlasxmbpqxbuybxpsv97usa3fpqyeqzqbuhgifcusxx.png',
+  'AURA,RAYDIUM,DTR4D9FTVOTX2569GAL837ZGRB6WNJJ6TKMNX9RDK9B2':
+    '/apps/dydx-v4/currencies/aura,raydium,dtr4d9ftvotx2569gal837zgrb6wnjj6tkmnx9rdk9b2.png',
+  'AVI,UNISWAP_V3,0XD2BDAAF2B9CC6981FD273DCB7C04023BFBE0A7FE':
+    '/apps/dydx-v4/currencies/avi,uniswap_v3,0xd2bdaaf2b9cc6981fd273dcb7c04023bfbe0a7fe.png',
+  AVIVE: '/apps/dydx-v4/currencies/avive.png',
+  AVT: '/apps/dydx-v4/currencies/avt.png',
+  AZUR: '/apps/dydx-v4/currencies/azur.png',
+  'BABY,RAYDIUM,5HMF8JT9PUWOQIFQTB3VR22732ZTKYRLRW9VO7TN3RCZ':
+    '/apps/dydx-v4/currencies/baby,raydium,5hmf8jt9puwoqifqtb3vr22732ztkyrlrw9vo7tn3rcz.png',
+  BABYDOGE: '/apps/dydx-v4/currencies/babydoge.png',
+  'BABYTRUMP,RAYDIUM,6NBNHQKD2DH4JSWTLMMCP7LNSH4NH6Y2CNGDQG2NY9ZW':
+    '/apps/dydx-v4/currencies/babytrump,raydium,6nbnhqkd2dh4jswtlmmcp7lnsh4nh6y2cngdqg2ny9zw.png',
+  'BAG,RAYDIUM,D8R8XTUCRUHLHEWEGXSWC3G92RHASFICV3YA7B2XWCLV':
+    '/apps/dydx-v4/currencies/bag,raydium,d8r8xtucruhlhewegxswc3g92rhasficv3ya7b2xwclv.png',
+  'BAKED,RAYDIUM,CQBXK942C6GPCRWTZ2WMFP5JCQ9NQBXTB8JUEWBI7GOT':
+    '/apps/dydx-v4/currencies/baked,raydium,cqbxk942c6gpcrwtz2wmfp5jcq9nqbxtb8juewbi7got.png',
+  BANANA: '/apps/dydx-v4/currencies/banana.png',
+  BB: '/apps/dydx-v4/currencies/bb.png',
+  BCCOIN: '/apps/dydx-v4/currencies/bccoin.png',
+  'BDROP,RAYDIUM,DCJLACAUR25RUJGXBVHZTCWPCTJZSW6YDM8E7OIPIT3K':
+    '/apps/dydx-v4/currencies/bdrop,raydium,dcjlacaur25rujgxbvhztcwpctjzsw6ydm8e7oipit3k.png',
+  BDX: '/apps/dydx-v4/currencies/bdx.png',
+  BEAT: '/apps/dydx-v4/currencies/beat.png',
+  BEBE: '/apps/dydx-v4/currencies/bebe.png',
+  'BENDOG,RAYDIUM,AHW5N8IQZOBTCBEPKSJZZ61XTAUSZBDCPXTRLG6KUKPK':
+    '/apps/dydx-v4/currencies/bendog,raydium,ahw5n8iqzobtcbepksjzz61xtauszbdcpxtrlg6kukpk.png',
+  BENJI: '/apps/dydx-v4/currencies/benji.png',
+  BEPRO: '/apps/dydx-v4/currencies/bepro.png',
+  BETA: '/apps/dydx-v4/currencies/beta.png',
+  'BGUY,UNISWAP-V3-BASE,0X8931EE05EC111325C1700B68E5EF7B887E00661D':
+    '/apps/dydx-v4/currencies/bguy,uniswap-v3-base,0x8931ee05ec111325c1700b68e5ef7b887e00661d.png',
+  BIFI: '/apps/dydx-v4/currencies/bifi.png',
+  'BILL,RAYDIUM,5O817YNOR97F1H5SUZBGHWC8DP53OURERUFBGJIACFUZ':
+    '/apps/dydx-v4/currencies/bill,raydium,5o817ynor97f1h5suzbghwc8dp53ourerufbgjiacfuz.png',
+  BILLY: '/apps/dydx-v4/currencies/billy.png',
+  'BITCOIN,UNISWAP_V3,0X72E4F9F808C49A2A61DE9C5896298920DC4EEEA9':
+    '/apps/dydx-v4/currencies/bitcoin,uniswap_v3,0x72e4f9f808c49a2a61de9c5896298920dc4eeea9.png',
+  'BKN,UNISWAP_V3,0X0A638F07ACC6969ABF392BB009F216D22ADEA36D':
+    '/apps/dydx-v4/currencies/bkn,uniswap_v3,0x0a638f07acc6969abf392bb009f216d22adea36d.png',
+  BLAZE: '/apps/dydx-v4/currencies/blaze.png',
+  BLD: '/apps/dydx-v4/currencies/bld.png',
+  BLS: '/apps/dydx-v4/currencies/bls.png',
+  'BLUE,RAYDIUM,CWQVQTKUH1IU8ZSFFFVAUXAVZLZQU1E8GYU5D6ECGBNE':
+    '/apps/dydx-v4/currencies/blue,raydium,cwqvqtkuh1iu8zsfffvauxavzlzqu1e8gyu5d6ecgbne.png',
+  BMX: '/apps/dydx-v4/currencies/bmx.png',
+  BOB: '/apps/dydx-v4/currencies/bob.png',
+  'BOBAOPPA,RAYDIUM,BOBAM3U8QMQZHY1HWATNVZE9DLXVKGKYK3TD3T8MLVA':
+    '/apps/dydx-v4/currencies/bobaoppa,raydium,bobam3u8qmqzhy1hwatnvze9dlxvkgkyk3td3t8mlva.png',
+  BOBO: '/apps/dydx-v4/currencies/bobo.png',
+  'BODEN,RAYDIUM,3PSH1MJ1F7YUFAD5GH6ZJ7EPE8HHRMKMETGV5TSHQA4O':
+    '/apps/dydx-v4/currencies/boden,raydium,3psh1mj1f7yufad5gh6zj7epe8hhrmkmetgv5tshqa4o.png',
+  BONUS: '/apps/dydx-v4/currencies/bonus.png',
+  'BOOE,UNISWAP_V3,0X289FF00235D2B98B0145FF5D4435D3E92F9540A6':
+    '/apps/dydx-v4/currencies/booe,uniswap_v3,0x289ff00235d2b98b0145ff5d4435d3e92f9540a6.png',
+  BORA: '/apps/dydx-v4/currencies/bora.png',
+  'BORK,RAYDIUM,4JZXKSNGTQKCDB36ECZ6A2ANZCUNIGCDEXGTDTM2HXAX':
+    '/apps/dydx-v4/currencies/bork,raydium,4jzxksngtqkcdb36ecz6a2anzcunigcdexgtdtm2hxax.png',
+  'BOZO,RAYDIUM,EJPTJEDOGXZDBVM8QVASQYBLMPJ5N1VQEQOAZJ9YFV3Q':
+    '/apps/dydx-v4/currencies/bozo,raydium,ejptjedogxzdbvm8qvasqyblmpj5n1vqeqoazj9yfv3q.png',
+  'BRAINLET,RAYDIUM,8NNXWRWVCTNW1UFEABYPFFIMTDCLCCD8XJZHVYSMGWPF':
+    '/apps/dydx-v4/currencies/brainlet,raydium,8nnxwrwvctnw1ufeabypffimtdclccd8xjzhvysmgwpf.png',
+  BRZ: '/apps/dydx-v4/currencies/brz.png',
+  BST: '/apps/dydx-v4/currencies/bst.png',
+  BTRST: '/apps/dydx-v4/currencies/btrst.png',
+  'BTW,RAYDIUM,4YTPZGVONB66BFS6NRCUAAVSLDTYK2FHQ4U92JNJPUMP':
+    '/apps/dydx-v4/currencies/btw,raydium,4ytpzgvonb66bfs6nrcuaavsldtyk2fhq4u92jnjpump.png',
+  'BUFFI,UNISWAP_V3,0X4C1B1302220D7DE5C22B495E78B72F2DD2457D45':
+    '/apps/dydx-v4/currencies/buffi,uniswap_v3,0x4c1b1302220d7de5c22b495e78b72f2dd2457d45.png',
+  'BWB,RAYDIUM,6FVYLVHQSSHWVUSCQ2FJRR1MRECGSHC3QXBWWTGIVFWK':
+    '/apps/dydx-v4/currencies/bwb,raydium,6fvylvhqsshwvuscq2fjrr1mrecgshc3qxbwwtgivfwk.png',
+  'BYTE,RAYDIUM,ARGFK9JJ72QETCMCKXVJCZ9APUATGP1MF9YSVHNPU4UT':
+    '/apps/dydx-v4/currencies/byte,raydium,argfk9jj72qetcmckxvjcz9apuatgp1mf9ysvhnpu4ut.png',
+  'BYTES,UNISWAP_V3,0XA19F5264F7D7BE11C451C093D8F92592820BEA86':
+    '/apps/dydx-v4/currencies/bytes,uniswap_v3,0xa19f5264f7d7be11c451c093d8f92592820bea86.png',
+  BZZ: '/apps/dydx-v4/currencies/bzz.png',
+  CA: '/apps/dydx-v4/currencies/ca.png',
+  CAGA: '/apps/dydx-v4/currencies/caga.png',
+  'CAH,UNISWAP_V3,0X8E0E57DCB1CE8D9091DF38EC1BFC3B224529754A':
+    '/apps/dydx-v4/currencies/cah,uniswap_v3,0x8e0e57dcb1ce8d9091df38ec1bfc3b224529754a.png',
+  'CAIR,RAYDIUM,D7Z8T6FADMQDYGHY3LSMN3BZFRABMVVUNAFURKFUWZ8F':
+    '/apps/dydx-v4/currencies/cair,raydium,d7z8t6fadmqdyghy3lsmn3bzfrabmvvunafurkfuwz8f.png',
+  'CAL,UNISWAP_V3,0X20561172F791F915323241E885B4F7D5187C36E1':
+    '/apps/dydx-v4/currencies/cal,uniswap_v3,0x20561172f791f915323241e885b4f7d5187c36e1.png',
+  CAPS: '/apps/dydx-v4/currencies/caps.png',
+  'CATALORIAN,UNISWAP_V3,0X8BAF5D75CAE25C7DF6D1E0D26C52D19EE848301A':
+    '/apps/dydx-v4/currencies/catalorian,uniswap_v3,0x8baf5d75cae25c7df6d1e0d26c52d19ee848301a.png',
+  CATDOG: '/apps/dydx-v4/currencies/catdog.png',
+  'CATGPT,RAYDIUM,FGF1US3KQU9AXU2X1YWKFIKE8USX42ACVRIURBUAODZQ':
+    '/apps/dydx-v4/currencies/catgpt,raydium,fgf1us3kqu9axu2x1ywkfike8usx42acvriurbuaodzq.png',
+  CATI: '/apps/dydx-v4/currencies/cati.png',
+  'CATMAN,RAYDIUM,EAVJDLH8CYTANT3QDITPKGMSPL2HQ1MY5G9R2P6AT6LC':
+    '/apps/dydx-v4/currencies/catman,raydium,eavjdlh8cytant3qditpkgmspl2hq1my5g9r2p6at6lc.png',
+  CAW: '/apps/dydx-v4/currencies/caw.png',
+  'CBETH,UNISWAP_V3,0XBE9895146F7AF43049CA1C1AE358B0541EA49704':
+    '/apps/dydx-v4/currencies/cbeth,uniswap_v3,0xbe9895146f7af43049ca1c1ae358b0541ea49704.png',
+  CBX: '/apps/dydx-v4/currencies/cbx.png',
+  CCD: '/apps/dydx-v4/currencies/ccd.png',
+  CDCETH: '/apps/dydx-v4/currencies/cdceth.png',
+  'CDT,RAYDIUM,AK3OVNWQNAXPSFOSNCONYJLNJTQDCKRBH4HWHWKB6HFM':
+    '/apps/dydx-v4/currencies/cdt,raydium,ak3ovnwqnaxpsfosnconyjlnjtqdckrbh4hwhwkb6hfm.png',
+  CEC: '/apps/dydx-v4/currencies/cec.png',
+  CHAPZ: '/apps/dydx-v4/currencies/chapz.png',
+  'CHAT,RAYDIUM,947TEOG318GUMYJVYHRANRVWPMX7FPBTDQFBOJVSKSG3':
+    '/apps/dydx-v4/currencies/chat,raydium,947teog318gumyjvyhranrvwpmx7fpbtdqfbojvsksg3.png',
+  'CHEEKS,RAYDIUM,6E6RVIDZAVLRV56NVZYE5UOFRKDG36MF6DTQRMCOPTW9':
+    '/apps/dydx-v4/currencies/cheeks,raydium,6e6rvidzavlrv56nvzye5uofrkdg36mf6dtqrmcoptw9.png',
+  CHEEL: '/apps/dydx-v4/currencies/cheel.png',
+  'CHEEMS,RAYDIUM,3FOUASGDBVTD6YZ4WVKJGTB76ONJUKZ7GPEBNIR5B8WC':
+    '/apps/dydx-v4/currencies/cheems,raydium,3fouasgdbvtd6yz4wvkjgtb76onjukz7gpebnir5b8wc.png',
+  'CHEEMS,UNISWAP_V3,0X41B1F9DCD5923C9542B6957B9B72169595ACBC5C':
+    '/apps/dydx-v4/currencies/cheems,uniswap_v3,0x41b1f9dcd5923c9542b6957b9b72169595acbc5c.png',
+  CHEQ: '/apps/dydx-v4/currencies/cheq.png',
+  CHESS: '/apps/dydx-v4/currencies/chess.png',
+  'CHEX,RAYDIUM,6DKCOWJPJ5MFU5GWDEFDPUUEBASBLK3WLEWHUZQPAA1E':
+    '/apps/dydx-v4/currencies/chex,raydium,6dkcowjpj5mfu5gwdefdpuuebasblk3wlewhuzqpaa1e.png',
+  CHF: '/apps/dydx-v4/currencies/chf.png',
+  'CHILL,RAYDIUM,BZPQOPC44OAHU9SB5HEK1GRNJZC4UWFCL4OWUSWOZM3N':
+    '/apps/dydx-v4/currencies/chill,raydium,bzpqopc44oahu9sb5hek1grnjzc4uwfcl4owuswozm3n.png',
+  'CHINU,RAYDIUM,FLRGWXXAX8Q8ECF18WEDF3PLAYORXST5ORPY34D8JFBM':
+    '/apps/dydx-v4/currencies/chinu,raydium,flrgwxxax8q8ecf18wedf3playorxst5orpy34d8jfbm.png',
+  'CHITAN,RAYDIUM,J95PXHUEYTZTGBF9DPLPYPHXNUTWN4FBRK2JNC5NYKA3':
+    '/apps/dydx-v4/currencies/chitan,raydium,j95pxhueytztgbf9dplpyphxnutwn4fbrk2jnc5nyka3.png',
+  'CHONKY,RAYDIUM,H7ED7UGCLP3AX4X1CQ5WUWDN6D1PPRFMMYIV5EJWLWWU':
+    '/apps/dydx-v4/currencies/chonky,raydium,h7ed7ugclp3ax4x1cq5wuwdn6d1pprfmmyiv5ejwlwwu.png',
+  CHRP: '/apps/dydx-v4/currencies/chrp.png',
+  CLV: '/apps/dydx-v4/currencies/clv.png',
+  CO: '/apps/dydx-v4/currencies/co.png',
+  'COK,RAYDIUM,DNB9DLSXXAARXVEXEHZEH8W8NFMLMNJSUGOADDZSWTOG':
+    '/apps/dydx-v4/currencies/cok,raydium,dnb9dlsxxaarxvexehzeh8w8nfmlmnjsugoaddzswtog.png',
+  COM: '/apps/dydx-v4/currencies/com.png',
+  CONV: '/apps/dydx-v4/currencies/conv.png',
+  COP: '/apps/dydx-v4/currencies/cop.png',
+  COREUM: '/apps/dydx-v4/currencies/coreum.png',
+  COS: '/apps/dydx-v4/currencies/cos.png',
+  'COST,RAYDIUM,AV6QVIGKB7USQYPXJKUVAEM4F599WTRVD75PUWBA9ENM':
+    '/apps/dydx-v4/currencies/cost,raydium,av6qvigkb7usqypxjkuvaem4f599wtrvd75puwba9enm.png',
+  COT: '/apps/dydx-v4/currencies/cot.png',
+  CRDS: '/apps/dydx-v4/currencies/crds.png',
+  'CREAM,UNISWAP_V3,0X2BA592F78DB6436527729929AAF6C908497CB200':
+    '/apps/dydx-v4/currencies/cream,uniswap_v3,0x2ba592f78db6436527729929aaf6c908497cb200.png',
+  CREDI: '/apps/dydx-v4/currencies/credi.png',
+  CREO: '/apps/dydx-v4/currencies/creo.png',
+  CRTS: '/apps/dydx-v4/currencies/crts.png',
+  CSIX: '/apps/dydx-v4/currencies/csix.png',
+  CTP: '/apps/dydx-v4/currencies/ctp.png',
+  CTT: '/apps/dydx-v4/currencies/ctt.png',
+  CVTX: '/apps/dydx-v4/currencies/cvtx.png',
+  CWEB: '/apps/dydx-v4/currencies/cweb.png',
+  CZK: '/apps/dydx-v4/currencies/czk.png',
+  DAPP: '/apps/dydx-v4/currencies/dapp.png',
+  DAPPX: '/apps/dydx-v4/currencies/dappx.png',
+  'DATA,UNISWAP_V3,0X8F693CA8D21B157107184D29D398A8D082B38B76':
+    '/apps/dydx-v4/currencies/data,uniswap_v3,0x8f693ca8d21b157107184d29d398a8d082b38b76.png',
+  DCB: '/apps/dydx-v4/currencies/dcb.png',
+  DEVVE: '/apps/dydx-v4/currencies/devve.png',
+  'DEVVE,UNISWAP_V3,0X8248270620AA532E4D64316017BE5E873E37CC09':
+    '/apps/dydx-v4/currencies/devve,uniswap_v3,0x8248270620aa532e4d64316017be5e873e37cc09.png',
+  DFYN: '/apps/dydx-v4/currencies/dfyn.png',
+  DIMO: '/apps/dydx-v4/currencies/dimo.png',
+  'DINGO,RAYDIUM,6VYF5JXQ6RFQ4QRGGMG6CO7B1EV1LJ7KSBHBXFQ9E1L3':
+    '/apps/dydx-v4/currencies/dingo,raydium,6vyf5jxq6rfq4qrggmg6co7b1ev1lj7ksbhbxfq9e1l3.png',
+  DIONE: '/apps/dydx-v4/currencies/dione.png',
+  DLC: '/apps/dydx-v4/currencies/dlc.png',
+  'DLORD,RAYDIUM,3KRWSXRWEUBPSDJ9NKIWZNJSXLQKDPJNGZEEU5MZKKRB':
+    '/apps/dydx-v4/currencies/dlord,raydium,3krwsxrweubpsdj9nkiwznjsxlqkdpjngzeeu5mzkkrb.png',
+  'DMAGA,RAYDIUM,7D7BRCBYEPFI77VXYSAPMEQRNN1WSBBXNFPJGBH5PUMP':
+    '/apps/dydx-v4/currencies/dmaga,raydium,7d7brcbyepfi77vxysapmeqrnn1wsbbxnfpjgbh5pump.png',
+  DMTR: '/apps/dydx-v4/currencies/dmtr.png',
+  DNT: '/apps/dydx-v4/currencies/dnt.png',
+  DNX: '/apps/dydx-v4/currencies/dnx.png',
+  DOAI: '/apps/dydx-v4/currencies/doai.png',
+  'DOAI,RAYDIUM,3VMFEATR9M2PP5JCFNC8C8U6U4EFUBDQ6FQJGPPCNFKS':
+    '/apps/dydx-v4/currencies/doai,raydium,3vmfeatr9m2pp5jcfnc8c8u6u4efubdq6fqjgppcnfks.png',
+  'DOG,UNISWAP_V3,0XBAAC2B4491727D78D2B78815144570B9F2FE8899':
+    '/apps/dydx-v4/currencies/dog,uniswap_v3,0xbaac2b4491727d78d2b78815144570b9f2fe8899.png',
+  'DOKY,RAYDIUM,5RS53FY3Q4T4MLK9ZBQ45CVNGF1RH7NQRNXIP6PA5RYH':
+    '/apps/dydx-v4/currencies/doky,raydium,5rs53fy3q4t4mlk9zbq45cvngf1rh7nqrnxip6pa5ryh.png',
+  'DOLLAR,RAYDIUM,5ANPDX9GPOSBI9JSW2DFFE5QQD3FMXBUDOQUMNDXPUMP':
+    '/apps/dydx-v4/currencies/dollar,raydium,5anpdx9gposbi9jsw2dffe5qqd3fmxbudoqumndxpump.png',
+  DOME: '/apps/dydx-v4/currencies/dome.png',
+  'DOOGLE,RAYDIUM,F6TSRCJTLBZKDTZYQJTPVQ9WTNWHMMC1WCQGUEGCPUMP':
+    '/apps/dydx-v4/currencies/doogle,raydium,f6tsrcjtlbzkdtzyqjtpvq9wtnwhmmc1wcqguegcpump.png',
+  'DOUG,RAYDIUM,BAVUJ8BNTC79A8AHTXQI1EUHCCNQVEU8KSBE4SVCAAHC':
+    '/apps/dydx-v4/currencies/doug,raydium,bavuj8bntc79a8ahtxqi1euhccnqveu8ksbe4svcaahc.png',
+  DPX: '/apps/dydx-v4/currencies/dpx.png',
+  DSYNC: '/apps/dydx-v4/currencies/dsync.png',
+  'DSYNC,UNISWAP_V3,0XF94E7D0710709388BCE3161C32B4EEA56D3F91CC':
+    '/apps/dydx-v4/currencies/dsync,uniswap_v3,0xf94e7d0710709388bce3161c32b4eea56d3f91cc.png',
+  DTEC: '/apps/dydx-v4/currencies/dtec.png',
+  DUEL: '/apps/dydx-v4/currencies/duel.png',
+  'DUKO,RAYDIUM,HLPTM5E6RTGH4EKGDPYFRNRHBJPKMYVDEEREEA2G7RF9':
+    '/apps/dydx-v4/currencies/duko,raydium,hlptm5e6rtgh4ekgdpyfrnrhbjpkmyvdeereea2g7rf9.png',
+  DUST: '/apps/dydx-v4/currencies/dust.png',
+  DZOO: '/apps/dydx-v4/currencies/dzoo.png',
+  'EBULL,UNISWAP_V3,0X71297312753EA7A2570A5A3278ED70D9A75F4F44':
+    '/apps/dydx-v4/currencies/ebull,uniswap_v3,0x71297312753ea7a2570a5a3278ed70d9a75f4f44.png',
+  'EGL,RAYDIUM,DCCA1IVQRYFQWSQTZ3ARKFKPD6UXV6AN8JDW5S3EVKQZ':
+    '/apps/dydx-v4/currencies/egl,raydium,dcca1ivqryfqwsqtz3arkfkpd6uxv6an8jdw5s3evkqz.png',
+  EGP: '/apps/dydx-v4/currencies/egp.png',
+  EIGEN: '/apps/dydx-v4/currencies/eigen.png',
+  ELDA: '/apps/dydx-v4/currencies/elda.png',
+  ELIX: '/apps/dydx-v4/currencies/elix.png',
+  EMT: '/apps/dydx-v4/currencies/emt.png',
+  'EPIK,RAYDIUM,3BGWJ8B7B9HHX4SGFZ2KJHV9496COVFSMK2YEPEVSBRW':
+    '/apps/dydx-v4/currencies/epik,raydium,3bgwj8b7b9hhx4sgfz2kjhv9496covfsmk2yepevsbrw.png',
+  EPX: '/apps/dydx-v4/currencies/epx.png',
+  EVMOS: '/apps/dydx-v4/currencies/evmos.png',
+  'EXGO,RAYDIUM,D5YMUBHSVOVYKAGUCGKNK2CM8UYGKTNTXJ62T3C46NXS':
+    '/apps/dydx-v4/currencies/exgo,raydium,d5ymubhsvovykagucgknk2cm8uygktntxj62t3c46nxs.png',
+  EXVG: '/apps/dydx-v4/currencies/exvg.png',
+  'FALX,RAYDIUM,AFO4NUMBNHDXC7M7P6QJZ1PF3LBQYFG5K1CNRGVE8RVU':
+    '/apps/dydx-v4/currencies/falx,raydium,afo4numbnhdxc7m7p6qjz1pf3lbqyfg5k1cnrgve8rvu.png',
+  FAME: '/apps/dydx-v4/currencies/fame.png',
+  FAR: '/apps/dydx-v4/currencies/far.png',
+  FB: '/apps/dydx-v4/currencies/fb.png',
+  FDUSD: '/apps/dydx-v4/currencies/fdusd.png',
+  FIGHT: '/apps/dydx-v4/currencies/fight.png',
+  FLT: '/apps/dydx-v4/currencies/flt.png',
+  'FLT,UNISWAP_V3,0X236501327E701692A281934230AF0B6BE8DF3353':
+    '/apps/dydx-v4/currencies/flt,uniswap_v3,0x236501327e701692a281934230af0b6be8df3353.png',
+  'FLUFFI,RAYDIUM,6CEJCG7JO5RV9KFSGKX66RPW19NRSCMCCD2BXFWPUMP':
+    '/apps/dydx-v4/currencies/fluffi,raydium,6cejcg7jo5rv9kfsgkx66rpw19nrscmccd2bxfwpump.png',
+  FMB: '/apps/dydx-v4/currencies/fmb.png',
+  FOFAR: '/apps/dydx-v4/currencies/fofar.png',
+  FON: '/apps/dydx-v4/currencies/fon.png',
+  FOX: '/apps/dydx-v4/currencies/fox.png',
+  FREE: '/apps/dydx-v4/currencies/free.png',
+  FTR: '/apps/dydx-v4/currencies/ftr.png',
+  FUN: '/apps/dydx-v4/currencies/fun.png',
+  'FUN,UNISWAP_V3,0X419D0D8BDD9AF5E606AE2232ED285AFF190E711B':
+    '/apps/dydx-v4/currencies/fun,uniswap_v3,0x419d0d8bdd9af5e606ae2232ed285aff190e711b.png',
+  FUSE: '/apps/dydx-v4/currencies/fuse.png',
+  GALAXIS: '/apps/dydx-v4/currencies/galaxis.png',
+  GAT: '/apps/dydx-v4/currencies/gat.png',
+  GEAR: '/apps/dydx-v4/currencies/gear.png',
+  GEMS: '/apps/dydx-v4/currencies/gems.png',
+  GENE: '/apps/dydx-v4/currencies/gene.png',
+  GEOD: '/apps/dydx-v4/currencies/geod.png',
+  GFI: '/apps/dydx-v4/currencies/gfi.png',
+  'GIGA,RAYDIUM,63LFDMNB3MQ8MW9MTZ2TO9BEA2M71KZUUGQ5TIJXCQJ9':
+    '/apps/dydx-v4/currencies/giga,raydium,63lfdmnb3mq8mw9mtz2to9bea2m71kzuugq5tijxcqj9.png',
+  'GIKO,RAYDIUM,3WPEP4UFATOK1AS5S8BL9INZEURT4DYAQCIIC6ZKKC1U':
+    '/apps/dydx-v4/currencies/giko,raydium,3wpep4ufatok1as5s8bl9inzeurt4dyaqciic6zkkc1u.png',
+  'GINNAN,RAYDIUM,GINNABFFZL4FUJ9VACTXHA74GDAW8KDPGAHQMTMZPS2F':
+    '/apps/dydx-v4/currencies/ginnan,raydium,ginnabffzl4fuj9vactxha74gdaw8kdpgahqmtmzps2f.png',
+  GLQ: '/apps/dydx-v4/currencies/glq.png',
+  'GME,RAYDIUM,8WXTPEU6557ETKP9WHFY1N1ECU6NXDVBAGGHGSMYIHSB':
+    '/apps/dydx-v4/currencies/gme,raydium,8wxtpeu6557etkp9whfy1n1ecu6nxdvbagghgsmyihsb.png',
+  'GNUS,UNISWAP_V3,0X614577036F0A024DBC1C88BA616B394DD65D105A':
+    '/apps/dydx-v4/currencies/gnus,uniswap_v3,0x614577036f0a024dbc1c88ba616b394dd65d105a.png',
+  'GOAT,RAYDIUM,59U8QAD2S2GETSY5VS7DJ95YSPNHAVYHETRFZCEB9F7G':
+    '/apps/dydx-v4/currencies/goat,raydium,59u8qad2s2getsy5vs7dj95yspnhavyhetrfzceb9f7g.png',
+  GOG: '/apps/dydx-v4/currencies/gog.png',
+  GPT: '/apps/dydx-v4/currencies/gpt.png',
+  GRND: '/apps/dydx-v4/currencies/grnd.png',
+  GROK: '/apps/dydx-v4/currencies/grok.png',
+  GSWIFT: '/apps/dydx-v4/currencies/gswift.png',
+  'GUAC,RAYDIUM,AZSHEMXD36BJ1EMNXHOWJAJPUXZRKCK57WW4ZGXVA7YR':
+    '/apps/dydx-v4/currencies/guac,raydium,azshemxd36bj1emnxhowjajpuxzrkck57ww4zgxva7yr.png',
+  'GURU,UNISWAP_V3,0X525574C899A7C877A11865339E57376092168258':
+    '/apps/dydx-v4/currencies/guru,uniswap_v3,0x525574c899a7c877a11865339e57376092168258.png',
+  'HABIBI,RAYDIUM,864YJRB3JAVARC4FNUDTPKFXDESYRBB39NWXKZUDXY46':
+    '/apps/dydx-v4/currencies/habibi,raydium,864yjrb3javarc4fnudtpkfxdesyrbb39nwxkzudxy46.png',
+  HAI: '/apps/dydx-v4/currencies/hai.png',
+  'HAMI,RAYDIUM,4SP2EUDRQF46RZUN6SYAWZJRXWUPX2T3NJUOKMV766RJ':
+    '/apps/dydx-v4/currencies/hami,raydium,4sp2eudrqf46rzun6syawzjrxwupx2t3njuokmv766rj.png',
+  'HAMMY,RAYDIUM,26KMQVGDUOB6REFNJ51YAABWWJND8UMTPNQGSHQ64UDR':
+    '/apps/dydx-v4/currencies/hammy,raydium,26kmqvgduob6refnj51yaabwwjnd8umtpnqgshq64udr.png',
+  'HARAMBE,RAYDIUM,FCH1OIXTPRI8ZXBNMDCEADOJW2TOYFHXQDZACQKWDVSP':
+    '/apps/dydx-v4/currencies/harambe,raydium,fch1oixtpri8zxbnmdceadojw2toyfhxqdzacqkwdvsp.png',
+  'HARRIS,UNISWAP_V3,0X155788DD4B3CCD955A5B2D461C7D6504F83F71FA':
+    '/apps/dydx-v4/currencies/harris,uniswap_v3,0x155788dd4b3ccd955a5b2d461c7d6504f83f71fa.png',
+  'HAWKTUAH,RAYDIUM,4GFE6MBDORSY5BLBIUMRGETR6PZCJYFXMDM5EHSGPUMP':
+    '/apps/dydx-v4/currencies/hawktuah,raydium,4gfe6mbdorsy5blbiumrgetr6pzcjyfxmdm5ehsgpump.png',
+  HEART: '/apps/dydx-v4/currencies/heart.png',
+  'HEGE,RAYDIUM,ULWSJMMPXMNRFPU6BJNK6RPRKXQD5JXUMPPS1FXHXFY':
+    '/apps/dydx-v4/currencies/hege,raydium,ulwsjmmpxmnrfpu6bjnk6rprkxqd5jxumpps1fxhxfy.png',
+  'HEHE,RAYDIUM,BREUHVOHXX5FV6Q41UYB3SOJTAUGOGAIAHKBMTCRPUMP':
+    '/apps/dydx-v4/currencies/hehe,raydium,breuhvohxx5fv6q41uyb3sojtaugogaiahkbmtcrpump.png',
+  HELLO: '/apps/dydx-v4/currencies/hello.png',
+  'HEX,UNISWAP_V3,0X2B591E99AFE9F32EAA6214F7B7629768C40EEB39':
+    '/apps/dydx-v4/currencies/hex,uniswap_v3,0x2b591e99afe9f32eaa6214f7b7629768c40eeb39.png',
+  HGPT: '/apps/dydx-v4/currencies/hgpt.png',
+  HMND: '/apps/dydx-v4/currencies/hmnd.png',
+  HMSTR: '/apps/dydx-v4/currencies/hmstr.png',
+  'HOGE,RAYDIUM,74GUPK636NRIEDT9KLSGF1PEWG5BB7ITNKJF2BKMDWZJ':
+    '/apps/dydx-v4/currencies/hoge,raydium,74gupk636nriedt9klsgf1pewg5bb7itnkjf2bkmdwzj.png',
+  HONEY: '/apps/dydx-v4/currencies/honey.png',
+  'HONK,RAYDIUM,3AG1MJ9AKZ9FAKCQ6GAEHPLSX8B2PUBPDKB9IBSDLZNB':
+    '/apps/dydx-v4/currencies/honk,raydium,3ag1mj9akz9fakcq6gaehplsx8b2pubpdkb9ibsdlznb.png',
+  HOPR: '/apps/dydx-v4/currencies/hopr.png',
+  'HUND,RAYDIUM,2XPQOKFJITK8YCMDGBKY7CMZRRYF2X9PNIZECYKDUZEV':
+    '/apps/dydx-v4/currencies/hund,raydium,2xpqokfjitk8ycmdgbky7cmzrryf2x9pnizecykduzev.png',
+  'HUNT,UNISWAP_V3,0X9AAB071B4129B083B01CB5A0CB513CE7ECA26FA5':
+    '/apps/dydx-v4/currencies/hunt,uniswap_v3,0x9aab071b4129b083b01cb5a0cb513ce7eca26fa5.png',
+  HVH: '/apps/dydx-v4/currencies/hvh.png',
+  HYDRA: '/apps/dydx-v4/currencies/hydra.png',
+  IDRT: '/apps/dydx-v4/currencies/idrt.png',
+  'IMPT,UNISWAP_V3,0X04C17B9D3B29A78F7BD062A57CF44FC633E71F85':
+    '/apps/dydx-v4/currencies/impt,uniswap_v3,0x04c17b9d3b29a78f7bd062a57cf44fc633e71f85.png',
+  INDEX: '/apps/dydx-v4/currencies/index.png',
+  INV: '/apps/dydx-v4/currencies/inv.png',
+  'IOT,RAYDIUM,IOTEVVZLEYWOTN1QDWNPDDXPWSZN3ZFHEOT3MFL9FNS':
+    '/apps/dydx-v4/currencies/iot,raydium,iotevvzleywotn1qdwnpddxpwszn3zfheot3mfl9fns.png',
+  IQ50: '/apps/dydx-v4/currencies/iq50.png',
+  'IQ50,RAYDIUM,21RWEMLGYEMNONHW7H3XA5PY17X6ZFRCHIRCP9INRBQA':
+    '/apps/dydx-v4/currencies/iq50,raydium,21rwemlgyemnonhw7h3xa5py17x6zfrchircp9inrbqa.png',
+  IRIS: '/apps/dydx-v4/currencies/iris.png',
+  IRON: '/apps/dydx-v4/currencies/iron.png',
+  ISLM: '/apps/dydx-v4/currencies/islm.png',
+  ISP: '/apps/dydx-v4/currencies/isp.png',
+  'JASON,RAYDIUM,6SURYVEUDZ5HQAXAB6QRGFBZWVJN8DC7M29EZSVDPUMP':
+    '/apps/dydx-v4/currencies/jason,raydium,6suryveudz5hqaxab6qrgfbzwvjn8dc7m29ezsvdpump.png',
+  JUICE: '/apps/dydx-v4/currencies/juice.png',
+  JUM: '/apps/dydx-v4/currencies/jum.png',
+  'JUNGLE,RAYDIUM,9P32YQUCXFZNDOXMMJNZBPQXQGFOU4TA4SB1RAQH9CYW':
+    '/apps/dydx-v4/currencies/jungle,raydium,9p32yqucxfzndoxmmjnzbpqxqgfou4ta4sb1raqh9cyw.png',
+  'KAMA,RAYDIUM,HNKKZR1YTFBUUXM6G3IVRS2RY68KHHGV7BNDFF1GCSJB':
+    '/apps/dydx-v4/currencies/kama,raydium,hnkkzr1ytfbuuxm6g3ivrs2ry68khhgv7bndff1gcsjb.png',
+  KASTA: '/apps/dydx-v4/currencies/kasta.png',
+  'KHAI,RAYDIUM,3TWGDVYBL2YPET2LXNWAWSMEOA8AL4DUTNUWAT2PKCJC':
+    '/apps/dydx-v4/currencies/khai,raydium,3twgdvybl2ypet2lxnwawsmeoa8al4dutnuwat2pkcjc.png',
+  KISHU: '/apps/dydx-v4/currencies/kishu.png',
+  'KITTENWIF,RAYDIUM,9A8AMDFQXFJ44RRVHKDIXNKWCWT99IGWP5QRRUC73PIN':
+    '/apps/dydx-v4/currencies/kittenwif,raydium,9a8amdfqxfj44rrvhkdixnkwcwt99igwp5qrruc73pin.png',
+  'KIZUNA,UNISWAP_V3,0X470C8950C0C3AA4B09654BC73B004615119A44B5':
+    '/apps/dydx-v4/currencies/kizuna,uniswap_v3,0x470c8950c0c3aa4b09654bc73b004615119a44b5.png',
+  KMON: '/apps/dydx-v4/currencies/kmon.png',
+  KNINE: '/apps/dydx-v4/currencies/knine.png',
+  'KOKO,RAYDIUM,FSA54YL49WKS7RWOGV9SUCBSGWCWV756JTD349E6H2YW':
+    '/apps/dydx-v4/currencies/koko,raydium,fsa54yl49wks7rwogv9sucbsgwcwv756jtd349e6h2yw.png',
+  KON: '/apps/dydx-v4/currencies/kon.png',
+  'LABZ,RAYDIUM,4VC7UYQBO9SIW8ZNKPXFW9D3DZYCIVRPDZS9XRTYRJMH':
+    '/apps/dydx-v4/currencies/labz,raydium,4vc7uyqbo9siw8znkpxfw9d3dzycivrpdzs9xrtyrjmh.png',
+  'LADYF,RAYDIUM,3X8GCLIH2HTTJYQEPG7MAZPMBWBGQ5URUMTYDZ5TKMDE':
+    '/apps/dydx-v4/currencies/ladyf,raydium,3x8gclih2httjyqepg7mazpmbwbgq5urumtydz5tkmde.png',
+  'LAIKA,RAYDIUM,EUOQ6CYQFCJCVSLR9WFAUPDW19Y6ZHWECJOZSEI643I1':
+    '/apps/dydx-v4/currencies/laika,raydium,euoq6cyqfcjcvslr9wfaupdw19y6zhwecjozsei643i1.png',
+  LAND: '/apps/dydx-v4/currencies/land.png',
+  LAZIO: '/apps/dydx-v4/currencies/lazio.png',
+  LEO: '/apps/dydx-v4/currencies/leo.png',
+  'LFGO,RAYDIUM,2U98MM7DMTVMNG4IAKRNMTYNJMKZGD6FXAZB3WVFHQVG':
+    '/apps/dydx-v4/currencies/lfgo,raydium,2u98mm7dmtvmng4iakrnmtynjmkzgd6fxazb3wvfhqvg.png',
+  'LIBERTA,RAYDIUM,EGQCDSZVIK6T1DHCAGJBVFTC9CD4AQIRIHZWEHYQ84LG':
+    '/apps/dydx-v4/currencies/liberta,raydium,egqcdszvik6t1dhcagjbvftc9cd4aqirihzwehyq84lg.png',
+  'LILPUMP,RAYDIUM,9VRGUHWSC8LYLJQOH3ZJB9S53X7A88U49LA63QPB6F5T':
+    '/apps/dydx-v4/currencies/lilpump,raydium,9vrguhwsc8lyljqoh3zjb9s53x7a88u49la63qpb6f5t.png',
+  LIME: '/apps/dydx-v4/currencies/lime.png',
+  LIS: '/apps/dydx-v4/currencies/lis.png',
+  'LIT,UNISWAP_V3,0XFD0205066521550D7D7AB19DA8F72BB004B4C341':
+    '/apps/dydx-v4/currencies/lit,uniswap_v3,0xfd0205066521550d7d7ab19da8f72bb004b4c341.png',
+  LKI: '/apps/dydx-v4/currencies/lki.png',
+  LMR: '/apps/dydx-v4/currencies/lmr.png',
+  'LMR,UNISWAP_V3,0X4B1D0B9F081468D780CA1D5D79132B64301085D1':
+    '/apps/dydx-v4/currencies/lmr,uniswap_v3,0x4b1d0b9f081468d780ca1d5d79132b64301085d1.png',
+  LOBO: '/apps/dydx-v4/currencies/lobo.png',
+  LOCUS: '/apps/dydx-v4/currencies/locus.png',
+  'LOS,RAYDIUM,44BZGE9EZJGPJRYNMSA64MDKZ1EELDDCDICZRMOYATEZ':
+    '/apps/dydx-v4/currencies/los,raydium,44bzge9ezjgpjrynmsa64mdkz1eelddcdiczrmoyatez.png',
+  'LOVE,RAYDIUM,4QQV4LQUUXAN1EN1XQGRFY65TFLE5STJCFSCQOZQYB8T':
+    '/apps/dydx-v4/currencies/love,raydium,4qqv4lquuxan1en1xqgrfy65tfle5stjcfscqozqyb8t.png',
+  LSETH: '/apps/dydx-v4/currencies/lseth.png',
+  LUNA: '/apps/dydx-v4/currencies/luna.png',
+  LUNC: '/apps/dydx-v4/currencies/lunc.png',
+  'MAD,RAYDIUM,MADHPJRN6BD8T78RSY7NUSUNWWA2HU8BYPOBZPRHBHV':
+    '/apps/dydx-v4/currencies/mad,raydium,madhpjrn6bd8t78rsy7nusunwwa2hu8bypobzprhbhv.png',
+  MAGA: '/apps/dydx-v4/currencies/maga.png',
+  MAK: '/apps/dydx-v4/currencies/mak.png',
+  MAN: '/apps/dydx-v4/currencies/man.png',
+  'MARS,UNISWAP_V3,0XB8D6196D71CDD7D90A053A7769A077772AAAC464':
+    '/apps/dydx-v4/currencies/mars,uniswap_v3,0xb8d6196d71cdd7d90a053a7769a077772aaac464.png',
+  MARSH: '/apps/dydx-v4/currencies/marsh.png',
+  'MASQ,UNISWAP_V3,0X06F3C323F0238C72BF35011071F2B5B7F43A054C':
+    '/apps/dydx-v4/currencies/masq,uniswap_v3,0x06f3c323f0238c72bf35011071f2b5b7f43a054c.png',
+  MATH: '/apps/dydx-v4/currencies/math.png',
+  MBS: '/apps/dydx-v4/currencies/mbs.png',
+  MCG: '/apps/dydx-v4/currencies/mcg.png',
+  MDAO: '/apps/dydx-v4/currencies/mdao.png',
+  'MDT,RAYDIUM,8WQBST4QAN2FQBCCH5GDXQ2WJ7VTNWEY4ONLRPUG7TYA':
+    '/apps/dydx-v4/currencies/mdt,raydium,8wqbst4qan2fqbcch5gdxq2wj7vtnwey4onlrpug7tya.png',
+  MEDIA: '/apps/dydx-v4/currencies/media.png',
+  MEE: '/apps/dydx-v4/currencies/mee.png',
+  METH: '/apps/dydx-v4/currencies/meth.png',
+  MFER: '/apps/dydx-v4/currencies/mfer.png',
+  'MICHI,RAYDIUM,5MBK36SZ7J19AN8JFOCHHQS4OF8G6BWUJBECSXBSOWDP':
+    '/apps/dydx-v4/currencies/michi,raydium,5mbk36sz7j19an8jfochhqs4of8g6bwujbecsxbsowdp.png',
+  MIGGLES: '/apps/dydx-v4/currencies/miggles.png',
+  MILO: '/apps/dydx-v4/currencies/milo.png',
+  'MINI,RAYDIUM,2JCXACFWT9MVAWBQ5NZKYWCYXQKRCDSYRDXN6HJ22SBP':
+    '/apps/dydx-v4/currencies/mini,raydium,2jcxacfwt9mvawbq5nzkywcyxqkrcdsyrdxn6hj22sbp.png',
+  MIX: '/apps/dydx-v4/currencies/mix.png',
+  'ML,UNISWAP_V3,0X059956483753947536204E89BFAD909E1A434CC6':
+    '/apps/dydx-v4/currencies/ml,uniswap_v3,0x059956483753947536204e89bfad909e1a434cc6.png',
+  MLT: '/apps/dydx-v4/currencies/mlt.png',
+  MNW: '/apps/dydx-v4/currencies/mnw.png',
+  MOB: '/apps/dydx-v4/currencies/mob.png',
+  MOCA: '/apps/dydx-v4/currencies/moca.png',
+  MODE: '/apps/dydx-v4/currencies/mode.png',
+  MOJO: '/apps/dydx-v4/currencies/mojo.png',
+  'MONGY,RAYDIUM,FSBPYIGZ4BHUXVSPP7XPJYFTPM5PSLJC2WGZAFADPUMP':
+    '/apps/dydx-v4/currencies/mongy,raydium,fsbpyigz4bhuxvspp7xpjyftpm5psljc2wgzafadpump.png',
+  'MONK,RAYDIUM,FYA25XNBSXQXADTNSYKBKD5GZ1VZHCHBRF57CQFRXJZX':
+    '/apps/dydx-v4/currencies/monk,raydium,fya25xnbsxqxadtnsykbkd5gz1vzhchbrf57cqfrxjzx.png',
+  MOODENG: '/apps/dydx-v4/currencies/moodeng.png',
+  'MOODENG,UNISWAP_V3,0X28561B8A2360F463011C16B6CC0B0CBEF8DBBCAD':
+    '/apps/dydx-v4/currencies/moodeng,uniswap_v3,0x28561b8a2360f463011c16b6cc0b0cbef8dbbcad.png',
+  'MOUTAI,RAYDIUM,45EGCWCPXYAGBC7KQBIN4NCFGEZWN7F3Y6NACWXQMCWX':
+    '/apps/dydx-v4/currencies/moutai,raydium,45egcwcpxyagbc7kqbin4ncfgezwn7f3y6nacwxqmcwx.png',
+  MOXIE: '/apps/dydx-v4/currencies/moxie.png',
+  MPC: '/apps/dydx-v4/currencies/mpc.png',
+  MPT: '/apps/dydx-v4/currencies/mpt.png',
+  MSTAR: '/apps/dydx-v4/currencies/mstar.png',
+  'MUMU,RAYDIUM,5LAFQURVCO6O7KMZ42EQVEJ9LW31STPYGJEEU5SKOMTA':
+    '/apps/dydx-v4/currencies/mumu,raydium,5lafqurvco6o7kmz42eqvej9lw31stpygjeeu5skomta.png',
+  MUSIC: '/apps/dydx-v4/currencies/music.png',
+  MYTH: '/apps/dydx-v4/currencies/myth.png',
+  NADA: '/apps/dydx-v4/currencies/nada.png',
+  'NAP,RAYDIUM,4G86CMXGSMDLETRYNAVMFKPHQZKTVDBYGMRADVTR72NU':
+    '/apps/dydx-v4/currencies/nap,raydium,4g86cmxgsmdletrynavmfkphqzktvdbygmradvtr72nu.png',
+  NCN: '/apps/dydx-v4/currencies/ncn.png',
+  NCT: '/apps/dydx-v4/currencies/nct.png',
+  NEER: '/apps/dydx-v4/currencies/neer.png',
+  'NEIREI,UNISWAP_V3,0X1D4FB9BFA1967BE6CA74819E28B98C2AA5AE8B59':
+    '/apps/dydx-v4/currencies/neirei,uniswap_v3,0x1d4fb9bfa1967be6ca74819e28b98c2aa5ae8b59.png',
+  NESS: '/apps/dydx-v4/currencies/ness.png',
+  'NEVER,RAYDIUM,CXRHHSQYW8YTDWC4CSJMMGO7UBUJSXZNZRWHTW9ULDRU':
+    '/apps/dydx-v4/currencies/never,raydium,cxrhhsqyw8ytdwc4csjmmgo7ubujsxznzrwhtw9uldru.png',
+  NEXT: '/apps/dydx-v4/currencies/next.png',
+  'NFAI,UNISWAP_V3,0X17C50D62E6E8D20D2DC18E9AD79C43263D0720D9':
+    '/apps/dydx-v4/currencies/nfai,uniswap_v3,0x17c50d62e6e8d20d2dc18e9ad79c43263d0720d9.png',
+  NIM: '/apps/dydx-v4/currencies/nim.png',
+  'NINJA,RAYDIUM,2XP43MAWHFU7PWPUMVKC6AUWG4GX8XPQLTGMKSZFCEJT':
+    '/apps/dydx-v4/currencies/ninja,raydium,2xp43mawhfu7pwpumvkc6auwg4gx8xpqltgmkszfcejt.png',
+  NIZA: '/apps/dydx-v4/currencies/niza.png',
+  'NOMNOM,RAYDIUM,6ZRYHKWVOYE4QQZPDZJ7HTEHWT2U2546EKTNJ7QEPUMP':
+    '/apps/dydx-v4/currencies/nomnom,raydium,6zryhkwvoye4qqzpdzj7htehwt2u2546ektnj7qepump.png',
+  'NOS,RAYDIUM,NOSXBVOACTTYDLVKY6CSB4AC8JCDQKKAAWYTX2ZMOO7':
+    '/apps/dydx-v4/currencies/nos,raydium,nosxbvoacttydlvky6csb4ac8jcdqkkaawytx2zmoo7.png',
+  NOTAI: '/apps/dydx-v4/currencies/notai.png',
+  NPC: '/apps/dydx-v4/currencies/npc.png',
+  'NPCS,RAYDIUM,5TODNKIBAK6K697RRYNGTBURU7YZNFZFX7JZSD1UC7PK':
+    '/apps/dydx-v4/currencies/npcs,raydium,5todnkibak6k697rryngtburu7yznfzfx7jzsd1uc7pk.png',
+  NPT: '/apps/dydx-v4/currencies/npt.png',
+  'NSO,RAYDIUM,HGMFSGNDLQ6VGLXCW4J33NJRWV2ZTH81IEJNVWK9KCHD':
+    '/apps/dydx-v4/currencies/nso,raydium,hgmfsgndlq6vglxcw4j33njrwv2zth81iejnvwk9kchd.png',
+  NSTR: '/apps/dydx-v4/currencies/nstr.png',
+  'NUB,RAYDIUM,GTDZKAQVMZMNTI46ZEWMIXCA4OXF4BZXWQPOKZXPFXZN':
+    '/apps/dydx-v4/currencies/nub,raydium,gtdzkaqvmzmnti46zewmixca4oxf4bzxwqpokzxpfxzn.png',
+  NUX: '/apps/dydx-v4/currencies/nux.png',
+  'NXRA,UNISWAP_V3,0X644192291CC835A93D6330B24EA5F5FEDD0EEF9E':
+    '/apps/dydx-v4/currencies/nxra,uniswap_v3,0x644192291cc835a93d6330b24ea5f5fedd0eef9e.png',
+  OAX: '/apps/dydx-v4/currencies/oax.png',
+  OBI: '/apps/dydx-v4/currencies/obi.png',
+  OCTA: '/apps/dydx-v4/currencies/octa.png',
+  'OHM,UNISWAP_V3,0X64AA3364F17A4D01C6F1751FD97C2BD3D7E7F1D5':
+    '/apps/dydx-v4/currencies/ohm,uniswap_v3,0x64aa3364f17a4d01c6f1751fd97c2bd3d7e7f1d5.png',
+  OKT: '/apps/dydx-v4/currencies/okt.png',
+  OMI: '/apps/dydx-v4/currencies/omi.png',
+  OMNI: '/apps/dydx-v4/currencies/omni.png',
+  OOKI: '/apps/dydx-v4/currencies/ooki.png',
+  OORT: '/apps/dydx-v4/currencies/oort.png',
+  'ORACLE,RAYDIUM,3TU6NPNDFVQNOBQKMGJDWZE1LBVE9SRUDQHSSQXWK1HL':
+    '/apps/dydx-v4/currencies/oracle,raydium,3tu6npndfvqnobqkmgjdwze1lbve9srudqhssqxwk1hl.png',
+  'ORBT,RAYDIUM,BGYJASMSZYM9HHIZ1LBU4EJ7KCTRJMSPBN4ZTRU3W5VF':
+    '/apps/dydx-v4/currencies/orbt,raydium,bgyjasmszym9hhiz1lbu4ej7kctrjmspbn4ztru3w5vf.png',
+  'ORC,RAYDIUM,CZYWQYWNZACQC7NPHTAPHC8CB2H7OU6U9TEHBRVNZJKX':
+    '/apps/dydx-v4/currencies/orc,raydium,czywqywnzacqc7nphtaphc8cb2h7ou6u9tehbrvnzjkx.png',
+  ORDER: '/apps/dydx-v4/currencies/order.png',
+  ORDS: '/apps/dydx-v4/currencies/ords.png',
+  ORT: '/apps/dydx-v4/currencies/ort.png',
+  OVR: '/apps/dydx-v4/currencies/ovr.png',
+  'OWO,UNISWAP-V3-BASE,0X5D559EA7BB2DAE4B694A079CB8328A2145FD32F6':
+    '/apps/dydx-v4/currencies/owo,uniswap-v3-base,0x5d559ea7bb2dae4b694a079cb8328a2145fd32f6.png',
+  OX: '/apps/dydx-v4/currencies/ox.png',
+  'OXY,RAYDIUM,Z3DN17YLAGMKFFVOGEFHQ9ZWVCXGQGF3PQNDSNS2G6M':
+    '/apps/dydx-v4/currencies/oxy,raydium,z3dn17ylagmkffvogefhq9zwvcxgqgf3pqndsns2g6m.png',
+  PAAL: '/apps/dydx-v4/currencies/paal.png',
+  'PAAL,UNISWAP_V3,0X14FEE680690900BA0CCCFC76AD70FD1B95D10E16':
+    '/apps/dydx-v4/currencies/paal,uniswap_v3,0x14fee680690900ba0cccfc76ad70fd1b95d10e16.png',
+  PACK: '/apps/dydx-v4/currencies/pack.png',
+  'PAJAMAS,RAYDIUM,FVER7SSVY5GQAMAWF7QFB5MNUUMDDBPNPG4NCA4ZHOLW':
+    '/apps/dydx-v4/currencies/pajamas,raydium,fver7ssvy5gqamawf7qfb5mnuumddbpnpg4nca4zholw.png',
+  'PANDORA,UNISWAP_V3,0X9E9FBDE7C7A83C43913BDDC8779158F1368F0413':
+    '/apps/dydx-v4/currencies/pandora,uniswap_v3,0x9e9fbde7c7a83c43913bddc8779158f1368f0413.png',
+  PARAM: '/apps/dydx-v4/currencies/param.png',
+  PBX: '/apps/dydx-v4/currencies/pbx.png',
+  PCH: '/apps/dydx-v4/currencies/pch.png',
+  'PEAS,UNISWAP_V3,0X02F92800F57BCD74066F5709F1DAA1A4302DF875':
+    '/apps/dydx-v4/currencies/peas,uniswap_v3,0x02f92800f57bcd74066f5709f1daa1a4302df875.png',
+  PEIPEI: '/apps/dydx-v4/currencies/peipei.png',
+  'PELF,RAYDIUM,BGJW7U1U2RY5XJK9UYB5AQFRZJMTQE7PW3KAF9IW9NTZ':
+    '/apps/dydx-v4/currencies/pelf,raydium,bgjw7u1u2ry5xjk9uyb5aqfrzjmtqe7pw3kaf9iw9ntz.png',
+  PEW: '/apps/dydx-v4/currencies/pew.png',
+  'PEW,UNISWAP_V3,0X382EA807A61A418479318EFD96F1EFBC5C1F2C21':
+    '/apps/dydx-v4/currencies/pew,uniswap_v3,0x382ea807a61a418479318efd96f1efbc5c1f2c21.png',
+  PHIL: '/apps/dydx-v4/currencies/phil.png',
+  PIKA: '/apps/dydx-v4/currencies/pika.png',
+  'PIP,RAYDIUM,HHJOYWUP5AU6PNRVN4S2PWEERWXNZKHXKGYJRJMOBJLW':
+    '/apps/dydx-v4/currencies/pip,raydium,hhjoywup5au6pnrvn4s2pweerwxnzkhxkgyjrjmobjlw.png',
+  PIVX: '/apps/dydx-v4/currencies/pivx.png',
+  PIZZA: '/apps/dydx-v4/currencies/pizza.png',
+  PLANET: '/apps/dydx-v4/currencies/planet.png',
+  PLN: '/apps/dydx-v4/currencies/pln.png',
+  PMG: '/apps/dydx-v4/currencies/pmg.png',
+  PNK: '/apps/dydx-v4/currencies/pnk.png',
+  POLK: '/apps/dydx-v4/currencies/polk.png',
+  POLYDOGE: '/apps/dydx-v4/currencies/polydoge.png',
+  POR: '/apps/dydx-v4/currencies/por.png',
+  PORK: '/apps/dydx-v4/currencies/pork.png',
+  PORT3: '/apps/dydx-v4/currencies/port3.png',
+  PORTO: '/apps/dydx-v4/currencies/porto.png',
+  'POS,RAYDIUM,B8VV6AN7XFF3BARB1CMU7TMFKNJJES2WVY7JWQIRC6K6':
+    '/apps/dydx-v4/currencies/pos,raydium,b8vv6an7xff3barb1cmu7tmfknjjes2wvy7jwqirc6k6.png',
+  'POWR,UNISWAP_V3,0X595832F8FC6BF59C85C527FEC3740A1B7A361269':
+    '/apps/dydx-v4/currencies/powr,uniswap_v3,0x595832f8fc6bf59c85c527fec3740a1b7a361269.png',
+  'POWSCHE,RAYDIUM,8CKISHHJDHJV4LUOIRMLUHQG58CUKBYJRTCP4Z3MCXNF':
+    '/apps/dydx-v4/currencies/powsche,raydium,8ckishhjdhjv4luoirmluhqg58cukbyjrtcp4z3mcxnf.png',
+  PPT: '/apps/dydx-v4/currencies/ppt.png',
+  PRIMAL: '/apps/dydx-v4/currencies/primal.png',
+  PRO: '/apps/dydx-v4/currencies/pro.png',
+  PROPS: '/apps/dydx-v4/currencies/props.png',
+  PROS: '/apps/dydx-v4/currencies/pros.png',
+  PTC: '/apps/dydx-v4/currencies/ptc.png',
+  PUGGY: '/apps/dydx-v4/currencies/puggy.png',
+  'PUNDIX,UNISWAP_V3,0X0FD10B9899882A6F2FCB5C371E17E70FDEE00C38':
+    '/apps/dydx-v4/currencies/pundix,uniswap_v3,0x0fd10b9899882a6f2fcb5c371e17e70fdee00c38.png',
+  'PUNDU,RAYDIUM,WSKZSKQEW3ZSMRHPAEVFVZB6PUULZWOV9MJWZSFDEPC':
+    '/apps/dydx-v4/currencies/pundu,raydium,wskzskqew3zsmrhpaevfvzb6puulzwov9mjwzsfdepc.png',
+  PURSE: '/apps/dydx-v4/currencies/purse.png',
+  'PZP,RAYDIUM,2CNFY3WZU715MDBJ1CEWFMNCSKNQKREPJTMW4O1PSJ9J':
+    '/apps/dydx-v4/currencies/pzp,raydium,2cnfy3wzu715mdbj1cewfmncsknqkrepjtmw4o1psj9j.png',
+  QANX: '/apps/dydx-v4/currencies/qanx.png',
+  QUBIC: '/apps/dydx-v4/currencies/qubic.png',
+  QUICK: '/apps/dydx-v4/currencies/quick.png',
+  RADAR: '/apps/dydx-v4/currencies/radar.png',
+  'RADX,RAYDIUM,FVFZXEEWZRXOOU8N8PJGPWKHHZOUDJPFW6RZVAEXQGVY':
+    '/apps/dydx-v4/currencies/radx,raydium,fvfzxeewzrxoou8n8pjgpwkhhzoudjpfw6rzvaexqgvy.png',
+  RAIN: '/apps/dydx-v4/currencies/rain.png',
+  RATS: '/apps/dydx-v4/currencies/rats.png',
+  'RBT,RAYDIUM,65NTNUJGHME4PQVKQYJYKKP1BJAKK4A8Q66SD2YBWUGF':
+    '/apps/dydx-v4/currencies/rbt,raydium,65ntnujghme4pqvkqyjykkp1bjakk4a8q66sd2ybwugf.png',
+  REAL: '/apps/dydx-v4/currencies/real.png',
+  REDO: '/apps/dydx-v4/currencies/redo.png',
+  'RETARDIO,RAYDIUM,6OGZHHZDRQR9PGV6HZ2MNZE7URZBMAFYBBWUYP1FHITX':
+    '/apps/dydx-v4/currencies/retardio,raydium,6ogzhhzdrqr9pgv6hz2mnze7urzbmafybbwuyp1fhitx.png',
+  'RETH,UNISWAP_V3,0XAE78736CD615F374D3085123A210448E74FC6393':
+    '/apps/dydx-v4/currencies/reth,uniswap_v3,0xae78736cd615f374d3085123a210448e74fc6393.png',
+  RFRM: '/apps/dydx-v4/currencies/rfrm.png',
+  RITE: '/apps/dydx-v4/currencies/rite.png',
+  RJV: '/apps/dydx-v4/currencies/rjv.png',
+  'RLB,UNISWAP_V3,0X046EEE2CC3188071C02BFC1745A6B17C656E3F3D':
+    '/apps/dydx-v4/currencies/rlb,uniswap_v3,0x046eee2cc3188071c02bfc1745a6b17c656e3f3d.png',
+  'RNT,RAYDIUM,2FUFHZYD47MAPV9WCFXH5GNQWFXTQCYU9XAN4THBPUMP':
+    '/apps/dydx-v4/currencies/rnt,raydium,2fufhzyd47mapv9wcfxh5gnqwfxtqcyu9xan4thbpump.png',
+  ROA: '/apps/dydx-v4/currencies/roa.png',
+  'ROA,RAYDIUM,5TB5D6DGJMXXHYMNKFJNG237X6PZGEWTZGPUUH62YQJ7':
+    '/apps/dydx-v4/currencies/roa,raydium,5tb5d6dgjmxxhymnkfjng237x6pzgewtzgpuuh62yqj7.png',
+  'RODAI,RAYDIUM,GDBYLSNKHKLXTZVEO8QRGKVMREXEEZUYVHPSFUZ9TDKC':
+    '/apps/dydx-v4/currencies/rodai,raydium,gdbylsnkhklxtzveo8qrgkvmrexeezuyvhpsfuz9tdkc.png',
+  RON: '/apps/dydx-v4/currencies/ron.png',
+  ROND: '/apps/dydx-v4/currencies/rond.png',
+  RPK: '/apps/dydx-v4/currencies/rpk.png',
+  'RSC,UNISWAP_V3,0XD101DCC414F310268C37EEB4CD376CCFA507F571':
+    '/apps/dydx-v4/currencies/rsc,uniswap_v3,0xd101dcc414f310268c37eeb4cd376ccfa507f571.png',
+  RUNECOIN: '/apps/dydx-v4/currencies/runecoin.png',
+  SAI: '/apps/dydx-v4/currencies/sai.png',
+  SAKAI: '/apps/dydx-v4/currencies/sakai.png',
+  SALD: '/apps/dydx-v4/currencies/sald.png',
+  SANTOS: '/apps/dydx-v4/currencies/santos.png',
+  'SATO,UNISWAP_V3,0X5DE758BBA013E58DAE2693AEA3F0B12B31A3023D':
+    '/apps/dydx-v4/currencies/sato,uniswap_v3,0x5de758bba013e58dae2693aea3f0b12b31a3023d.png',
+  SAUCE: '/apps/dydx-v4/currencies/sauce.png',
+  'SB,RAYDIUM,8TWUNZMSZQWEFBDERWTF4GW13E6MUS4HSDX5MI3AQXAM':
+    '/apps/dydx-v4/currencies/sb,raydium,8twunzmszqwefbderwtf4gw13e6mus4hsdx5mi3aqxam.png',
+  'SBABE,RAYDIUM,D9MFKGNZHNQGRTZKVNJ44YVOLTJMFBZRAHXIUKCAZRE4':
+    '/apps/dydx-v4/currencies/sbabe,raydium,d9mfkgnzhnqgrtzkvnj44yvoltjmfbzrahxiukcazre4.png',
+  'SBAE,RAYDIUM,BWWWURBODJGBOVFETC3FC6OSBQKDOE62E1XQZ7X4PUMP':
+    '/apps/dydx-v4/currencies/sbae,raydium,bwwwurbodjgbovfetc3fc6osbqkdoe62e1xqz7x4pump.png',
+  'SCF,RAYDIUM,GIG7HR61RVM4CSUXJMGICOYSFQTDIWXTQF64MSRPPUMP':
+    '/apps/dydx-v4/currencies/scf,raydium,gig7hr61rvm4csuxjmgicoysfqtdiwxtqf64msrppump.png',
+  SCLP: '/apps/dydx-v4/currencies/sclp.png',
+  SCPT: '/apps/dydx-v4/currencies/scpt.png',
+  SDEX: '/apps/dydx-v4/currencies/sdex.png',
+  SEAL: '/apps/dydx-v4/currencies/seal.png',
+  SEILOR: '/apps/dydx-v4/currencies/seilor.png',
+  'SELFIE,RAYDIUM,9WPTUKH8FKUCNEPRWOPYLH3AK9GSJPHFDENBQ2X1CZDP':
+    '/apps/dydx-v4/currencies/selfie,raydium,9wptukh8fkucneprwopylh3ak9gsjphfdenbq2x1czdp.png',
+  SEOR: '/apps/dydx-v4/currencies/seor.png',
+  SERO: '/apps/dydx-v4/currencies/sero.png',
+  SERSH: '/apps/dydx-v4/currencies/sersh.png',
+  SHDW: '/apps/dydx-v4/currencies/shdw.png',
+  'SHDW,RAYDIUM,SHDWYBXIHQICJ6YEKG2GUR7WQKLELAMK1GHZCK9PL6Y':
+    '/apps/dydx-v4/currencies/shdw,raydium,shdwybxihqicj6yekg2gur7wqklelamk1ghzck9pl6y.png',
+  SHILL: '/apps/dydx-v4/currencies/shill.png',
+  'SHOG,UNISWAP_V3,0XC8388E437031B09B2C61FC4277469091382A1B13':
+    '/apps/dydx-v4/currencies/shog,uniswap_v3,0xc8388e437031b09b2c61fc4277469091382a1b13.png',
+  SHPING: '/apps/dydx-v4/currencies/shping.png',
+  SHR: '/apps/dydx-v4/currencies/shr.png',
+  'SIGMA,RAYDIUM,5SVG3T9CNQSM2KEWZBRQ6HASQH1OGFJQTTLXYUIBPUMP':
+    '/apps/dydx-v4/currencies/sigma,raydium,5svg3t9cnqsm2kewzbrq6hasqh1ogfjqttlxyuibpump.png',
+  'SKBDI,RAYDIUM,DPAQFQ5SFNOQW2SH9WMMMASFL9LNU6RDTDQWE1TAB2TB':
+    '/apps/dydx-v4/currencies/skbdi,raydium,dpaqfq5sfnoqw2sh9wmmmasfl9lnu6rdtdqwe1tab2tb.png',
+  SKEY: '/apps/dydx-v4/currencies/skey.png',
+  'SKID,RAYDIUM,9X2RHTKRBZW3SLYE9E88CBD1KZ5RFU1F4JTSN4ARH43D':
+    '/apps/dydx-v4/currencies/skid,raydium,9x2rhtkrbzw3slye9e88cbd1kz5rfu1f4jtsn4arh43d.png',
+  SLF: '/apps/dydx-v4/currencies/slf.png',
+  'SLIM,RAYDIUM,XXXXA1SKNGWFTW2KFN8XAUW9XQ8HBZ5KVTCSESTT9FW':
+    '/apps/dydx-v4/currencies/slim,raydium,xxxxa1skngwftw2kfn8xauw9xq8hbz5kvtcsestt9fw.png',
+  SLN: '/apps/dydx-v4/currencies/sln.png',
+  'SLOTH,RAYDIUM,HQ7DAOIUXZC2K1DR7KXRHCCNTXVEYGNVOUEXTXE8DMBH':
+    '/apps/dydx-v4/currencies/sloth,raydium,hq7daoiuxzc2k1dr7kxrhccntxveygnvouextxe8dmbh.png',
+  SMH: '/apps/dydx-v4/currencies/smh.png',
+  'SMILEK,RAYDIUM,7X4FGIFFEQZS1TIUNVJZPT47GTLXAJ8JFN8G1HYYU6JH':
+    '/apps/dydx-v4/currencies/smilek,raydium,7x4fgiffeqzs1tiunvjzpt47gtlxaj8jfn8g1hyyu6jh.png',
+  'SMOG,RAYDIUM,FS66V5XYTJAFO14LIPZ5HT93EUMAHMYIPCFQHLPU4SS8':
+    '/apps/dydx-v4/currencies/smog,raydium,fs66v5xytjafo14lipz5ht93eumahmyipcfqhlpu4ss8.png',
+  'SMOLE,RAYDIUM,9TTYEZ3XIRUYJ6CQAR495HBBKJU6SUWDV6AMQ9MVBYYS':
+    '/apps/dydx-v4/currencies/smole,raydium,9ttyez3xiruyj6cqar495hbbkju6suwdv6amq9mvbyys.png',
+  'SMT,UNISWAP_V3,0XB17548C7B510427BAAC4E267BEA62E800B247173':
+    '/apps/dydx-v4/currencies/smt,uniswap_v3,0xb17548c7b510427baac4e267bea62e800b247173.png',
+  SNC: '/apps/dydx-v4/currencies/snc.png',
+  SNS: '/apps/dydx-v4/currencies/sns.png',
+  'SNSY,UNISWAP_V3,0X82A605D6D9114F4AD6D5EE461027477EEED31E34':
+    '/apps/dydx-v4/currencies/snsy,uniswap_v3,0x82a605d6d9114f4ad6d5ee461027477eeed31e34.png',
+  'SNT,UNISWAP_V3,0X744D70FDBE2BA4CF95131626614A1763DF805B9E':
+    '/apps/dydx-v4/currencies/snt,uniswap_v3,0x744d70fdbe2ba4cf95131626614a1763df805b9e.png',
+  SOCIAL: '/apps/dydx-v4/currencies/social.png',
+  'SOLAMA,RAYDIUM,AVLHAHDCDQ4M4VHM4UG63OH7XC8JTK49DM5HOE9SAZQR':
+    '/apps/dydx-v4/currencies/solama,raydium,avlhahdcdq4m4vhm4ug63oh7xc8jtk49dm5hoe9sazqr.png',
+  'SOLCAT,RAYDIUM,E99FN4TCRB1TQPHXK1DU7PRXJI6HMZXETYPNJRO19FWZ':
+    '/apps/dydx-v4/currencies/solcat,raydium,e99fn4tcrb1tqphxk1du7prxji6hmzxetypnjro19fwz.png',
+  'SOLCEX,RAYDIUM,AMJZRN1TBQWQFNAJHFEBB7UGBBQBJB7FZXANGGDFPK6K':
+    '/apps/dydx-v4/currencies/solcex,raydium,amjzrn1tbqwqfnajhfebb7ugbbqbjb7fzxanggdfpk6k.png',
+  'SOLS,RAYDIUM,2WME8EVKW8QSFSK2B3QEX4S64AC6WXHPXB3GRDCKEKIO':
+    '/apps/dydx-v4/currencies/sols,raydium,2wme8evkw8qsfsk2b3qex4s64ac6wxhpxb3grdckekio.png',
+  'SOLZILLA,RAYDIUM,31IQSAHFA4CMIIRU7REYGBZUAWG4R4AH7Y4ADU9ZFXJP':
+    '/apps/dydx-v4/currencies/solzilla,raydium,31iqsahfa4cmiiru7reygbzuawg4r4ah7y4adu9zfxjp.png',
+  'SOY,RAYDIUM,4G3KNXWAA2UQHDPAQTJWQM1SREXCUD7LKT14V2OES7RV':
+    '/apps/dydx-v4/currencies/soy,raydium,4g3knxwaa2uqhdpaqtjwqm1srexcud7lkt14v2oes7rv.png',
+  SPARKLET: '/apps/dydx-v4/currencies/sparklet.png',
+  SPEC: '/apps/dydx-v4/currencies/spec.png',
+  'SPIKE,RAYDIUM,SPIKEYAQOAGYYBANPXRO8NLSYLU93SR56N352JJRLN5':
+    '/apps/dydx-v4/currencies/spike,raydium,spikeyaqoagyybanpxro8nlsylu93sr56n352jjrln5.png',
+  SPURS: '/apps/dydx-v4/currencies/spurs.png',
+  'SPWN,RAYDIUM,5U9QQCPHQXAJCEV9UYZFJD5ZHN93VUPK1ANNKXNUFPNT':
+    '/apps/dydx-v4/currencies/spwn,raydium,5u9qqcphqxajcev9uyzfjd5zhn93vupk1annkxnufpnt.png',
+  'SPX,RAYDIUM,J3NKXXXZCNNIMJKW9HYB2K4LUXGWB6T1FTPTQVSV3KFR':
+    '/apps/dydx-v4/currencies/spx,raydium,j3nkxxxzcnnimjkw9hyb2k4luxgwb6t1ftptqvsv3kfr.png',
+  'SRM,RAYDIUM,SRMUAPVNDXXOKK5GT7XD5CUUGXMBCOAZ2LHEUAOKWRT':
+    '/apps/dydx-v4/currencies/srm,raydium,srmuapvndxxokk5gt7xd5cuugxmbcoaz2lheuaokwrt.png',
+  SSWP: '/apps/dydx-v4/currencies/sswp.png',
+  STAR: '/apps/dydx-v4/currencies/star.png',
+  'STASH,RAYDIUM,EWMFSJGDCE7CXDAYZ3HBCAA7NSFHTNDDYSXX3SHCO2HS':
+    '/apps/dydx-v4/currencies/stash,raydium,ewmfsjgdce7cxdayz3hbcaa7nsfhtnddysxx3shco2hs.png',
+  'STEP,RAYDIUM,STEPASCQOEIOFXXWGNH2SLBDFP9D8RVKZ2YP39IDPYT':
+    '/apps/dydx-v4/currencies/step,raydium,stepascqoeiofxxwgnh2slbdfp9d8rvkz2yp39idpyt.png',
+  STETH: '/apps/dydx-v4/currencies/steth.png',
+  STIK: '/apps/dydx-v4/currencies/stik.png',
+  STMX: '/apps/dydx-v4/currencies/stmx.png',
+  STOC: '/apps/dydx-v4/currencies/stoc.png',
+  'STOG,RAYDIUM,AHNZ7VYYQ5JHXBITQL8TUN7CIGG66EVCNU7EKOKX99FZ':
+    '/apps/dydx-v4/currencies/stog,raydium,ahnz7vyyq5jhxbitql8tun7cigg66evcnu7ekokx99fz.png',
+  STT: '/apps/dydx-v4/currencies/stt.png',
+  SUNCAT: '/apps/dydx-v4/currencies/suncat.png',
+  'SUSDE,UNISWAP_V3,0X9D39A5DE30E57443BFF2A8307A4256C8797A3497':
+    '/apps/dydx-v4/currencies/susde,uniswap_v3,0x9d39a5de30e57443bff2a8307a4256c8797a3497.png',
+  SVL: '/apps/dydx-v4/currencies/svl.png',
+  SWCH: '/apps/dydx-v4/currencies/swch.png',
+  'SWITCH,UNISWAP_V3,0XB10CC888CB2CCE7036F4C7ECAD8A57DA16161338':
+    '/apps/dydx-v4/currencies/switch,uniswap_v3,0xb10cc888cb2cce7036f4c7ecad8a57da16161338.png',
+  'SYP,RAYDIUM,FNKE9N6AGJQONWRBZXY4RW6LZVAO7QWBONUBID7EDUMZ':
+    '/apps/dydx-v4/currencies/syp,raydium,fnke9n6agjqonwrbzxy4rw6lzvao7qwbonubid7edumz.png',
+  TADA: '/apps/dydx-v4/currencies/tada.png',
+  TAI: '/apps/dydx-v4/currencies/tai.png',
+  TAKI: '/apps/dydx-v4/currencies/taki.png',
+  TAP: '/apps/dydx-v4/currencies/tap.png',
+  TARA: '/apps/dydx-v4/currencies/tara.png',
+  TET: '/apps/dydx-v4/currencies/tet.png',
+  TKO: '/apps/dydx-v4/currencies/tko.png',
+  'TMANIA,RAYDIUM,HUPSPKKI5QDNF5WAU7JTETHKEMHNI6XQ23TUNZRKZWUI':
+    '/apps/dydx-v4/currencies/tmania,raydium,hupspkki5qdnf5wau7jtethkemhni6xq23tunzrkzwui.png',
+  TOKEN: '/apps/dydx-v4/currencies/token.png',
+  'TOOKER,RAYDIUM,9EYSCPIYSGNEIMNQPZAZR7JN9GVFXFYZGTEJ85HV9L6U':
+    '/apps/dydx-v4/currencies/tooker,raydium,9eyscpiysgneimnqpzazr7jn9gvfxfyzgtej85hv9l6u.png',
+  'TORSY,RAYDIUM,5YQCKGEKWHJMP9LW5AUF2UJRDUBMJAHCYNGJA8M7EBW8':
+    '/apps/dydx-v4/currencies/torsy,raydium,5yqckgekwhjmp9lw5auf2ujrdubmjahcyngja8m7ebw8.png',
+  TOX: '/apps/dydx-v4/currencies/tox.png',
+  TRADE: '/apps/dydx-v4/currencies/trade.png',
+  TRC: '/apps/dydx-v4/currencies/trc.png',
+  'TREMP,RAYDIUM,FU1Q8VJPZNURMQSCISJP8BAKKIDGSLMOUB8CBDF8TKQV':
+    '/apps/dydx-v4/currencies/tremp,raydium,fu1q8vjpznurmqscisjp8bakkidgslmoub8cbdf8tkqv.png',
+  TRIAS: '/apps/dydx-v4/currencies/trias.png',
+  TROLL: '/apps/dydx-v4/currencies/troll.png',
+  TROY: '/apps/dydx-v4/currencies/troy.png',
+  'TRUF,UNISWAP_V3,0X38C2A4A7330B22788374B8FF70BBA513C8D848CA':
+    '/apps/dydx-v4/currencies/truf,uniswap_v3,0x38c2a4a7330b22788374b8ff70bba513c8d848ca.png',
+  'TRUMP,UNISWAP-V3-BASE,0X57F5FBD3DE65DFC0BD3630F732969E5FB97E6D37':
+    '/apps/dydx-v4/currencies/trump,uniswap-v3-base,0x57f5fbd3de65dfc0bd3630f732969e5fb97e6d37.png',
+  TRUMPCOIN: '/apps/dydx-v4/currencies/trumpcoin.png',
+  UAH: '/apps/dydx-v4/currencies/uah.png',
+  UDS: '/apps/dydx-v4/currencies/uds.png',
+  'UFO,RAYDIUM,99MYNE1MVNSSV2KAKZZDFNNWF5XB4SASJNACRXDBPUMP':
+    '/apps/dydx-v4/currencies/ufo,raydium,99myne1mvnssv2kakzzdfnnwf5xb4sasjnacrxdbpump.png',
+  ULD: '/apps/dydx-v4/currencies/uld.png',
+  UPC: '/apps/dydx-v4/currencies/upc.png',
+  'UPDOG,RAYDIUM,HJ39RRZ6YS22KDB3USXDGNSL7RKIQMSC3YL8AS3SUUKU':
+    '/apps/dydx-v4/currencies/updog,raydium,hj39rrz6ys22kdb3usxdgnsl7rkiqmsc3yl8as3suuku.png',
+  'USA,RAYDIUM,69KDRLYP5DTRKPHRAASZAQBWMAWZF9GUKJZFZMXZCBAS':
+    '/apps/dydx-v4/currencies/usa,raydium,69kdrlyp5dtrkphraaszaqbwmawzf9gukjzfzmxzcbas.png',
+  USBT: '/apps/dydx-v4/currencies/usbt.png',
+  'USEDCAR,RAYDIUM,9GWTEGFJJERDPWJKJPFLR2G2ZRE3NL1V5ZPWBTSK3C6P':
+    '/apps/dydx-v4/currencies/usedcar,raydium,9gwtegfjjerdpwjkjpflr2g2zre3nl1v5zpwbtsk3c6p.png',
+  VAI: '/apps/dydx-v4/currencies/vai.png',
+  VARA: '/apps/dydx-v4/currencies/vara.png',
+  VC: '/apps/dydx-v4/currencies/vc.png',
+  VELAR: '/apps/dydx-v4/currencies/velar.png',
+  'VEMP,UNISWAP_V3,0XCFEB09C3C5F0F78AD72166D55F9E6E9A60E96EEC':
+    '/apps/dydx-v4/currencies/vemp,uniswap_v3,0xcfeb09c3c5f0f78ad72166d55f9e6e9a60e96eec.png',
+  VERSE: '/apps/dydx-v4/currencies/verse.png',
+  VGX: '/apps/dydx-v4/currencies/vgx.png',
+  VIB: '/apps/dydx-v4/currencies/vib.png',
+  VISTA: '/apps/dydx-v4/currencies/vista.png',
+  VITE: '/apps/dydx-v4/currencies/vite.png',
+  VPR: '/apps/dydx-v4/currencies/vpr.png',
+  'VSG,UNISWAP_V3,0X58AEA10748A00D1781D6651F9D78A414EA32CA46':
+    '/apps/dydx-v4/currencies/vsg,uniswap_v3,0x58aea10748a00d1781d6651f9d78a414ea32ca46.png',
+  'WAFFLES,RAYDIUM,8DOS8NZMGVZEAACXALKBK5FZTW4UUORP4YT8NEAXFDMB':
+    '/apps/dydx-v4/currencies/waffles,raydium,8dos8nzmgvzeaacxalkbk5fztw4uuorp4yt8neaxfdmb.png',
+  'WALTER,RAYDIUM,FV56CMR7FHEYPKYMKFMVIKV48UPO51TI9KAXSSQQTDLU':
+    '/apps/dydx-v4/currencies/walter,raydium,fv56cmr7fheypkymkfmvikv48upo51ti9kaxssqqtdlu.png',
+  'WAM,RAYDIUM,7HDEO5QCIUF8S2VFSX6URJKDNVADBU3DDCXW4ZJDCMIN':
+    '/apps/dydx-v4/currencies/wam,raydium,7hdeo5qciuf8s2vfsx6urjkdnvadbu3ddcxw4zjdcmin.png',
+  WAMPL: '/apps/dydx-v4/currencies/wampl.png',
+  WATER: '/apps/dydx-v4/currencies/water.png',
+  WBETH: '/apps/dydx-v4/currencies/wbeth.png',
+  WBT: '/apps/dydx-v4/currencies/wbt.png',
+  WCFG: '/apps/dydx-v4/currencies/wcfg.png',
+  'WDOG,RAYDIUM,GYKMDFCUMZVRQFCH1G579BGJUZSRIJJ3LBUWV79RPUMP':
+    '/apps/dydx-v4/currencies/wdog,raydium,gykmdfcumzvrqfch1g579bgjuzsrijj3lbuwv79rpump.png',
+  'WETH,UNISWAP_V3,0XC02AAA39B223FE8D0A0E5C4F27EAD9083C756CC2':
+    '/apps/dydx-v4/currencies/weth,uniswap_v3,0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2.png',
+  'WHALES,RAYDIUM,GTH3WG3NERJWCF7VGCOXEXKGXSHVYHX5GTATEEM5JAS1':
+    '/apps/dydx-v4/currencies/whales,raydium,gth3wg3nerjwcf7vgcoxexkgxshvyhx5gtateem5jas1.png',
+  WHY: '/apps/dydx-v4/currencies/why.png',
+  WING: '/apps/dydx-v4/currencies/wing.png',
+  WLTH: '/apps/dydx-v4/currencies/wlth.png',
+  'WMT,UNISWAP_V3,0X263B6B028F3E4ED8C4329EB2B5F409EE38D97296':
+    '/apps/dydx-v4/currencies/wmt,uniswap_v3,0x263b6b028f3e4ed8c4329eb2b5f409ee38d97296.png',
+  WNCG: '/apps/dydx-v4/currencies/wncg.png',
+  'WOLF,UNISWAP_V3,0X67466BE17DF832165F8C80A5A120CCC652BD7E69':
+    '/apps/dydx-v4/currencies/wolf,uniswap_v3,0x67466be17df832165f8c80a5a120ccc652bd7e69.png',
+  'WSTETH,UNISWAP_V3,0X7F39C581F595B53C5CB19BD0B3F8DA6C935E2CA0':
+    '/apps/dydx-v4/currencies/wsteth,uniswap_v3,0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0.png',
+  WSTUSDT: '/apps/dydx-v4/currencies/wstusdt.png',
+  X: '/apps/dydx-v4/currencies/x.png',
+  XAR: '/apps/dydx-v4/currencies/xar.png',
+  'XB,RAYDIUM,2UAUGWYH22SJJTATQMJ2AGEL2RBDIRKKUAK2QCCSAFCA':
+    '/apps/dydx-v4/currencies/xb,raydium,2uaugwyh22sjjtatqmj2agel2rbdirkkuak2qccsafca.png',
+  XCHNG: '/apps/dydx-v4/currencies/xchng.png',
+  XDB: '/apps/dydx-v4/currencies/xdb.png',
+  XSWAP: '/apps/dydx-v4/currencies/xswap.png',
+  XVS: '/apps/dydx-v4/currencies/xvs.png',
+  'XYO,UNISWAP_V3,0X55296F69F40EA6D20E478533C15A6B08B654E758':
+    '/apps/dydx-v4/currencies/xyo,uniswap_v3,0x55296f69f40ea6d20e478533c15a6b08b654e758.png',
+  YFII: '/apps/dydx-v4/currencies/yfii.png',
+  'YOUNES,RAYDIUM,ANAUIZ2JJRVNTYW8CD7USQ4LRWB1PTGHYRGMWPXTPUMP':
+    '/apps/dydx-v4/currencies/younes,raydium,anauiz2jjrvntyw8cd7usq4lrwb1ptghyrgmwpxtpump.png',
+  'ZACK,RAYDIUM,8VCAUBXEJDTAXN6JNX5UAQTYTZLMXALG9U1BVFCAJTX7':
+    '/apps/dydx-v4/currencies/zack,raydium,8vcaubxejdtaxn6jnx5uaqtytzlmxalg9u1bvfcajtx7.png',
+  ZAM: '/apps/dydx-v4/currencies/zam.png',
+  'ZAP,RAYDIUM,HXPOEHMT1VKEQJKCEPCQTJ6YYGN6XQQ1FKTY3PJX4YRX':
+    '/apps/dydx-v4/currencies/zap,raydium,hxpoehmt1vkeqjkcepcqtj6yygn6xqq1fkty3pjx4yrx.png',
+  ZAR: '/apps/dydx-v4/currencies/zar.png',
+  ZBU: '/apps/dydx-v4/currencies/zbu.png',
+  'ZERO,RAYDIUM,93RC484OMK5T9H89RZT5QIAXKHGP9JSCXFFFRIHNBE57':
+    '/apps/dydx-v4/currencies/zero,raydium,93rc484omk5t9h89rzt5qiaxkhgp9jscxfffrihnbe57.png',
+  ZKP: '/apps/dydx-v4/currencies/zkp.png',
+  ZTX: '/apps/dydx-v4/currencies/ztx.png',
 } as const;
 
 const Placeholder = ({ className, symbol }: { className?: string; symbol: string }) => (
@@ -670,28 +1610,47 @@ const isAssetSymbol = (symbol: Nullable<string>): symbol is AssetSymbol =>
   symbol != null && Object.hasOwn(assetIcons, symbol);
 
 export const AssetIcon = ({
+  logoUrl,
   symbol,
   className,
 }: {
+  logoUrl?: string;
   symbol?: Nullable<string>;
   className?: string;
 }) =>
-  isAssetSymbol(symbol) ? (
-    <$Img src={assetIcons[symbol]} className={className} alt={symbol} />
+  logoUrl ? (
+    <img
+      src={logoUrl}
+      className={className}
+      alt={symbol ?? 'logo'}
+      tw="h-[1em] w-auto rounded-[50%]"
+    />
+  ) : isAssetSymbol(symbol) ? (
+    <$AssetIcon src={assetIcons[symbol]} className={className} alt={symbol} />
   ) : (
     <Placeholder className={className} symbol={symbol ?? ''} />
   );
 
-const $Img = styled.img`
-  width: auto;
-  height: 1em;
+const $AssetIcon = styled.img`
+  --asset-icon-size: 1em;
+
+  height: var(--asset-icon-size);
+  min-height: var(--asset-icon-size);
+  width: var(--asset-icon-size);
+  min-width: var(--asset-icon-size);
+
   border-radius: 50%;
 `;
 
 const $Placeholder = styled.div`
+  --asset-icon-size: 1em;
+
+  height: var(--asset-icon-size);
+  min-height: var(--asset-icon-size);
+  width: var(--asset-icon-size);
+  min-width: var(--asset-icon-size);
+
   background-color: var(--color-layer-5);
-  width: 1em;
-  height: 1em;
   border-radius: 50%;
   overflow: hidden;
 

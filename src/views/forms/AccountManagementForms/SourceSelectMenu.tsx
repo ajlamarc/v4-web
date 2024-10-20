@@ -1,25 +1,33 @@
+import { useMemo } from 'react';
+
 import { shallowEqual } from 'react-redux';
-import styled from 'styled-components';
+import tw from 'twin.macro';
 
 import { TransferType } from '@/constants/abacus';
+import {
+  cctpTokensByChainId,
+  getMapOfHighestFeeTokensByChainId,
+  getMapOfLowestFeeTokensByChainId,
+} from '@/constants/cctp';
+import { SUPPORTED_COSMOS_CHAINS } from '@/constants/graz';
 import { STRING_KEYS } from '@/constants/localization';
 import { EMPTY_ARR } from '@/constants/objects';
-import { WalletType } from '@/constants/wallets';
+import { ConnectorType, WalletType } from '@/constants/wallets';
 
 import { useAccounts } from '@/hooks/useAccounts';
 import { useEnvFeatures } from '@/hooks/useEnvFeatures';
 import { useStringGetter } from '@/hooks/useStringGetter';
 
-import { layoutMixins } from '@/styles/layoutMixins';
-
 import { SearchSelectMenu } from '@/components/SearchSelectMenu';
 
+import { getSelectedDydxChainId } from '@/state/appSelectors';
 import { useAppSelector } from '@/state/appTypes';
 import { getTransferInputs } from '@/state/inputsSelectors';
 
 import { isTruthy } from '@/lib/isTruthy';
 
-import cctpTokens from '../../../../public/configs/cctp.json';
+import { HighestFeesDecoratorText } from './HighestFeesText';
+import { LowestFeesDecoratorText } from './LowestFeesText';
 
 type ElementProps = {
   label?: string;
@@ -28,22 +36,7 @@ type ElementProps = {
   onSelect: (name: string, type: 'chain' | 'exchange') => void;
 };
 
-export type TokenInfo = {
-  chainId: string;
-  tokenAddress: string;
-  name: string;
-};
-
-const cctpTokensByChainId = cctpTokens.reduce(
-  (acc, token) => {
-    if (!acc[token.chainId]) {
-      acc[token.chainId] = [];
-    }
-    acc[token.chainId].push(token);
-    return acc;
-  },
-  {} as Record<string, TokenInfo[]>
-);
+const solanaChainIdPrefix = 'solana';
 
 export const SourceSelectMenu = ({
   label,
@@ -51,8 +44,14 @@ export const SourceSelectMenu = ({
   selectedChain,
   onSelect,
 }: ElementProps) => {
-  const { walletType } = useAccounts();
-  const { CCTPWithdrawalOnly, CCTPDepositOnly } = useEnvFeatures();
+  const { sourceAccount } = useAccounts();
+  const selectedDydxChainId = useAppSelector(getSelectedDydxChainId);
+  const { CCTPWithdrawalOnly, CCTPDepositOnly: initialCCTPDepositValue } = useEnvFeatures();
+  // Only CCTP deposits are supported for Phantom / Solana
+  const CCTPDepositOnly =
+    sourceAccount.walletInfo?.connectorType === ConnectorType.PhantomSolana
+      ? true
+      : initialCCTPDepositValue;
 
   const stringGetter = useStringGetter();
   const { type, depositOptions, withdrawalOptions } =
@@ -65,9 +64,20 @@ export const SourceSelectMenu = ({
     (type === TransferType.deposit ? depositOptions : withdrawalOptions)?.exchanges?.toArray() ??
     EMPTY_ARR;
 
+  const lowestFeeTokensByChainId = useMemo(() => getMapOfLowestFeeTokensByChainId(type), [type]);
+
+  const highestFeeTokensByChainId = useMemo(() => getMapOfHighestFeeTokensByChainId(type), [type]);
+  const isKeplrWallet = sourceAccount.walletInfo?.name === WalletType.Keplr;
+
   // withdrawals SourceSelectMenu is half width size so we must throw the decorator text
   // in the description prop (renders below the item label) instead of in the slotAfter
-  const lowestFeesDecoratorProp = type === TransferType.deposit ? 'slotAfter' : 'description';
+  const feesDecoratorProp = type === TransferType.deposit ? 'slotAfter' : 'description';
+
+  const getFeeDecoratorComponentForChainId = (chainId: string) => {
+    if (lowestFeeTokensByChainId[chainId]) return <LowestFeesDecoratorText />;
+    if (highestFeeTokensByChainId[chainId]) return <HighestFeesDecoratorText />;
+    return null;
+  };
 
   const chainItems = Object.values(chains)
     .map((chain) => ({
@@ -77,21 +87,22 @@ export const SourceSelectMenu = ({
         onSelect(chain.type, 'chain');
       },
       slotBefore: <$Img src={chain.iconUrl ?? undefined} alt="" />,
-      [lowestFeesDecoratorProp]: !!cctpTokensByChainId[chain.type] && (
-        <$Text>
-          {stringGetter({
-            key: STRING_KEYS.LOWEST_FEES_WITH_USDC,
-            params: {
-              LOWEST_FEES_HIGHLIGHT_TEXT: (
-                <$GreenHighlight>
-                  {stringGetter({ key: STRING_KEYS.LOWEST_FEES_HIGHLIGHT_TEXT })}
-                </$GreenHighlight>
-              ),
-            },
-          })}
-        </$Text>
-      ),
+      [feesDecoratorProp]: getFeeDecoratorComponentForChainId(chain.type),
     }))
+    .filter((chain) => {
+      // only cosmos chains are supported on kepler
+      if (isKeplrWallet) {
+        return selectedDydxChainId !== chain.value && SUPPORTED_COSMOS_CHAINS.includes(chain.value);
+      }
+      // only solana chains are supported on phantom
+      if (sourceAccount.walletInfo?.connectorType === ConnectorType.PhantomSolana) {
+        return selectedDydxChainId !== chain.value && chain.value.startsWith(solanaChainIdPrefix);
+      }
+      // other wallets do not support solana
+      if (chain.value.startsWith(solanaChainIdPrefix)) return false;
+
+      return true;
+    })
     .filter((chain) => {
       // if deposit and CCTPDepositOnly enabled, only return cctp tokens
       if (type === TransferType.deposit && CCTPDepositOnly) {
@@ -101,9 +112,12 @@ export const SourceSelectMenu = ({
       if (type === TransferType.withdrawal && CCTPWithdrawalOnly) {
         return !!cctpTokensByChainId[chain.value];
       }
+
       return true;
     })
-    .sort((chain) => (cctpTokensByChainId[chain.value] ? -1 : 1));
+    // we want lowest fee tokens first followed by non-lowest fee cctp tokens
+    .sort((chain) => (cctpTokensByChainId[chain.value] ? -1 : 1))
+    .sort((chain) => (lowestFeeTokensByChainId[chain.value] ? -1 : 1));
 
   const exchangeItems = Object.values(exchanges).map((exchange) => ({
     value: exchange.type,
@@ -112,20 +126,22 @@ export const SourceSelectMenu = ({
       onSelect(exchange.type, 'exchange');
     },
     slotBefore: <$Img src={exchange.iconUrl ?? undefined} alt="" />,
+    [feesDecoratorProp]: <LowestFeesDecoratorText />,
   }));
 
   const selectedChainOption = chains.find((item) => item.type === selectedChain);
   const selectedExchangeOption = exchanges.find((item) => item.type === selectedExchange);
-  const isNotPrivyDeposit = type === TransferType.withdrawal || walletType !== WalletType.Privy;
-
+  const isNotPrivyDeposit =
+    type === TransferType.withdrawal || sourceAccount.walletInfo?.name !== WalletType.Privy;
   return (
     <SearchSelectMenu
       items={[
-        exchangeItems.length > 0 && {
-          group: 'exchanges',
-          groupLabel: stringGetter({ key: STRING_KEYS.EXCHANGES }),
-          items: exchangeItems,
-        },
+        !isKeplrWallet &&
+          exchangeItems.length > 0 && {
+            group: 'exchanges',
+            groupLabel: stringGetter({ key: STRING_KEYS.EXCHANGES }),
+            items: exchangeItems,
+          },
         // only block privy wallets for deposits
         isNotPrivyDeposit &&
           chainItems.length > 0 && {
@@ -134,9 +150,14 @@ export const SourceSelectMenu = ({
             items: chainItems,
           },
       ].filter(isTruthy)}
-      label={label ?? (type === TransferType.deposit ? 'Source' : 'Destination')}
+      label={
+        label ??
+        stringGetter({
+          key: type === TransferType.deposit ? STRING_KEYS.SOURCE : STRING_KEYS.DESTINATION,
+        })
+      }
     >
-      <$ChainRow>
+      <div tw="row gap-0.5 text-color-text-2 font-base-book">
         {selectedChainOption ? (
           <>
             <$Img src={selectedChainOption.iconUrl ?? undefined} alt="" />{' '}
@@ -150,29 +171,9 @@ export const SourceSelectMenu = ({
         ) : (
           stringGetter({ key: STRING_KEYS.SELECT_CHAIN })
         )}
-      </$ChainRow>
+      </div>
     </SearchSelectMenu>
   );
 };
 
-const $Img = styled.img`
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 50%;
-`;
-
-const $ChainRow = styled.div`
-  ${layoutMixins.row}
-  gap: 0.5rem;
-  color: var(--color-text-2);
-  font: var(--font-base-book);
-`;
-
-const $Text = styled.div`
-  font: var(--font-small-regular);
-  color: var(--color-text-0);
-`;
-
-const $GreenHighlight = styled.span`
-  color: var(--color-green);
-`;
+const $Img = tw.img`h-1.25 w-1.25 rounded-[50%]`;

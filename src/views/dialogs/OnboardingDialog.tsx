@@ -1,34 +1,33 @@
-import { useEffect, useState, type ElementType } from 'react';
+import { useEffect, useState } from 'react';
 
 import styled, { css } from 'styled-components';
+import tw from 'twin.macro';
 
 import { EvmDerivedAccountStatus, OnboardingSteps } from '@/constants/account';
 import { AnalyticsEvents } from '@/constants/analytics';
 import { DialogProps, OnboardingDialogProps } from '@/constants/dialogs';
 import { STRING_KEYS } from '@/constants/localization';
 import { isMainnet } from '@/constants/networks';
-import { WalletType, wallets } from '@/constants/wallets';
+import { ConnectorType, WalletInfo, WalletType } from '@/constants/wallets';
 
 import { useAccounts } from '@/hooks/useAccounts';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useStringGetter } from '@/hooks/useStringGetter';
 
 import breakpoints from '@/styles/breakpoints';
-import { layoutMixins } from '@/styles/layoutMixins';
 
 import { Dialog, DialogPlacement } from '@/components/Dialog';
 import { GreenCheckCircle } from '@/components/GreenCheckCircle';
-import { Icon } from '@/components/Icon';
 import { Ring } from '@/components/Ring';
+import { WalletIcon } from '@/components/WalletIcon';
 import { TestnetDepositForm } from '@/views/forms/AccountManagementForms/TestnetDepositForm';
 
 import { calculateOnboardingStep } from '@/state/accountCalculators';
 import { useAppSelector } from '@/state/appTypes';
 
-import { track } from '@/lib/analytics';
+import { track } from '@/lib/analytics/analytics';
 
 import { DepositForm } from '../forms/AccountManagementForms/DepositForm';
-import { AcknowledgeTerms } from './OnboardingDialog/AcknowledgeTerms';
 import { ChooseWallet } from './OnboardingDialog/ChooseWallet';
 import { GenerateKeys } from './OnboardingDialog/GenerateKeys';
 
@@ -38,26 +37,27 @@ export const OnboardingDialog = ({ setIsOpen }: DialogProps<OnboardingDialogProp
   const stringGetter = useStringGetter();
   const { isMobile } = useBreakpoints();
 
-  const { selectWalletType, disconnect, walletType } = useAccounts();
+  const { selectWallet, sourceAccount } = useAccounts();
 
   const currentOnboardingStep = useAppSelector(calculateOnboardingStep);
 
   useEffect(() => {
     if (!currentOnboardingStep) setIsOpen?.(false);
-  }, [currentOnboardingStep]);
+  }, [currentOnboardingStep, setIsOpen]);
 
   const setIsOpenFromDialog = (open: boolean) => {
-    if (!open && currentOnboardingStep === OnboardingSteps.AcknowledgeTerms) {
-      disconnect();
-    }
     setIsOpen?.(open);
   };
 
-  const onChooseWallet = (wType: WalletType) => {
-    if (wType === WalletType.Privy) {
+  const onChooseWallet = (wallet: WalletInfo) => {
+    if (wallet.connectorType === ConnectorType.DownloadWallet) {
+      window.open(wallet.downloadLink, '_blank');
+      return;
+    }
+    if (wallet.name === WalletType.Privy || wallet.name === WalletType.Keplr) {
       setIsOpenFromDialog(false);
     }
-    selectWalletType(wType);
+    selectWallet(wallet);
   };
 
   return (
@@ -68,7 +68,7 @@ export const OnboardingDialog = ({ setIsOpen }: DialogProps<OnboardingDialogProp
         {
           [OnboardingSteps.ChooseWallet]: {
             title: stringGetter({ key: STRING_KEYS.CONNECT_YOUR_WALLET }),
-            description: 'Select your wallet from these supported options.',
+            description: stringGetter({ key: STRING_KEYS.CONNECT_YOUR_WALLET_SUBTITLE }),
             children: (
               <$Content>
                 <ChooseWallet onChooseWallet={onChooseWallet} />
@@ -77,8 +77,8 @@ export const OnboardingDialog = ({ setIsOpen }: DialogProps<OnboardingDialogProp
           },
           [OnboardingSteps.KeyDerivation]: {
             slotIcon: {
-              [EvmDerivedAccountStatus.NotDerived]: walletType && (
-                <Icon iconComponent={wallets[walletType]?.icon as ElementType} />
+              [EvmDerivedAccountStatus.NotDerived]: sourceAccount.walletInfo && (
+                <WalletIcon wallet={sourceAccount.walletInfo} />
               ),
               [EvmDerivedAccountStatus.Deriving]: <$Ring withAnimation value={0.25} />,
               [EvmDerivedAccountStatus.EnsuringDeterminism]: <$Ring withAnimation value={0.25} />,
@@ -92,15 +92,6 @@ export const OnboardingDialog = ({ setIsOpen }: DialogProps<OnboardingDialogProp
               </$Content>
             ),
             width: '23rem',
-          },
-          [OnboardingSteps.AcknowledgeTerms]: {
-            title: stringGetter({ key: STRING_KEYS.ACKNOWLEDGE_TERMS }),
-            children: (
-              <$Content>
-                <AcknowledgeTerms onClose={() => setIsOpenFromDialog?.(false)} />
-              </$Content>
-            ),
-            width: '30rem',
           },
           [OnboardingSteps.DepositFunds]: {
             title: stringGetter({ key: STRING_KEYS.DEPOSIT }),
@@ -128,10 +119,7 @@ export const OnboardingDialog = ({ setIsOpen }: DialogProps<OnboardingDialogProp
     />
   );
 };
-const $Content = styled.div`
-  ${layoutMixins.flexColumn}
-  gap: 1rem;
-`;
+const $Content = tw.div`flexColumn gap-1`;
 
 const $Dialog = styled(Dialog)<{ width?: string }>`
   @media ${breakpoints.notMobile} {
@@ -145,8 +133,4 @@ const $Dialog = styled(Dialog)<{ width?: string }>`
   --dialog-icon-size: 1.25rem;
 `;
 
-const $Ring = styled(Ring)`
-  width: 1.25rem;
-  height: 1.25rem;
-  --ring-color: var(--color-accent);
-`;
+const $Ring = tw(Ring)`w-1.25 h-1.25 [--ring-color:--color-accent]`;

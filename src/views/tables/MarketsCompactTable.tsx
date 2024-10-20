@@ -21,7 +21,7 @@ import { Output, OutputType } from '@/components/Output';
 import { Table, type ColumnDef } from '@/components/Table';
 import { AssetTableCell } from '@/components/Table/AssetTableCell';
 import { TableCell } from '@/components/Table/TableCell';
-import { Tag } from '@/components/Tag';
+import { NewTag } from '@/components/Tag';
 import { TriangleIndicator } from '@/components/TriangleIndicator';
 
 import { MustBigNumber } from '@/lib/numbers';
@@ -50,7 +50,19 @@ export const MarketsCompactTable = ({
           columnKey: 'market',
           allowsSorting: false,
           label: stringGetter({ key: STRING_KEYS.MARKET }),
-          renderCell: ({ asset }) => <AssetTableCell stacked asset={asset} />,
+          renderCell: ({
+            assetId,
+            effectiveInitialMarginFraction,
+            initialMarginFraction,
+            name,
+          }) => (
+            <AssetTableCell
+              stacked
+              configs={{ effectiveInitialMarginFraction, initialMarginFraction }}
+              name={name}
+              symbol={assetId}
+            />
+          ),
         },
         {
           columnKey: 'oraclePrice',
@@ -63,12 +75,13 @@ export const MarketsCompactTable = ({
             tickSizeDecimals,
           }) => (
             <TableCell stacked>
-              <$TabletOutput
+              <Output
                 withBaseFont
                 withSubscript
                 type={OutputType.Fiat}
                 value={oraclePrice}
                 fractionDigits={tickSizeDecimals}
+                tw="text-color-text-1 font-small-medium"
               />
               <$TabletPriceChange>
                 {!priceChange24H ? (
@@ -94,11 +107,12 @@ export const MarketsCompactTable = ({
           ? {
               columnKey: 'listing',
               allowsSorting: false,
+              label: undefined,
               renderCell: ({ isNew }) => (
                 <$DetailsCell>
                   {isNew && (
                     <$RecentlyListed>
-                      <$NewTag>{stringGetter({ key: STRING_KEYS.NEW })}</$NewTag>
+                      <NewTag>{stringGetter({ key: STRING_KEYS.NEW })}</NewTag>
                     </$RecentlyListed>
                   )}
                   <Icon iconName={IconName.ChevronRight} />
@@ -109,21 +123,22 @@ export const MarketsCompactTable = ({
               columnKey: 'openInterest',
               allowsSorting: false,
               label: stringGetter({ key: STRING_KEYS.OPEN_INTEREST }),
-              renderCell: ({ asset, openInterestUSDC, openInterest }) => (
+              renderCell: ({ assetId, openInterestUSDC, openInterest }) => (
                 <$DetailsCell>
                   <$RecentlyListed>
                     <Output type={OutputType.CompactFiat} value={openInterestUSDC} />
-                    <$InterestOutput
+                    <Output
                       type={OutputType.CompactNumber}
                       value={openInterest}
-                      slotRight={` ${asset.id}`}
+                      slotRight={` ${assetId}`}
+                      tw="text-color-text-0 font-mini-medium"
                     />
                   </$RecentlyListed>
                   <Icon iconName={IconName.ChevronRight} />
                 </$DetailsCell>
               ),
             },
-      ] as ColumnDef<MarketData>[],
+      ] satisfies ColumnDef<MarketData>[],
     [stringGetter, isTablet]
   );
 
@@ -161,7 +176,7 @@ export const MarketsCompactTable = ({
     <$Table
       withInnerBorders
       data={sortedMarkets.slice(0, 3)}
-      getRowKey={(row) => row.market ?? ''}
+      getRowKey={(row) => row.id ?? ''}
       label="Markets"
       onRowAction={(market: Key) =>
         navigate(`${AppRoute.Trade}/${market}`, { state: { from: AppRoute.Markets } })
@@ -244,12 +259,6 @@ const $Table = styled(Table)`
     }
   }
 ` as typeof Table;
-
-const $TabletOutput = styled(Output)`
-  font: var(--font-small-medium);
-  color: var(--color-text-1);
-`;
-
 const $TabletPriceChange = styled.div`
   ${layoutMixins.inlineRow}
 
@@ -303,15 +312,4 @@ const $RecentlyListed = styled.div`
     text-align: right;
     justify-content: flex-end;
   }
-`;
-
-const $InterestOutput = styled(Output)`
-  color: var(--color-text-0);
-  font: var(--font-mini-medium);
-`;
-
-const $NewTag = styled(Tag)`
-  background-color: var(--color-accent-faded);
-  color: var(--color-accent);
-  text-transform: uppercase;
 `;

@@ -54,8 +54,8 @@ export const DropdownHeaderMenu = <MenuItemValue extends string>({
               onSelect={() => (onSelect ?? onValueChange)?.(value)}
               disabled={disabled}
             >
-              <$ItemLabel>{label}</$ItemLabel>
-              <$Description>{description}</$Description>
+              <span tw="text-color-text-2 font-medium-book">{label}</span>
+              <span tw="text-color-text-0 font-small-book">{description}</span>
             </$Item>
           ))}
         </$Content>
@@ -74,7 +74,8 @@ const $Trigger = styled(Trigger)`
   --trigger-open-textColor: var(--color-text-2);
 
   &[data-state='open']:after {
-    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: brightness(var(--overlay-filter));
+    backdrop-filter: brightness(var(--overlay-filter));
     height: 100vh;
   }
 
@@ -84,7 +85,7 @@ const $Trigger = styled(Trigger)`
   font: var(--font-extra-medium);
   outline: none;
 
-  :hover {
+  &:hover {
     filter: brightness(var(--hover-filter-base));
   }
 `;
@@ -121,14 +122,4 @@ const $Item = styled(Item)`
 
   ${layoutMixins.column}
   gap: 0.5rem;
-`;
-
-const $ItemLabel = styled.span`
-  color: var(--color-text-2);
-  font: var(--font-medium-book);
-`;
-
-const $Description = styled.span`
-  color: var(--color-text-0);
-  font: var(--font-small-book);
 `;

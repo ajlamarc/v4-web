@@ -1,8 +1,10 @@
+import { mapValues } from 'lodash';
+
 import { Nullable } from '@/constants/abacus';
-import { Candle, TradingViewBar } from '@/constants/candles';
+import { Candle, TradingViewChartBar } from '@/constants/candles';
 import { EMPTY_ARR, EMPTY_OBJ } from '@/constants/objects';
 
-import { BIG_NUMBERS } from '@/lib/numbers';
+import { calculateMarketMaxLeverage } from '@/lib/marketsHelpers';
 import { mapCandle } from '@/lib/tradingView/utils';
 import { orEmptyObj } from '@/lib/typeUtils';
 
@@ -15,9 +17,17 @@ import { createAppSelector } from './appTypes';
 export const getMarketFilter = (state: RootState) => state.perpetuals.marketFilter;
 
 /**
- * @returns marketId of the market the user is currently viewing
+ * @returns marketId of the market the user is currently viewing (Internal)
  */
 export const getCurrentMarketId = (state: RootState) => state.perpetuals.currentMarketId;
+
+/**
+ * @returns displayId of the currentMarket the user is viewing (Render)
+ */
+export const getCurrentMarketDisplayId = (state: RootState) => {
+  const currentMarketId = getCurrentMarketId(state) ?? '';
+  return state.perpetuals?.markets?.[currentMarketId]?.displayId;
+};
 
 /**
  * @returns assetId of the currentMarket
@@ -167,15 +177,15 @@ export const getPerpetualCandlesForMarket = (
  *
  * @param marketId
  * @param resolution
- * @returns TradingViewBar data for specified marketId and resolution
+ * @returns TradingViewChartBar data for specified marketId and resolution
  */
-export const getPerpetualBarsForPriceChart = () =>
+export const getPerpetualBarsForPriceChart = (orderbookCandlesToggleOn: boolean) =>
   createAppSelector(
     [
       (state: RootState, marketId: string, resolution: string) =>
         getPerpetualCandlesForMarket(state, marketId, resolution),
     ],
-    (candles): TradingViewBar[] => candles.map(mapCandle)
+    (candles): TradingViewChartBar[] => candles.map(mapCandle(orderbookCandlesToggleOn))
   );
 
 /**
@@ -194,22 +204,25 @@ export const getCurrentMarketNextFundingRate = createAppSelector(
   (marketData) => marketData?.perpetual?.nextFundingRate
 );
 
+export const getMarketIdToAssetMetadataMap = createAppSelector(
+  [(state: RootState) => state.perpetuals.markets, (state: RootState) => state.assets.assets],
+  (markets, assets) => {
+    const mapping = mapValues(markets ?? {}, (v) => assets?.[v.assetId]);
+    return mapping;
+  }
+);
 /**
  * @returns Specified market's max leverage
  */
-export const getMarketMaxLeverage = createAppSelector(
-  [(state: RootState, marketId: string) => getMarketConfig(state, marketId)],
-  (marketConfig) => {
-    const { effectiveInitialMarginFraction, initialMarginFraction } = orEmptyObj(marketConfig);
+export const getMarketMaxLeverage = () =>
+  createAppSelector(
+    [
+      (state: RootState, marketId?: string) =>
+        marketId != null ? getMarketConfig(state, marketId) : undefined,
+    ],
+    (marketConfig) => {
+      const { effectiveInitialMarginFraction, initialMarginFraction } = orEmptyObj(marketConfig);
 
-    if (effectiveInitialMarginFraction) {
-      return BIG_NUMBERS.ONE.div(effectiveInitialMarginFraction).toNumber();
+      return calculateMarketMaxLeverage({ effectiveInitialMarginFraction, initialMarginFraction });
     }
-
-    if (initialMarginFraction) {
-      return BIG_NUMBERS.ONE.div(initialMarginFraction).toNumber();
-    }
-
-    return 10; // safe default
-  }
-);
+  );

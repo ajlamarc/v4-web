@@ -9,8 +9,9 @@ interface EnvironmentConfig {
   dydxChainId: string;
   chainName: string;
   chainLogo: string;
-  squidIntegratorId: string;
+  deployerName: string;
   rewardsHistoryStartDateMs: string;
+  megavaultHistoryStartDateMs: string;
 }
 
 export type EnvironmentConfigKey = keyof EnvironmentConfig;

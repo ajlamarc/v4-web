@@ -5,6 +5,7 @@ import { shallowEqual } from 'react-redux';
 import styled, { css } from 'styled-components';
 
 import {
+  AbacusInputTypes,
   ComplianceStatus,
   ErrorType,
   TradeInputErrorAction,
@@ -15,6 +16,7 @@ import {
 } from '@/constants/abacus';
 import { AlertType } from '@/constants/alerts';
 import { ButtonAction, ButtonShape, ButtonSize, ButtonType } from '@/constants/buttons';
+import { ErrorParams } from '@/constants/errors';
 import { STRING_KEYS } from '@/constants/localization';
 import { NotificationType } from '@/constants/notifications';
 import { MobilePlaceOrderSteps, ORDER_TYPE_STRINGS, TradeTypes } from '@/constants/trade';
@@ -34,6 +36,7 @@ import { AlertMessage } from '@/components/AlertMessage';
 import { Button } from '@/components/Button';
 import { Icon, IconName } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
+import { Link } from '@/components/Link';
 import { ToggleButton } from '@/components/ToggleButton';
 import { ToggleGroup } from '@/components/ToggleGroup';
 
@@ -50,9 +53,12 @@ import abacusStateManager from '@/lib/abacus';
 import { getSelectedOrderSide, getTradeInputAlert } from '@/lib/tradeData';
 
 import { CanvasOrderbook } from '../CanvasOrderbook/CanvasOrderbook';
+import { TradeSideTabs } from '../TradeSideTabs';
 import { AdvancedTradeOptions } from './TradeForm/AdvancedTradeOptions';
+import { MarginAndLeverageButtons } from './TradeForm/MarginAndLeverageButtons';
 import { PlaceOrderButtonAndReceipt } from './TradeForm/PlaceOrderButtonAndReceipt';
 import { PositionPreview } from './TradeForm/PositionPreview';
+import { TradeFormInfoMessages } from './TradeForm/TradeFormInfoMessages';
 import { TradeFormInputs } from './TradeForm/TradeFormInputs';
 import { TradeSizeInputs } from './TradeForm/TradeSizeInputs';
 import { useTradeTypeOptions } from './TradeForm/useTradeTypeOptions';
@@ -91,7 +97,7 @@ export const TradeForm = ({
 
   const currentTradeData = useAppSelector(getInputTradeData, shallowEqual);
 
-  const { side } = currentTradeData ?? {};
+  const { marketId, side } = currentTradeData ?? {};
 
   const selectedOrderSide = getSelectedOrderSide(side);
 
@@ -112,13 +118,22 @@ export const TradeForm = ({
 
   const hasInputErrors =
     !!tradeErrors?.some((error: ValidationError) => error.type !== ErrorType.warning) ||
-    currentInput !== 'trade';
+    currentInput !== AbacusInputTypes.Trade;
 
   const { getNotificationPreferenceForType } = useNotifications();
 
-  const { inputAlert, alertContent, alertType, shouldPromptUserToPlaceLimitOrder } = useMemo(() => {
+  const {
+    inputAlert,
+    alertContent,
+    shortAlertContent,
+    alertType,
+    shouldPromptUserToPlaceLimitOrder,
+  } = useMemo(() => {
     let alertContentInner;
     let alertTypeInner = AlertType.Error;
+
+    let alertContentLink;
+    let alertContentLinkText;
 
     const inputAlertInner = getTradeInputAlert({
       abacusInputErrors: tradeErrors ?? [],
@@ -136,13 +151,25 @@ export const TradeForm = ({
     } else if (inputAlertInner) {
       alertContentInner = inputAlertInner.alertString;
       alertTypeInner = inputAlertInner.type;
+      alertContentLink = inputAlertInner.link;
+      alertContentLinkText = inputAlertInner.linkText;
     }
 
     const shouldPromptUserToPlaceLimitOrderInner = ['MARKET_ORDER_ERROR_ORDERBOOK_SLIPPAGE'].some(
       (errorCode) => inputAlertInner?.code === errorCode
     );
     return {
-      alertContent: alertContentInner,
+      shortAlertContent: alertContentInner,
+      alertContent: alertContentInner && (
+        <div tw="inline-block">
+          {alertContentInner}{' '}
+          {alertContentLinkText && alertContentLink && (
+            <Link isInline href={alertContentLink}>
+              {alertContentLinkText}
+            </Link>
+          )}
+        </div>
+      ),
       alertType: alertTypeInner,
       shouldPromptUserToPlaceLimitOrder: shouldPromptUserToPlaceLimitOrderInner,
       inputAlert: inputAlertInner,
@@ -198,9 +225,12 @@ export const TradeForm = ({
     setPlaceOrderError(undefined);
 
     placeOrder({
-      onError: (errorParams?: { errorStringKey?: Nullable<string> }) => {
+      onError: (errorParams: ErrorParams) => {
         setPlaceOrderError(
-          stringGetter({ key: errorParams?.errorStringKey ?? STRING_KEYS.SOMETHING_WENT_WRONG })
+          stringGetter({
+            key: errorParams.errorStringKey,
+            fallback: errorParams.errorMessage ?? '',
+          })
         );
         setCurrentStep?.(MobilePlaceOrderSteps.PlaceOrderFailed);
       },
@@ -214,7 +244,7 @@ export const TradeForm = ({
 
   const tabletActionsRow = isTablet && (
     <$TopActionsRow>
-      <$OrderbookButtons>
+      <div tw="inlineRow justify-between gap-0.25 notTablet:hidden">
         <$OrderbookButton
           slotRight={<Icon iconName={IconName.Caret} />}
           onPressedChange={setShowOrderbook}
@@ -223,8 +253,7 @@ export const TradeForm = ({
           {!showOrderbook && stringGetter({ key: STRING_KEYS.ORDERBOOK })}
         </$OrderbookButton>
         {/* TODO[TRCL-1411]: add orderbook scale functionality */}
-      </$OrderbookButtons>
-
+      </div>
       <$ToggleGroup
         items={allTradeTypeItems}
         value={selectedTradeType}
@@ -233,36 +262,46 @@ export const TradeForm = ({
     </$TopActionsRow>
   );
 
+  const tradeFormMessages = (
+    <>
+      <TradeFormInfoMessages marketId={marketId} />
+
+      {complianceStatus === ComplianceStatus.CLOSE_ONLY && (
+        <AlertMessage type={AlertType.Error}>
+          <span>{complianceMessage}</span>
+        </AlertMessage>
+      )}
+
+      {alertContent && (
+        <AlertMessage type={alertType}>
+          <div tw="row gap-0.75">
+            {alertContent}
+            {shouldPromptUserToPlaceLimitOrder && (
+              <$IconButton
+                iconName={IconName.Arrow}
+                shape={ButtonShape.Circle}
+                action={ButtonAction.Navigation}
+                size={ButtonSize.XSmall}
+                iconSize="1.25em"
+                onClick={() => onTradeTypeChange(TradeTypes.LIMIT)}
+              />
+            )}
+          </div>
+        </AlertMessage>
+      )}
+    </>
+  );
+
   const orderbookAndInputs = (
     <$OrderbookAndInputs showOrderbook={showOrderbook}>
-      {isTablet && showOrderbook && <$Orderbook maxRowsPerSide={5} hideHeader />}
+      {isTablet && showOrderbook && (
+        <CanvasOrderbook rowsPerSide={5} hideHeader tw="notTablet:hidden" />
+      )}
       <$InputsColumn>
-        <TradeSizeInputs />
         <TradeFormInputs />
+        <TradeSizeInputs />
         <AdvancedTradeOptions />
-
-        {complianceStatus === ComplianceStatus.CLOSE_ONLY && (
-          <AlertMessage type={AlertType.Error}>
-            <$Message>{complianceMessage}</$Message>
-          </AlertMessage>
-        )}
-
-        {alertContent && (
-          <AlertMessage type={alertType}>
-            <$Message>
-              {alertContent}
-              {shouldPromptUserToPlaceLimitOrder && (
-                <$IconButton
-                  iconName={IconName.Arrow}
-                  shape={ButtonShape.Circle}
-                  action={ButtonAction.Navigation}
-                  size={ButtonSize.XSmall}
-                  onClick={() => onTradeTypeChange(TradeTypes.LIMIT)}
-                />
-              )}
-            </$Message>
-          </AlertMessage>
-        )}
+        {tradeFormMessages}
       </$InputsColumn>
     </$OrderbookAndInputs>
   );
@@ -270,7 +309,7 @@ export const TradeForm = ({
   const tradeFooter = (
     <$Footer>
       {isInputFilled && (!currentStep || currentStep === MobilePlaceOrderSteps.EditOrder) && (
-        <$ButtonRow>
+        <div tw="row justify-self-end px-0 py-0.5">
           <Button
             type={ButtonType.Reset}
             action={ButtonAction.Reset}
@@ -280,12 +319,12 @@ export const TradeForm = ({
           >
             {stringGetter({ key: STRING_KEYS.CLEAR })}
           </Button>
-        </$ButtonRow>
+        </div>
       )}
       <PlaceOrderButtonAndReceipt
         hasValidationErrors={hasInputErrors}
         actionStringKey={inputAlert?.actionStringKey}
-        validationErrorString={alertContent}
+        validationErrorString={shortAlertContent}
         summary={summary ?? undefined}
         currentStep={currentStep}
         showDeposit={inputAlert?.errorAction === TradeInputErrorAction.DEPOSIT}
@@ -305,6 +344,17 @@ export const TradeForm = ({
           <PositionPreview />
           {alertContent && <AlertMessage type={alertType}>{alertContent}</AlertMessage>}
         </>
+      ) : currentStep && currentStep === MobilePlaceOrderSteps.EditOrder ? (
+        <TradeSideTabs
+          tw="overflow-visible"
+          sharedContent={
+            <$Content tw="gap-0.75 shadow-none">
+              <$MarginAndLeverageButtons openInTradeBox={false} />
+              {tabletActionsRow}
+              {orderbookAndInputs}
+            </$Content>
+          }
+        />
       ) : (
         <>
           {tabletActionsRow}
@@ -325,7 +375,7 @@ const $TradeForm = styled.form`
 
   /* Rules */
   --orderbox-column-width: 180px;
-  --orderbook-width: calc(var(--orderbox-column-width) + var(--tradeBox-content-paddingLeft));
+  --orderbox-gap: 1rem;
 
   min-height: 100%;
   isolation: isolate;
@@ -359,27 +409,29 @@ const $TradeForm = styled.form`
   }
 `;
 
+const $Content = styled.div`
+  ${layoutMixins.flexColumn}
+`;
+
 const $TopActionsRow = styled.div`
   display: grid;
   grid-auto-flow: column;
 
   @media ${breakpoints.tablet} {
     grid-auto-columns: var(--orderbox-column-width) 1fr;
-    gap: var(--form-input-gap);
+    gap: var(--orderbox-gap);
   }
 `;
-const $OrderbookButtons = styled.div`
-  ${layoutMixins.inlineRow}
-  justify-content: space-between;
-  gap: 0.25rem;
 
-  @media ${breakpoints.notTablet} {
-    display: none;
-  }
+const $MarginAndLeverageButtons = styled(MarginAndLeverageButtons)`
+  margin-top: 0.75rem;
 `;
+
 const $OrderbookButton = styled(ToggleButton)`
   --button-toggle-off-textColor: var(--color-text-1);
   --button-toggle-off-backgroundColor: transparent;
+
+  ${layoutMixins.flexExpandToSpace}
 
   > svg {
     color: var(--color-text-0);
@@ -410,9 +462,8 @@ const $OrderbookAndInputs = styled.div<{ showOrderbook: boolean }>`
     ${({ showOrderbook }) =>
       showOrderbook
         ? css`
-            grid-auto-columns: var(--orderbook-width) 1fr;
-            gap: var(--form-input-gap);
-            margin-left: calc(-1 * var(--tradeBox-content-paddingLeft));
+            grid-auto-columns: var(--orderbox-column-width) 1fr;
+            gap: var(--orderbox-gap);
           `
         : css`
             grid-auto-columns: 1fr;
@@ -420,50 +471,24 @@ const $OrderbookAndInputs = styled.div<{ showOrderbook: boolean }>`
           `}
   }
 `;
-const $Orderbook = styled(CanvasOrderbook)`
-  width: 100%;
 
-  @media ${breakpoints.notTablet} {
-    display: none;
-  }
-`;
 const $ToggleGroup = styled(ToggleGroup)`
-  overflow-x: auto;
-
   button[data-state='off'] {
     gap: 0;
-
     img {
-      height: 0;
+      display: none;
     }
   }
 ` as typeof ToggleGroup;
 
-const $Message = styled.div`
-  ${layoutMixins.row}
-  gap: 0.75rem;
-`;
-
 const $IconButton = styled(IconButton)`
   --button-backgroundColor: var(--color-white-faded);
   flex-shrink: 0;
-
-  svg {
-    width: 1.25em;
-    height: 1.25em;
-  }
 `;
 
 const $InputsColumn = styled.div`
   ${formMixins.inputsColumn}
 `;
-
-const $ButtonRow = styled.div`
-  ${layoutMixins.row}
-  justify-self: end;
-  padding: 0.5rem 0 0.5rem 0;
-`;
-
 const $Footer = styled.footer`
   ${formMixins.footer}
   --stickyFooterBackdrop-outsetY: var(--tradeBox-content-paddingBottom);

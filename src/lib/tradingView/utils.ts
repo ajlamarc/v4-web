@@ -1,6 +1,12 @@
 import { OrderSide } from '@dydxprotocol/v4-client-js';
+import {
+  ChartPropertiesOverrides,
+  TradingTerminalFeatureset,
+  TradingTerminalWidgetOptions,
+} from 'public/tradingview/charting_library';
 
-import { Candle, TradingViewBar, TradingViewSymbol } from '@/constants/candles';
+import { MetadataServiceCandlesResponse } from '@/constants/assetMetadata';
+import { Candle, TradingViewChartBar, TradingViewSymbol } from '@/constants/candles';
 import { THEME_NAMES } from '@/constants/styles/colors';
 import type { ChartLineType } from '@/constants/tvchart';
 
@@ -8,26 +14,131 @@ import { Themes } from '@/styles/themes';
 
 import { AppTheme, type AppColorMode } from '@/state/configs';
 
-export const mapCandle = ({
-  startedAt,
-  open,
-  close,
-  high,
-  low,
-  baseTokenVolume,
-}: Candle): TradingViewBar => ({
-  time: new Date(startedAt).getTime(),
-  low: parseFloat(low),
-  high: parseFloat(high),
-  open: parseFloat(open),
-  close: parseFloat(close),
-  volume: Math.ceil(Number(baseTokenVolume)),
-});
+import { getDisplayableTickerFromMarket } from '../assetUtils';
+import { testFlags } from '../testFlags';
+
+const MIN_NUM_TRADES_FOR_ORDERBOOK_PRICES = 10;
+
+const getOhlcValues = ({
+  orderbookCandlesToggleOn,
+  trades,
+  tradeOpen,
+  tradeClose,
+  tradeLow,
+  tradeHigh,
+  orderbookOpen,
+  orderbookClose,
+}: {
+  orderbookCandlesToggleOn: boolean;
+  trades: number;
+  tradeOpen: number;
+  tradeClose: number;
+  tradeLow: number;
+  tradeHigh: number;
+  orderbookOpen?: number;
+  orderbookClose?: number;
+}) => {
+  const useOrderbookCandles =
+    orderbookCandlesToggleOn &&
+    trades <= MIN_NUM_TRADES_FOR_ORDERBOOK_PRICES &&
+    orderbookOpen !== undefined &&
+    orderbookClose !== undefined;
+
+  return {
+    low: useOrderbookCandles ? Math.min(orderbookOpen, orderbookClose) : tradeLow,
+    high: useOrderbookCandles ? Math.max(orderbookOpen, orderbookClose) : tradeHigh,
+    open: useOrderbookCandles ? orderbookOpen : tradeOpen,
+    close: useOrderbookCandles ? orderbookClose : tradeClose,
+  };
+};
+
+export const mapMetadataServiceCandles = (
+  candle: MetadataServiceCandlesResponse[string][number]
+) => {
+  return {
+    time: new Date(candle.time).getTime(),
+    open: candle.open,
+    close: candle.close,
+    high: candle.high,
+    low: candle.low,
+    volume: candle.volume,
+  };
+};
+
+export const mapCandle =
+  (orderbookCandlesToggleOn: boolean) =>
+  ({
+    startedAt,
+    open,
+    close,
+    high,
+    low,
+    baseTokenVolume,
+    usdVolume,
+    trades,
+    orderbookMidPriceOpen,
+    orderbookMidPriceClose,
+  }: Candle): TradingViewChartBar => {
+    const tradeOpen = parseFloat(open);
+    const tradeClose = parseFloat(close);
+    const tradeLow = parseFloat(low);
+    const tradeHigh = parseFloat(high);
+    const orderbookOpen = orderbookMidPriceOpen ? parseFloat(orderbookMidPriceOpen) : undefined;
+    const orderbookClose = orderbookMidPriceClose ? parseFloat(orderbookMidPriceClose) : undefined;
+    const tokenVolume = Math.ceil(Number(baseTokenVolume)); // default
+    return {
+      ...getOhlcValues({
+        orderbookCandlesToggleOn,
+        trades,
+        tradeOpen,
+        tradeClose,
+        tradeLow,
+        tradeHigh,
+        orderbookOpen,
+        orderbookClose,
+      }),
+      time: new Date(startedAt).getTime(),
+      volume: tokenVolume,
+      assetVolume: tokenVolume,
+      usdVolume: Math.ceil(Number(usdVolume)),
+      tradeOpen,
+      tradeClose,
+      orderbookOpen,
+      orderbookClose,
+      tradeLow,
+      tradeHigh,
+      trades,
+    };
+  };
+
+const mapTradingViewChartBar = ({
+  orderbookCandlesToggleOn,
+  bar,
+}: {
+  orderbookCandlesToggleOn: boolean;
+  bar: TradingViewChartBar;
+}): TradingViewChartBar => {
+  const { trades, orderbookOpen, orderbookClose, tradeOpen, tradeClose, tradeLow, tradeHigh } = bar;
+
+  return {
+    ...bar,
+    ...getOhlcValues({
+      orderbookCandlesToggleOn,
+      trades,
+      tradeOpen,
+      tradeClose,
+      tradeLow,
+      tradeHigh,
+      orderbookOpen,
+      orderbookClose,
+    }),
+  };
+};
 
 export const getSymbol = (marketId: string): TradingViewSymbol => ({
   description: marketId,
   exchange: 'dYdX',
-  full_name: marketId,
+  full_name: getDisplayableTickerFromMarket(marketId),
   symbol: marketId,
   type: 'crypto',
 });
@@ -37,17 +148,21 @@ export const getHistorySlice = ({
   fromMs,
   toMs,
   firstDataRequest,
+  orderbookCandlesToggleOn,
 }: {
-  bars?: TradingViewBar[];
+  bars?: TradingViewChartBar[];
   fromMs: number;
   toMs: number;
   firstDataRequest: boolean;
-}): TradingViewBar[] => {
+  orderbookCandlesToggleOn: boolean;
+}): TradingViewChartBar[] => {
   if (!bars || (!firstDataRequest && bars.length > 0 && toMs < bars[0].time)) {
     return [];
   }
 
-  return bars.filter(({ time }) => time >= fromMs);
+  return bars
+    .map((bar) => mapTradingViewChartBar({ orderbookCandlesToggleOn, bar }))
+    .filter(({ time }) => time >= fromMs);
 };
 
 export const getChartLineColors = ({
@@ -93,7 +208,7 @@ export const getWidgetOverrides = ({
       'paneProperties.vertGridProperties.color': theme.layer3,
       'paneProperties.crossHairProperties.style': 1,
       'paneProperties.legendProperties.showBarChange': false,
-      'paneProperties.backgroundType': 'solid',
+      'paneProperties.backgroundType': 'solid' as const,
 
       'mainSeriesProperties.style': 1,
       'mainSeriesProperties.candleStyle.upColor': theme.positive,
@@ -107,7 +222,8 @@ export const getWidgetOverrides = ({
       'scalesProperties.textColor': theme.textPrimary,
       'scalesProperties.backgroundColor': theme.layer2,
       'scalesProperties.lineColor': theme.layer3,
-    },
+      'scalesProperties.fontSize': 12,
+    } as Partial<ChartPropertiesOverrides>,
     studies_overrides: {
       'volume.volume.color.0': theme.negative,
       'volume.volume.color.1': theme.positive,
@@ -123,27 +239,44 @@ export const getWidgetOverrides = ({
   };
 };
 
-export const getWidgetOptions = () => {
+export const getWidgetOptions = (
+  isViewingUnlaunchedMarket?: boolean
+): Partial<TradingTerminalWidgetOptions> & Pick<TradingTerminalWidgetOptions, 'container'> => {
+  const { uiRefresh } = testFlags;
+
+  const disabledFeaturesForUnlaunchedMarket: TradingTerminalFeatureset[] = [
+    'chart_scroll',
+    'chart_zoom',
+  ];
+
+  const disabledFeatures: TradingTerminalFeatureset[] = [
+    'header_symbol_search',
+    'header_compare',
+    'symbol_search_hot_key',
+    'symbol_info',
+    'go_to_date',
+    'timeframes_toolbar',
+    'header_layouttoggle',
+    'trading_account_manager',
+    ...(isViewingUnlaunchedMarket ? disabledFeaturesForUnlaunchedMarket : []),
+  ];
+
   return {
     // debug: true,
     container: 'tv-price-chart',
     library_path: '/apps/dydx-v4/tradingview/', // relative to public folder
-    custom_css_url: '/apps/dydx-v4/tradingview/custom-styles.css',
+    custom_css_url: uiRefresh
+      ? '/apps/dydx-v4/tradingview/custom-styles.css'
+      : '/apps/dydx-v4/tradingview/custom-styles-deprecated.css',
+    custom_font_family: "'Satoshi', system-ui, -apple-system, Helvetica, Arial, sans-serif",
     autosize: true,
-    disabled_features: [
-      'header_symbol_search',
-      'header_compare',
-      'symbol_search_hot_key',
-      'compare_symbol',
-      'symbol_info',
-      'go_to_date',
-      'timeframes_toolbar',
-    ],
+    disabled_features: disabledFeatures,
     enabled_features: [
       'remove_library_container_border',
       'hide_last_na_study_output',
       'dont_show_boolean_study_arguments',
       'hide_left_toolbar_by_default',
+      'hide_right_toolbar',
     ],
   };
 };
@@ -158,5 +291,5 @@ export const getSavedResolution = ({ savedConfig }: { savedConfig?: object }): s
     (source: { type: string; state: { interval: string | null } }) => source.type === 'MainSeries'
   )?.state?.interval;
 
-  return savedResolution ?? null;
+  return savedResolution ?? undefined;
 };
