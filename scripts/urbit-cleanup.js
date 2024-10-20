@@ -3,7 +3,7 @@ import path from 'path';
 
 const distDir = path.join(process.cwd(), 'dist');
 // .ts will remove .d.ts files (it's only matching last extension)
-const extensionsToRemove = ['.ts', '.cur', '.md']; // Add the file extensions you want to remove
+const extensionsToRemove = ['.ts', '.cur', '.md', '.mp3']; // Add the file extensions you want to remove
 
 function removeFileExtensions(dir) {
   const files = fs.readdirSync(dir);
