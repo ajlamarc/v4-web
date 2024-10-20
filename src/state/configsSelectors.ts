@@ -23,9 +23,9 @@ const ChartDotBackgrounds = {
 };
 
 const GridBackgrounds = {
-  [AppTheme.Dark]: '/grid-background-dark.svg',
-  [AppTheme.Classic]: '/grid-background-dark.svg',
-  [AppTheme.Light]: '/grid-background-light.svg',
+  [AppTheme.Dark]: '/apps/dydx-v4/grid-background-dark.png',
+  [AppTheme.Classic]: '/apps/dydx-v4/grid-background-dark.png',
+  [AppTheme.Light]: '/apps/dydx-v4/grid-background-light.png',
 };
 
 export const getChartDotBackground = (state: RootState): string => {

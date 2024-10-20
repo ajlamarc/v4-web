@@ -74,7 +74,7 @@ export const ReferralDialog = ({ setIsOpen, refCode }: DialogProps<ReferralDialo
         isSuccess && isAffiliatesInfoSuccess ? (
           <$HeaderAbove tw="flex flex-row items-center gap-1">
             {isEligible ? (
-              <img src="/hedgies-placeholder.png" alt="hedgie" tw="h-5" />
+              <img src="/apps/dydx-v4/hedgies-placeholder.png" alt="hedgie" tw="h-5" />
             ) : (
               <div tw="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[100%] bg-color-layer-1">
                 <div tw="flex h-2.5 w-2.5 items-center justify-center rounded-[100%] bg-color-layer-7 text-color-layer-1 font-large-book">

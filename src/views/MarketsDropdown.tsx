@@ -509,7 +509,7 @@ const $FlagGradient = styled.div`
   height: 100%;
   background-image: ${({ theme }) => `
     linear-gradient(90deg, ${theme.layer1} 0%, ${theme.tooltipBackground} 53%, ${theme.layer1} 99%),
-    url('/AmericanFlag.png')
+    url('/apps/dydx-v4/AmericanFlag.png')
   `};
   background-repeat: no-repeat;
   position: absolute;
@@ -518,7 +518,7 @@ const $FlagGradient = styled.div`
 `;
 
 const $TriggerFlag = styled.div`
-  background: url('/AmericanFlag2.png') no-repeat;
+  background: url('/apps/dydx-v4/AmericanFlag2.png') no-repeat;
   mix-blend-mode: luminosity;
   position: absolute;
   top: 0;

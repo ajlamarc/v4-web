@@ -99,7 +99,7 @@ const EstimatedRewards = () => {
         </$Points>
       </$EstimatedRewardsCardContent>
 
-      <img src="/rewards-stars.svg" tw="relative float-right mb-1.5 h-auto w-[5.25rem]" />
+      <img src="apps/dydx-v4/rewards-stars.svg" tw="relative float-right mb-1.5 h-auto w-[5.25rem]" />
     </$EstimatedRewardsCard>
   );
 };

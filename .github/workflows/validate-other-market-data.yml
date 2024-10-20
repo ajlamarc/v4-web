@@ -3,7 +3,7 @@ name: Validate Other Market Data
 on:
   pull_request:
     paths:
-      - 'public/configs/otherMarketData.json'
+      - 'public/configs/other-market-data.json'
       - 'scripts/markets/validate-other-market-data.ts'
 
 jobs:

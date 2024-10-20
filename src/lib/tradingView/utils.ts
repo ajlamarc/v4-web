@@ -264,10 +264,10 @@ export const getWidgetOptions = (
   return {
     // debug: true,
     container: 'tv-price-chart',
-    library_path: '/tradingview/', // relative to public folder
+    library_path: '/apps/dydx-v4/tradingview/', // relative to public folder
     custom_css_url: uiRefresh
-      ? '/tradingview/custom-styles.css'
-      : '/tradingview/custom-styles-deprecated.css',
+      ? '/apps/dydx-v4/tradingview/custom-styles.css'
+      : '/apps/dydx-v4/tradingview/custom-styles-deprecated.css',
     custom_font_family: "'Satoshi', system-ui, -apple-system, Helvetica, Arial, sans-serif",
     autosize: true,
     disabled_features: disabledFeatures,

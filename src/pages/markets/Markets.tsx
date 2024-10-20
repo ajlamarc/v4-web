@@ -148,7 +148,7 @@ const $FlagOverlay = styled.div`
   height: 100%;
   background-image: ${({ theme }) => `
     linear-gradient(90deg, ${theme.layer1} 0%, ${theme.tooltipBackground} 53%, ${theme.layer1} 99%),
-    url('/AmericanFlag.png')
+    url('/apps/dydx-v4/AmericanFlag.png')
   `};
   background-repeat: no-repeat;
 

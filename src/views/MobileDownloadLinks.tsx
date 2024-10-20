@@ -31,12 +31,12 @@ export const MobileDownloadLinks = ({ withBadges }: { withBadges?: boolean }) =>
         <$Download>{stringGetter({ key: STRING_KEYS.GET_DYDX_ON_PHONE })}</$Download>
         {googlePlayStoreUrl && (
           <Link href={googlePlayStoreUrl}>
-            <img src="/play-store.png" alt="google-play" />
+            <img src="/apps/dydx-v4/play-store.png" alt="google-play" />
           </Link>
         )}
         {appleAppStoreUrl && (
           <Link href={appleAppStoreUrl}>
-            <img src="/app-store.png" alt="app-store" />
+            <img src="/apps/dydx-v4/app-store.png" alt="app-store" />
           </Link>
         )}
       </$DownloadLinksInDropdown>
