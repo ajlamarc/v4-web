@@ -1,5 +1,5 @@
 /*
-This script adds markets to a dYdX chain. Markets are read from public/config/otherMarketData.json.
+This script adds markets to a dYdX chain. Markets are read from public/config/other-market-data.json.
 
 Supported environments: local, dev, dev2, dev3, dev4, dev5, staging.
 
@@ -18,9 +18,9 @@ import {
 import { readFileSync } from 'fs';
 import Long from 'long';
 import {
-  createAndSendMarketMapProposal,
   PerpetualMarketType,
   Proposal,
+  createAndSendMarketMapProposal,
   retry,
   sleep,
   voteOnProposals
@@ -286,7 +286,7 @@ async function main(): Promise<void> {
 
   // Read proposals.
   const proposals: Record<string, Proposal> = JSON.parse(
-    readFileSync('public/configs/otherMarketData.json', 'utf8')
+    readFileSync('public/configs/other-market-data.json', 'utf8')
   );
 
   // Add markets.

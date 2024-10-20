@@ -2,10 +2,10 @@ import { useToBlob } from '@hugocxl/react-to-image';
 import styled from 'styled-components';
 
 import {
-  AFFILIATES_FEE_DISCOUNT_USD,
-  AFFILIATES_REQUIRED_VOLUME_USD,
-  DEFAULT_AFFILIATES_EARN_PER_MONTH_USD,
-  DEFAULT_AFFILIATES_VIP_EARN_PER_MONTH_USD,
+    AFFILIATES_FEE_DISCOUNT_USD,
+    AFFILIATES_REQUIRED_VOLUME_USD,
+    DEFAULT_AFFILIATES_EARN_PER_MONTH_USD,
+    DEFAULT_AFFILIATES_VIP_EARN_PER_MONTH_USD,
 } from '@/constants/affiliates';
 import { ButtonAction, ButtonSize } from '@/constants/buttons';
 import { DialogProps, ShareAffiliateDialogProps } from '@/constants/dialogs';
@@ -134,7 +134,7 @@ export const ShareAffiliateDialog = ({ setIsOpen }: DialogProps<ShareAffiliateDi
           }}
           tw="relative"
         >
-          <img src="/affiliates-share.png" alt="share affiliates" tw="w-full rounded-1" />
+          <img src="/apps/dydx-v4/affiliates-share.png" alt="share affiliates" tw="w-full rounded-1" />
           <$QrCode
             size={68}
             options={{

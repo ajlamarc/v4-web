@@ -2,8 +2,8 @@ import { css } from 'styled-components';
 import { styled } from 'twin.macro';
 
 import {
-  AFFILIATES_FEE_DISCOUNT_USD,
-  DEFAULT_AFFILIATES_EARN_PER_MONTH_USD,
+    AFFILIATES_FEE_DISCOUNT_USD,
+    DEFAULT_AFFILIATES_EARN_PER_MONTH_USD,
 } from '@/constants/affiliates';
 import { ButtonAction, ButtonSize } from '@/constants/buttons';
 import { DialogTypes } from '@/constants/dialogs';
@@ -92,7 +92,7 @@ export const AffiliatesBanner = () => {
       tw="row mb-1 mt-1 justify-between gap-0.5 bg-color-layer-1 pl-1 pr-2"
     >
       <div tw="row">
-        <img src="/affiliates-hedgie.png" alt="affiliates hedgie" tw="mt-1 h-8" />
+        <img src="/apps/dydx-v4/affiliates-hedgie.png" alt="affiliates hedgie" tw="mt-1 h-8" />
         <div tw="column items-start gap-0.5">
           <div tw="row">
             <$Triangle />
