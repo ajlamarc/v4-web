@@ -1,6 +1,9 @@
+import { useState } from 'react';
+
 import styled from 'styled-components';
 
 import { Nullable } from '@/constants/abacus';
+import { ASSET_ICON_MAP } from '@/constants/assets';
 
 export type AssetSymbol = keyof typeof assetIcons;
 
@@ -1607,29 +1610,44 @@ const Placeholder = ({ className, symbol }: { className?: string; symbol: string
 );
 
 const isAssetSymbol = (symbol: Nullable<string>): symbol is AssetSymbol =>
-  symbol != null && Object.hasOwn(assetIcons, symbol);
+  symbol != null && Object.hasOwn(ASSET_ICON_MAP, symbol);
 
 export const AssetIcon = ({
   logoUrl,
   symbol,
   className,
 }: {
-  logoUrl?: string;
+  logoUrl?: Nullable<string>;
   symbol?: Nullable<string>;
   className?: string;
-}) =>
-  logoUrl ? (
-    <img
+}) => {
+  const [isError, setIsError] = useState(false);
+
+  if (isError || (!logoUrl && !isAssetSymbol(symbol))) {
+    return <Placeholder className={className} symbol={symbol ?? ''} />;
+  }
+
+  return logoUrl ? (
+    <$AssetIcon
       src={logoUrl}
       className={className}
       alt={symbol ?? 'logo'}
       tw="h-[1em] w-auto rounded-[50%]"
+      onError={({ currentTarget }) => {
+        currentTarget.onerror = null;
+        if (isAssetSymbol(symbol)) {
+          currentTarget.src = ASSET_ICON_MAP[symbol];
+        } else {
+          setIsError(true);
+        }
+      }}
     />
   ) : isAssetSymbol(symbol) ? (
-    <$AssetIcon src={assetIcons[symbol]} className={className} alt={symbol} />
+    <$AssetIcon src={ASSET_ICON_MAP[symbol]} className={className} alt={symbol} />
   ) : (
     <Placeholder className={className} symbol={symbol ?? ''} />
   );
+};
 
 const $AssetIcon = styled.img`
   --asset-icon-size: 1em;
